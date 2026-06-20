@@ -33,11 +33,16 @@ export async function auditUnloadModel(params: Parameters<typeof unloadModel>[0]
 }
 
 export interface AuditCompletion { contentText: string; stats?: CompletionStats; wallTtftMs: number | null; wallTotalMs: number }
-export async function auditCompletion(params: Parameters<typeof completion>[0], meta: ModelMeta & { event: string }): Promise<AuditCompletion> {
+export async function auditCompletion(params: Parameters<typeof completion>[0], meta: ModelMeta & { event: string; onToken?: (t: string) => void }): Promise<AuditCompletion> {
   const t0 = performance.now();
   const run = completion(params);
   let wallTtftMs: number | null = null;
-  for await (const ev of run.events) { if (ev.type === "contentDelta" && wallTtftMs === null) wallTtftMs = performance.now() - t0; }
+  for await (const ev of run.events) {
+    if (ev.type === "contentDelta") {
+      if (wallTtftMs === null) wallTtftMs = performance.now() - t0;
+      meta.onToken?.(ev.text);
+    }
+  }
   const final = await run.final;
   const wallTotalMs = performance.now() - t0;
   const stats = final.stats as CompletionStats | undefined;

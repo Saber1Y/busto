@@ -3,12 +3,16 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve, extname } from "node:path";
-import { loadEnvSafe, logInference, buildPaymentIntent, toMinorUnits, type PaymentIntent } from "../../shared/src/index.ts";
+import { loadEnvSafe, logInference, buildPaymentIntent, toMinorUnits, fromMinorUnits, type PaymentIntent } from "../../shared/src/index.ts";
 import { openErp, ensureSchema, seedErp, lookupVendor } from "../../orchestrator/src/erp.ts";
-import { extractInvoice } from "../../orchestrator/src/extract.ts";
+import { extractInvoice, type ExtractResult } from "../../orchestrator/src/extract.ts";
 import { computeVerdict, type Verdict } from "../../orchestrator/src/verdict.ts";
+import { explainInvoice, type ExplainContext } from "../../orchestrator/src/explain.ts";
 import { openEdgeWallet, CHAIN } from "./wallet.ts";
 import { settleIntent } from "./settle.ts";
+
+type Res = import("node:http").ServerResponse;
+type Req = import("node:http").IncomingMessage;
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "../../..");
@@ -21,37 +25,52 @@ const db = openErp(resolve(REPO, "data/erp.db"));
 ensureSchema(db);
 await seedErp(db); // exact-match verdict needs no models
 
-interface Job { intent: PaymentIntent; vendorId: number; poId: number; verdict: Verdict; status: string }
+interface Job { explainContext: ExplainContext; status: string; intent?: PaymentIntent; vendorId?: number; poId?: number }
 const jobs = new Map<string, Job>();
-let busy = false;
+let busy = false; // one QVAC op (verify or explain) at a time
 
 const SAMPLE_LIST = [
-  { id: "ui-clean", label: "Clean invoice", note: "Acme · 1 USD₮ · valid wallet", expect: "settle" },
-  { id: "ui-injection", label: "Prompt injection", note: "hidden “ignore instructions” payload", expect: "Gate 0" },
-  { id: "ui-amount", label: "Amount mismatch", note: "4,242 USD₮ — matches no PO", expect: "Gate 2" },
+  { id: "ui-clean", label: "Clean invoice", note: "Acme Robotics · 1 USD₮ · matches the PO", expect: "verified" },
+  { id: "ui-fraud", label: "Swapped payment wallet", note: "Acme invoice, attacker's wallet printed", expect: "blocked · recipient" },
+  { id: "ui-injection", label: "Hidden instruction", note: "“ignore previous instructions…” in the notes", expect: "blocked · Gate 0" },
+  { id: "ui-amount", label: "Amount doesn't match a PO", note: "4,242 USD₮ — no matching order", expect: "blocked · ERP" },
 ];
 
 const MIME: Record<string, string> = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon" };
-const json = (res: import("node:http").ServerResponse, code: number, body: unknown): void => {
-  res.writeHead(code, { "content-type": "application/json" });
-  res.end(JSON.stringify(body));
-};
-const readBody = (req: import("node:http").IncomingMessage): Promise<Buffer> =>
-  new Promise((ok) => { const c: Buffer[] = []; req.on("data", (d) => c.push(d)); req.on("end", () => ok(Buffer.concat(c))); });
+const json = (res: Res, code: number, body: unknown): void => { res.writeHead(code, { "content-type": "application/json" }); res.end(JSON.stringify(body)); };
+const readBody = (req: Req): Promise<Buffer> => new Promise((ok) => { const c: Buffer[] = []; req.on("data", (d) => c.push(d)); req.on("end", () => ok(Buffer.concat(c))); });
+
+function openPOsFor(vendorName: string): ExplainContext["vendorOpenPOs"] {
+  const v = lookupVendor(db, vendorName);
+  if (!v.vendorId) return [];
+  const rows = db.prepare("SELECT po_number, amount_minor, currency FROM purchase_orders WHERE vendor_id = ? AND status = 'open'")
+    .all(v.vendorId) as Array<{ po_number: string; amount_minor: string; currency: string }>;
+  return rows.map((r) => ({ poNumber: r.po_number, amount: fromMinorUnits(BigInt(r.amount_minor), 6), currency: r.currency }));
+}
+
+function buildExplainContext(invoiceRef: string, ex: ExtractResult, verdict: Verdict): ExplainContext {
+  return {
+    invoiceRef,
+    extraction: { vendorName: ex.extraction.vendorName, invoiceAmount: ex.extraction.invoiceAmount, currency: ex.extraction.currency, providedWallet: ex.extraction.providedWallet },
+    verdict,
+    vendorOpenPOs: openPOsFor(ex.extraction.vendorName),
+    gate0Findings: ex.gate0.findings.map((f) => ({ grade: f.grade, encoding: f.encoding, detail: f.detail })),
+  };
+}
 
 function gatesFromVerdict(v: Verdict, gate0Flagged: boolean): Array<{ id: string; name: string; state: "cleared" | "blocked" | "pending"; detail: string }> {
   const g2 = v.checks.vendorExists && v.checks.vendorActive && v.checks.amountParsed && v.checks.poMatched;
   return [
-    { id: "G0", name: "Input decode", state: gate0Flagged ? "blocked" : "cleared", detail: gate0Flagged ? "obfuscated imperative detected" : "no injection" },
-    { id: "G1", name: "Role bounding", state: gate0Flagged ? "pending" : "cleared", detail: "model extracts only" },
-    { id: "G2", name: "Deterministic truth", state: gate0Flagged ? "pending" : g2 ? "cleared" : "blocked", detail: g2 ? `vendor + PO ${v.matchedPO}` : "no vendor/PO match" },
-    { id: "G3", name: "Recipient", state: gate0Flagged || !g2 ? "pending" : v.checks.walletMatch ? "cleared" : "blocked", detail: v.checks.walletMatch ? "matches DB wallet" : "wallet not corroborated" },
-    { id: "G4", name: "Human approval", state: "pending", detail: "awaiting authorization" },
-    { id: "G5", name: "On-chain settle", state: "pending", detail: "pinned chain + token" },
+    { id: "G0", name: "Hidden-instruction check", state: gate0Flagged ? "blocked" : "cleared", detail: gate0Flagged ? "a hidden instruction was found in the document" : "no hidden instructions" },
+    { id: "G1", name: "The reader can't pay", state: gate0Flagged ? "pending" : "cleared", detail: "the AI only extracts fields" },
+    { id: "G2", name: "Vendor + purchase order", state: gate0Flagged ? "pending" : g2 ? "cleared" : "blocked", detail: g2 ? `${v.matchedPO} matches the amount` : "no vendor/PO match in the ERP" },
+    { id: "G3", name: "Payment goes to the verified wallet", state: gate0Flagged || !g2 ? "pending" : v.checks.walletMatch ? "cleared" : "blocked", detail: v.checks.walletMatch ? "matches the wallet on file" : "the document's wallet doesn't match the ERP" },
+    { id: "G4", name: "You approve", state: "pending", detail: "awaiting your authorization" },
+    { id: "G5", name: "On-chain payment", state: "pending", detail: "pinned network + token, exact amount" },
   ];
 }
 
-async function handleVerify(req: import("node:http").IncomingMessage, res: import("node:http").ServerResponse): Promise<void> {
+async function handleVerify(req: Req, res: Res): Promise<void> {
   if (busy) { json(res, 429, { error: "a verification is already in progress" }); return; }
   busy = true;
   res.writeHead(200, { "content-type": "application/x-ndjson", "cache-control": "no-cache" });
@@ -74,43 +93,46 @@ async function handleVerify(req: import("node:http").IncomingMessage, res: impor
     const invoiceRef = `INV-UI-${Date.now().toString(36).toUpperCase()}`;
 
     send({ t: "step", id: "intake", state: "cleared", detail: sourceLabel });
-    send({ t: "step", id: "G0", state: "active", detail: "normalizing + decoding" });
-    send({ t: "step", id: "extract", state: "active", detail: "reading invoice (QVAC, on-device)" });
+    send({ t: "step", id: "G0", state: "active", detail: "checking for hidden instructions" });
+    send({ t: "step", id: "extract", state: "active", detail: "reading the invoice on-device" });
 
     const ex = await extractInvoice(imagePath);
     send({ t: "extraction", data: { ...ex.extraction, _ocrBlocks: ex.ocrBlockCount, _model: ex.visionModel } });
-    send({ t: "step", id: "extract", state: "cleared", detail: `${ex.visionModel} · ${ex.ocrBlockCount} OCR blocks` });
+    send({ t: "step", id: "extract", state: "cleared", detail: `read with ${ex.visionModel}` });
 
-    if (ex.gate0.flagged) {
-      send({ t: "step", id: "G0", state: "blocked", detail: ex.gate0.findings.map((f) => `${f.grade}:${f.encoding}`).join(", ") });
+    const gate0Flagged = ex.gate0.flagged;
+    if (gate0Flagged) {
+      send({ t: "step", id: "G0", state: "blocked", detail: ex.gate0.findings.map((f) => f.detail).join("; ") });
       logInference({ node: "edge", op: "gate0-reject", model: "gate0", delegated: false, event: `ui ${ex.gate0.findings.map((f) => `${f.grade}:${f.encoding}`).join(",")}` });
-      send({ t: "final", data: { status: "BLOCKED", blockedGate: "G0", reason: `Gate 0 — ${ex.gate0.findings.map((f) => f.detail).join("; ")}`, gates: gatesFromVerdict({ checks: { vendorExists: false, vendorActive: false, amountParsed: false, poMatched: false, walletMatch: false, notDuplicate: true, gate0Clean: false } } as Verdict, true) } });
-      return;
+    } else {
+      send({ t: "step", id: "G0", state: "cleared", detail: "no hidden instructions" });
+      send({ t: "step", id: "G2", state: "active", detail: "checking the ERP" });
     }
-    send({ t: "step", id: "G0", state: "cleared", detail: "no injection" });
 
-    send({ t: "step", id: "G2", state: "active", detail: "verifying against ERP" });
-    const verdict = await computeVerdict(db, ex.extraction, invoiceRef, undefined, ex.gate0.flagged);
+    const verdict = await computeVerdict(db, ex.extraction, invoiceRef, undefined, gate0Flagged);
     logInference({ node: "edge", op: "verdict", model: "deterministic", delegated: false, event: `${verdict.decision} ${invoiceRef}` });
-    const gates = gatesFromVerdict(verdict, false);
+    const gates = gatesFromVerdict(verdict, gate0Flagged);
     send({ t: "verdict", data: verdict });
-    for (const g of gates) if (g.id === "G2" || g.id === "G3") send({ t: "step", id: g.id, state: g.state, detail: g.detail });
+    if (!gate0Flagged) for (const g of gates) if (g.id === "G2" || g.id === "G3") send({ t: "step", id: g.id, state: g.state, detail: g.detail });
 
+    const job: Job = { explainContext: buildExplainContext(invoiceRef, ex, verdict), status: verdict.decision };
     if (verdict.decision === "PASS" && verdict.knownWallet) {
       const vendor = lookupVendor(db, ex.extraction.vendorName);
       const poRow = db.prepare("SELECT id FROM purchase_orders WHERE po_number = ?").get(verdict.matchedPO) as { id: number };
-      const intent = buildPaymentIntent({
-        knownWallet: verdict.knownWallet,
-        amountMinor: toMinorUnits(ex.extraction.invoiceAmount, CHAIN.usdtDecimals)!,
-        token: CHAIN.usdt, chainId: CHAIN.id, invoiceRef, memo: `Custos · ${verdict.matchedPO}`,
-      });
-      const jobId = randomUUID();
-      jobs.set(jobId, { intent, vendorId: vendor.vendorId!, poId: poRow.id, verdict, status: "awaiting-approval" });
-      send({ t: "intent", data: intent });
-      send({ t: "final", data: { status: "VERIFIED", jobId, gates, intent } });
+      job.intent = buildPaymentIntent({ knownWallet: verdict.knownWallet, amountMinor: toMinorUnits(ex.extraction.invoiceAmount, CHAIN.usdtDecimals)!, token: CHAIN.usdt, chainId: CHAIN.id, invoiceRef, memo: `Custos · ${verdict.matchedPO}` });
+      job.vendorId = vendor.vendorId!;
+      job.poId = poRow.id;
+    }
+    const jobId = randomUUID();
+    jobs.set(jobId, job);
+
+    if (verdict.decision === "PASS" && job.intent) {
+      send({ t: "intent", data: job.intent });
+      send({ t: "final", data: { status: "VERIFIED", jobId, gates, intent: job.intent } });
     } else {
-      const blocked = gates.find((g) => g.state === "blocked");
-      send({ t: "final", data: { status: "BLOCKED", blockedGate: blocked?.id ?? "G2", reason: verdict.reasons.find((r) => r.startsWith("REJECT")) ?? "verification failed", gates } });
+      const blockedGate = gate0Flagged ? "G0" : gates.find((g) => g.state === "blocked")?.id ?? "G2";
+      const reason = gate0Flagged ? `A hidden instruction was found in the document and ignored — ${ex.gate0.findings[0]?.detail ?? ""}` : verdict.reasons.find((r) => r.startsWith("REJECT"))?.replace(/^REJECT:\s*/, "") ?? "verification failed";
+      send({ t: "final", data: { status: "BLOCKED", jobId, blockedGate, reason, gates } });
     }
   } catch (err) {
     send({ t: "final", data: { status: "ERROR", reason: String((err as Error)?.message ?? err) } });
@@ -120,28 +142,43 @@ async function handleVerify(req: import("node:http").IncomingMessage, res: impor
   }
 }
 
-async function handleApprove(req: import("node:http").IncomingMessage, res: import("node:http").ServerResponse): Promise<void> {
-  if (!process.env.CUSTOS_WALLET_SEED) {
-    json(res, 200, { status: "blocked", reason: "Demo mode — set CUSTOS_WALLET_SEED in .env to a funded Sepolia wallet to settle for real." });
-    return;
+async function handleExplain(req: Req, res: Res): Promise<void> {
+  const { jobId, question } = JSON.parse((await readBody(req)).toString() || "{}") as { jobId?: string; question?: string };
+  const job = jobId ? jobs.get(jobId) : undefined;
+  res.writeHead(200, { "content-type": "application/x-ndjson", "cache-control": "no-cache" });
+  const send = (e: unknown): void => { res.write(JSON.stringify(e) + "\n"); };
+  if (!job) { send({ t: "token", text: "Load an invoice first — I can only explain a verification that has already run." }); send({ t: "done" }); res.end(); return; }
+  if (busy) { send({ t: "token", text: "One moment — finishing the current verification." }); send({ t: "done" }); res.end(); return; }
+  busy = true;
+  try {
+    const full = await explainInvoice(question ?? "", job.explainContext, (tok) => send({ t: "token", text: tok }));
+    send({ t: "done", full });
+  } catch (e) {
+    send({ t: "error", reason: String((e as Error)?.message ?? e) });
+  } finally {
+    busy = false;
+    res.end();
   }
+}
+
+async function handleApprove(req: Req, res: Res): Promise<void> {
+  if (!process.env.CUSTOS_WALLET_SEED) { json(res, 200, { status: "blocked", reason: "Demo mode — set CUSTOS_WALLET_SEED in .env to a funded Sepolia wallet to settle for real." }); return; }
   const { jobId } = JSON.parse((await readBody(req)).toString() || "{}") as { jobId?: string };
   const job = jobId ? jobs.get(jobId) : undefined;
   if (!job) { json(res, 404, { error: "unknown or expired job" }); return; }
+  if (!job.intent || job.vendorId == null || job.poId == null) { json(res, 200, { status: "blocked", reason: "This invoice was not verified for payment." }); return; }
   const r = await settleIntent(db, { intent: job.intent, vendorId: job.vendorId, poId: job.poId, approve: true, confirmations: 2 });
   job.status = r.status;
   json(res, 200, r);
 }
 
-async function serveStatic(url: string, res: import("node:http").ServerResponse): Promise<void> {
+async function serveStatic(url: string, res: Res): Promise<void> {
   const file = url === "/" ? "index.html" : url.slice(1);
   try {
     const data = await readFile(resolve(UI, file));
     res.writeHead(200, { "content-type": MIME[extname(file)] ?? "application/octet-stream" });
     res.end(data);
-  } catch {
-    res.writeHead(404); res.end("not found");
-  }
+  } catch { res.writeHead(404); res.end("not found"); }
 }
 
 const server = createServer(async (req, res) => {
@@ -149,13 +186,14 @@ const server = createServer(async (req, res) => {
   try {
     if (req.method === "GET" && url === "/api/samples") return json(res, 200, SAMPLE_LIST);
     if (req.method === "GET" && url === "/api/wallet") {
-      if (!process.env.CUSTOS_WALLET_SEED) return json(res, 200, { configured: false }); // keyless demo mode
+      if (!process.env.CUSTOS_WALLET_SEED) return json(res, 200, { configured: false });
       const w = await openEdgeWallet();
       const [eth, usdt] = [await w.account.getBalance(), await w.account.getTokenBalance(CHAIN.usdt)];
       w.dispose();
       return json(res, 200, { configured: true, address: w.address, eth: eth.toString(), usdt: usdt.toString(), chain: "Ethereum Sepolia", token: CHAIN.usdt });
     }
     if (req.method === "POST" && url === "/api/verify") return void (await handleVerify(req, res));
+    if (req.method === "POST" && url === "/api/explain") return void (await handleExplain(req, res));
     if (req.method === "POST" && url === "/api/approve") return void (await handleApprove(req, res));
     if (req.method === "GET") return void (await serveStatic(url, res));
     res.writeHead(405); res.end();

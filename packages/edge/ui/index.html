@@ -28,11 +28,11 @@
 
   <!-- ── INTAKE ───────────────────────────────────────────────────────── -->
   <section class="band band-cloud" id="bandIntake">
-    <h2 class="heading-sm">Intake</h2>
+    <h2 class="heading-sm">Verify an invoice</h2>
     <div class="intake">
       <button class="dropzone ghost" id="dropzone" type="button">
-        <span class="drop-lead">Drop an invoice</span>
-        <span class="drop-sub">PNG or PDF — or choose a sample below</span>
+        <span class="drop-lead">Drop a vendor invoice</span>
+        <span class="drop-sub">PNG or PDF — read on this machine, never uploaded to the cloud</span>
         <input type="file" id="file" accept="image/*" hidden />
       </button>
       <div class="samples" id="samples"></div>
@@ -41,12 +41,27 @@
 
   <!-- ── VERIFICATION ─────────────────────────────────────────────────── -->
   <section class="band band-cloud" id="bandPipeline" hidden>
-    <h2 class="heading-sm">Verification</h2>
+    <h2 class="heading-sm">What we found</h2>
     <div class="pipeline">
-      <ol class="gates" id="gates"></ol>
-      <div class="readout" id="readout">
-        <p class="readout-empty">Extracted fields appear here.</p>
+      <div class="readcol">
+        <div class="readout" id="readout"><p class="readout-empty">Reading the invoice…</p></div>
+        <div class="checks" id="checks"></div>
       </div>
+      <ol class="gates" id="gates"></ol>
+    </div>
+  </section>
+
+  <!-- ── ASK ──────────────────────────────────────────────────────────── -->
+  <section class="band band-cloud" id="bandAsk" hidden>
+    <h2 class="heading-sm">Ask about this invoice</h2>
+    <div class="ask">
+      <div class="ask-chips" id="askChips"></div>
+      <form class="ask-form" id="askForm">
+        <input type="text" id="askInput" class="ask-input" placeholder="Ask in plain language…" autocomplete="off" />
+        <button type="submit" class="ghost" id="askSend">Ask</button>
+      </form>
+      <p class="ask-answer" id="askAnswer"></p>
+      <p class="ask-note">Read-only. The assistant explains the decision on this machine — it cannot change the verdict or move money.</p>
     </div>
   </section>
 
@@ -55,17 +70,17 @@
     <p class="block-gate" id="blockGate">GATE</p>
     <h2 class="display">BLOCKED</h2>
     <p class="block-reason" id="blockReason"></p>
-    <button class="ghost" id="resetBlocked" type="button">Start over</button>
+    <button class="ghost" id="resetBlocked" type="button">Verify another invoice</button>
   </section>
 
   <!-- ── SETTLEMENT ───────────────────────────────────────────────────── -->
   <section class="band band-cloud" id="bandSettle" hidden>
-    <h2 class="heading-sm">Authorize settlement</h2>
+    <h2 class="heading-sm">Authorize payment</h2>
     <div class="settle">
       <dl class="summary" id="summary"></dl>
       <div class="authorize">
         <button class="hold ghost" id="authorize" type="button">
-          <span class="hold-label">HOLD TO AUTHORIZE &amp; SIGN</span>
+          <span class="hold-label">HOLD TO AUTHORIZE PAYMENT</span>
           <span class="hold-bar"><i id="holdFill"></i></span>
         </button>
         <p class="authorize-note">
@@ -78,9 +93,9 @@
 
   <!-- ── RECEIPT ──────────────────────────────────────────────────────── -->
   <section class="band band-cloud" id="bandReceipt" hidden>
-    <h2 class="heading-sm">Settlement receipt</h2>
+    <h2 class="heading-sm">Payment settled — view on-chain</h2>
     <div class="receipt" id="receipt"></div>
-    <button class="ghost" id="resetReceipt" type="button">Settle another</button>
+    <button class="ghost" id="resetReceipt" type="button">Verify another invoice</button>
   </section>
 
   <!-- ── FOOTER (onyx) ────────────────────────────────────────────────── -->

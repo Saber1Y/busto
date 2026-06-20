@@ -51,7 +51,7 @@ function factsBlock(c: ExplainContext): string {
   );
 }
 
-export async function explainInvoice(question: string, context: ExplainContext): Promise<string> {
+export async function explainInvoice(question: string, context: ExplainContext, onToken?: (t: string) => void): Promise<string> {
   if (!context || !context.invoiceRef || !context.verdict) {
     return "Load an invoice first — I can only explain a verification that has already run on the current invoice.";
   }
@@ -76,7 +76,7 @@ export async function explainInvoice(question: string, context: ExplainContext):
         ],
         stream: true,
       },
-      { model: EXPLAIN_MODEL, event: "explain" },
+      { model: EXPLAIN_MODEL, event: "explain", onToken },
     );
     return stripThinking(res.contentText) || "I couldn't produce an explanation for that.";
   } finally {
