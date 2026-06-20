@@ -10,6 +10,8 @@ export {
   crossCheckAgainstOcr,
 } from "./invoice.ts";
 export type { InvoiceExtraction, ExtractionReview } from "./invoice.ts";
+export { isValidAddress, toChecksumAddress, isChecksumValid, addressEquals } from "./address.ts";
+export { toMinorUnits, fromMinorUnits } from "./money.ts";
 
 /** 64-char hex Hyperswarm identity seed (NOT a wallet seed). */
 export function generateHyperswarmSeed(): string {

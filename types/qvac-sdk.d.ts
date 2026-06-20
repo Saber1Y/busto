@@ -24,6 +24,9 @@ declare module "@qvac/sdk" {
   export const MMPROJ_QWEN3VL_2B_MULTIMODAL_Q4_K: QvacModelDescriptor;
   export const OCR_LATIN_RECOGNIZER_1: QvacModelDescriptor;
   export const OCR_CRAFT_DETECTOR: QvacModelDescriptor;
+  // C3 — ERP verification: embeddings (RAG) + tool-calling
+  export const GTE_LARGE_FP16: QvacModelDescriptor;
+  export const QWEN3_1_7B_INST_Q4: QvacModelDescriptor;
 }
 
 export {};

@@ -20,3 +20,8 @@ dist/
 build/
 *.log
 .DS_Store
+
+# generated SQLite ERP (seeded from code)
+*.db
+*.db-wal
+*.db-shm
