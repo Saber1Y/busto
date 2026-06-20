@@ -10,7 +10,7 @@ export {
   crossCheckAgainstOcr,
 } from "./invoice.ts";
 export type { InvoiceExtraction, ExtractionReview } from "./invoice.ts";
-export { isValidAddress, toChecksumAddress, isChecksumValid, addressEquals } from "./address.ts";
+export { isValidAddress, toChecksumAddress, isChecksumValid, addressEquals, addressMatchTolerant } from "./address.ts";
 export { toMinorUnits, fromMinorUnits } from "./money.ts";
 export { paymentIntentSchema, buildPaymentIntent } from "./intent.ts";
 export type { PaymentIntent } from "./intent.ts";

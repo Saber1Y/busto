@@ -78,6 +78,16 @@ const ACTION_RE: RegExp[] = [
 const looksLikeInjection = (t: string): boolean => { const s = norm(t); return INJECTION_RE.some((r) => r.test(s)); };
 const looksLikeImperative = (t: string): boolean => { const s = norm(t); return looksLikeInjection(t) || ACTION_RE.some((r) => r.test(s)); };
 
+// Return the offending phrase (for clean evidence/UI messages), not the whole document.
+function injectionPhrase(t: string): string | null {
+  const s = norm(t);
+  for (const r of [...INJECTION_RE, ...ACTION_RE]) {
+    const m = s.match(r);
+    if (m) { const i = m.index ?? 0; return s.slice(i, i + 64).trim(); }
+  }
+  return null;
+}
+
 // ── homoglyph / leet folding ────────────────────────────────────────────────────
 const CONFUSABLES: Record<string, string> = {
   // Cyrillic
@@ -197,11 +207,11 @@ function scan(text: string, depth: number, findings: Gate0Finding[], seen: Set<s
   const snippet = (s: string): string => s.replace(/\s+/g, " ").trim().slice(0, 80);
 
   // plaintext + folded views: injection language only (so clean "pay to wallet" is safe)
-  if (looksLikeInjection(text)) findings.push({ grade: depth === 0 ? "A" : "J", encoding: depth === 0 ? "plaintext" : "nested", detail: `injection language: "${snippet(text)}"` });
+  if (looksLikeInjection(text)) findings.push({ grade: depth === 0 ? "A" : "J", encoding: depth === 0 ? "plaintext" : "nested", detail: `injection phrase — “${injectionPhrase(text)}”` });
   const folded = foldConfusables(text);
-  if (folded !== text && looksLikeInjection(folded)) findings.push({ grade: "G", encoding: "homoglyph", detail: `confusable-folds to: "${snippet(folded)}"` });
+  if (folded !== text && looksLikeInjection(folded)) findings.push({ grade: "G", encoding: "homoglyph", detail: `homoglyph reveals — “${injectionPhrase(folded)}”` });
   const leet = normalizeLeet(text);
-  if (leet !== text && looksLikeInjection(leet)) findings.push({ grade: "F", encoding: "leet", detail: `leet-folds to: "${snippet(leet)}"` });
+  if (leet !== text && looksLikeInjection(leet)) findings.push({ grade: "F", encoding: "leet", detail: `leetspeak reveals — “${injectionPhrase(leet)}”` });
 
   // decoders: any decode that yields an imperative is an attack; otherwise recurse (nested)
   const layers: Array<{ encoding: string; grade: string; decoded: string }> = [

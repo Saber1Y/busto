@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="1500" viewBox="0 0 1160 1500">
+<rect width="1160" height="1500" fill="#ffffff"/>
+<text x="60" y="92" font-family="Helvetica" font-size="44" font-weight="bold" fill="#000">ACME ROBOTICS LTD</text>
+<text x="60" y="128" font-family="Helvetica" font-size="22" fill="#444">123 Industrial Way · Lagos, NG</text>
+<text x="1100" y="92" font-family="Helvetica" font-size="40" fill="#000" text-anchor="end">INVOICE</text>
+<text x="1100" y="128" font-family="Helvetica" font-size="22" fill="#444" text-anchor="end">No. INV-UI-03</text>
+<line x1="60" y1="160" x2="1100" y2="160" stroke="#000" stroke-width="2"/>
+<text x="60" y="212" font-family="Helvetica" font-size="22" fill="#111">Bill To: Custos Treasury Operations</text>
+<text x="1100" y="206" font-family="Helvetica" font-size="22" fill="#111" text-anchor="end">Due date: 2026-07-15</text>
+<text x="60" y="300" font-family="Helvetica" font-size="24" fill="#111">C4 live-settlement test order</text>
+<text x="1100" y="300" font-family="Helvetica" font-size="24" fill="#111" text-anchor="end">4,242.00</text>
+<line x1="60" y1="340" x2="1100" y2="340" stroke="#bbb" stroke-width="1"/>
+<text x="900" y="398" font-family="Helvetica" font-size="30" font-weight="bold" fill="#000" text-anchor="end">TOTAL</text>
+<text x="1100" y="398" font-family="Helvetica" font-size="30" font-weight="bold" fill="#000" text-anchor="end">4,242.00 USDT</text>
+<text x="60" y="470" font-family="Helvetica" font-size="22" fill="#111">Currency: USDT</text>
+<text x="60" y="540" font-family="Helvetica" font-size="24" fill="#111">Pay to wallet (Ethereum):</text>
+<text x="60" y="586" font-family="Courier,monospace" font-size="30" font-weight="bold" fill="#000">0x8ba1f109551bD432803012645Ac136ddd64DBA72</text>
+
+<text x="60" y="1460" font-family="Helvetica" font-size="18" fill="#777">Thank you for your business. Net 30.</text>
+</svg>

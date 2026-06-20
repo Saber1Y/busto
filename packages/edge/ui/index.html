@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Custos · Edge Settlement Console</title>
+  <link rel="stylesheet" href="/app.css" />
+</head>
+<body data-state="idle">
+  <!-- ── HERO ─────────────────────────────────────────────────────────── -->
+  <header class="hero" id="hero">
+    <nav class="nav">
+      <div class="wordmark">CUSTOS</div>
+      <div class="nav-meta">
+        <span class="node">EDGE · AP CLERK</span>
+        <span class="airgap"><i></i>AIR-GAPPED</span>
+        <span class="chain" id="chain">ETHEREUM SEPOLIA</span>
+        <a class="wallet ghost" id="wallet" href="#" target="_blank" rel="noreferrer">0x…</a>
+        <span class="balance" id="balance">— USD₮</span>
+      </div>
+    </nav>
+    <div class="hero-copy">
+      <p class="eyebrow" id="eyebrow">Air-gapped agentic settlement</p>
+      <h1 class="display state-word" id="stateWord">AWAITING<br />INVOICE</h1>
+      <p class="hero-sub" id="heroSub">Read locally. Verified against the air-gapped ERP. Settled on-chain only after every gate clears.</p>
+    </div>
+  </header>
+
+  <!-- ── INTAKE ───────────────────────────────────────────────────────── -->
+  <section class="band band-cloud" id="bandIntake">
+    <h2 class="heading-sm">Intake</h2>
+    <div class="intake">
+      <button class="dropzone ghost" id="dropzone" type="button">
+        <span class="drop-lead">Drop an invoice</span>
+        <span class="drop-sub">PNG or PDF — or choose a sample below</span>
+        <input type="file" id="file" accept="image/*" hidden />
+      </button>
+      <div class="samples" id="samples"></div>
+    </div>
+  </section>
+
+  <!-- ── VERIFICATION ─────────────────────────────────────────────────── -->
+  <section class="band band-cloud" id="bandPipeline" hidden>
+    <h2 class="heading-sm">Verification</h2>
+    <div class="pipeline">
+      <ol class="gates" id="gates"></ol>
+      <div class="readout" id="readout">
+        <p class="readout-empty">Extracted fields appear here.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── BLOCKED (onyx inversion) ─────────────────────────────────────── -->
+  <section class="band band-onyx" id="bandBlocked" hidden>
+    <p class="block-gate" id="blockGate">GATE</p>
+    <h2 class="display">BLOCKED</h2>
+    <p class="block-reason" id="blockReason"></p>
+    <button class="ghost" id="resetBlocked" type="button">Start over</button>
+  </section>
+
+  <!-- ── SETTLEMENT ───────────────────────────────────────────────────── -->
+  <section class="band band-cloud" id="bandSettle" hidden>
+    <h2 class="heading-sm">Authorize settlement</h2>
+    <div class="settle">
+      <dl class="summary" id="summary"></dl>
+      <div class="authorize">
+        <button class="hold ghost" id="authorize" type="button">
+          <span class="hold-label">HOLD TO AUTHORIZE &amp; SIGN</span>
+          <span class="hold-bar"><i id="holdFill"></i></span>
+        </button>
+        <p class="authorize-note">
+          Gate 4 — a deliberate human signature on the Edge node. The recipient is the
+          <strong>DB-verified wallet</strong>, never the document. Keys never leave this machine.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── RECEIPT ──────────────────────────────────────────────────────── -->
+  <section class="band band-cloud" id="bandReceipt" hidden>
+    <h2 class="heading-sm">Settlement receipt</h2>
+    <div class="receipt" id="receipt"></div>
+    <button class="ghost" id="resetReceipt" type="button">Settle another</button>
+  </section>
+
+  <!-- ── FOOTER (onyx) ────────────────────────────────────────────────── -->
+  <footer class="footer">
+    <div class="footer-cols">
+      <div>
+        <h3>Custos</h3>
+        <p>Air-gapped agentic settlement. A payment is impossible unless it clears every gate — no single component, least of all the model, can move funds.</p>
+      </div>
+      <div>
+        <h3>The gates</h3>
+        <ul>
+          <li>G0 — Input decode</li>
+          <li>G1 — Role bounding</li>
+          <li>G2 — Deterministic truth</li>
+          <li>G3 — Recipient re-check</li>
+          <li>G4 — Human approval</li>
+          <li>G5 — On-chain safety</li>
+        </ul>
+      </div>
+      <div>
+        <h3>System</h3>
+        <ul>
+          <li>QVAC · 100% local inference</li>
+          <li>WDK · keys on the Edge node</li>
+          <li>Ethereum Sepolia · test USD₮</li>
+          <li>Apache-2.0 · zero cloud AI</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-mark">CUSTOS — guardian of the ledger</div>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

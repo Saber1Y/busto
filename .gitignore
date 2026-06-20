@@ -25,3 +25,6 @@ build/
 *.db
 *.db-wal
 *.db-shm
+
+# runtime invoice uploads
+data/uploads/

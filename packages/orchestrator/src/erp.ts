@@ -1,6 +1,6 @@
 import Database from "better-sqlite3";
 import * as sqliteVec from "sqlite-vec";
-import { addressEquals, isValidAddress, isChecksumValid, toChecksumAddress } from "../../shared/src/index.ts";
+import { addressMatchTolerant, toChecksumAddress } from "../../shared/src/index.ts";
 import { toMinorUnits } from "../../shared/src/index.ts";
 
 // Air-gapped SQLite ERP — the deterministic source of truth (Gate 2). Vendor / PO /
@@ -149,14 +149,20 @@ export async function matchPurchaseOrder(
     : { matched: false, ragCandidates };
 }
 
-/** Gate 3 — wallet must equal the DB known_wallet under EIP-55 (threat #45/#48/#49). */
+/**
+ * Document-wallet corroboration vs DB known_wallet (threat #45/#48). OCR/vision-noise
+ * tolerant: a legit read lands within ≤2 chars after confusable folding; an attacker /
+ * lookalike differs in many positions and is rejected. The PAYOUT always uses the DB
+ * address (Gate 3, strict, at sign time) — this only decides corroboration.
+ */
 export function verifyWallet(db: Database.Database, vendorId: number, providedWallet: string): WalletCheck {
   const row = db.prepare("SELECT known_wallet FROM vendors WHERE id = ?").get(vendorId) as { known_wallet: string } | undefined;
   if (!row) return { match: false, knownWallet: null, reason: "vendor not found" };
-  if (!isValidAddress(providedWallet)) return { match: false, knownWallet: row.known_wallet, reason: "provided wallet is not a valid 0x40-hex address" };
-  if (!isChecksumValid(providedWallet)) return { match: false, knownWallet: row.known_wallet, reason: "provided wallet has an invalid EIP-55 checksum" };
-  const match = addressEquals(providedWallet, row.known_wallet);
-  return { match, knownWallet: row.known_wallet, reason: match ? "matches DB known_wallet" : "provided wallet != DB known_wallet" };
+  const m = addressMatchTolerant(providedWallet, row.known_wallet, 2);
+  if (m.match) {
+    return { match: true, knownWallet: row.known_wallet, reason: m.exact ? "matches DB known_wallet (exact)" : `corroborates DB known_wallet (${m.drift} OCR correction${m.drift === 1 ? "" : "s"})` };
+  }
+  return { match: false, knownWallet: row.known_wallet, reason: `provided wallet does not corroborate DB known_wallet (drift ${m.drift})` };
 }
 
 /** Threat #41 — duplicate/replay invoice guard (settlements.invoice_ref UNIQUE). */

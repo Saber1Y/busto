@@ -46,6 +46,11 @@ export async function settleIntent(
 
   const wallet = await openEdgeWallet();
   try {
+    // Pre-flight balance check (#72) — never broadcast a doomed send.
+    const balance = await wallet.account.getTokenBalance(toChecksumAddress(intent.token));
+    if (balance < BigInt(intent.amount)) {
+      return { status: "blocked", reason: `insufficient USD₮ balance (have ${balance}, need ${intent.amount})` };
+    }
     // Exact-amount ERC-20 transfer — no unbounded approve (#65); token + recipient pinned/checksummed.
     const result = await wallet.account.transfer({
       token: toChecksumAddress(intent.token),

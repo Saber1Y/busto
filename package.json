@@ -16,7 +16,9 @@
     "c3:demo": "node scripts/c3-verdict-demo.ts",
     "gen:adversarial": "node scripts/gen-adversarial.ts",
     "csec:test": "node scripts/csec-test.ts",
-    "c4:demo": "node scripts/c4-settle-demo.ts"
+    "c4:demo": "node scripts/c4-settle-demo.ts",
+    "serve": "node packages/edge/src/server.ts",
+    "gen:ui": "node scripts/gen-ui-samples.ts"
   },
   "dependencies": {
     "@noble/hashes": "^2.2.0",

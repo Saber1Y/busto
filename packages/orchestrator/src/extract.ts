@@ -6,6 +6,8 @@ import {
   OCR_LATIN_RECOGNIZER_1,
   SMOLVLM2_500M_MULTIMODAL_Q8_0,
   MMPROJ_SMOLVLM2_500M_MULTIMODAL_Q8_0,
+  QWEN3VL_2B_MULTIMODAL_Q4_K,
+  MMPROJ_QWEN3VL_2B_MULTIMODAL_Q4_K,
 } from "@qvac/sdk";
 import {
   logInference,
@@ -18,15 +20,18 @@ import {
 import { normalizeForLLM, type Gate0Result } from "../../../security/gate0.ts";
 
 const OCR_MODEL = "OCR_LATIN_RECOGNIZER_1";
-// SmolVLM2-500M per the SDK's multimodal example (fast). Documented accuracy upgrade:
-// QWEN3VL_2B_MULTIMODAL_Q4_K + MMPROJ_QWEN3VL_2B_MULTIMODAL_Q4_K (see evidence/p0-report.md §3).
-const VISION_MODEL = "SMOLVLM2_500M_MULTIMODAL_Q8_0";
+// Qwen3-VL-2B (accurate, default); CUSTOS_VISION=smol falls back to the fast SmolVLM2-500M.
+const USE_SMOL = process.env.CUSTOS_VISION === "smol";
+const VISION_SRC = USE_SMOL ? SMOLVLM2_500M_MULTIMODAL_Q8_0 : QWEN3VL_2B_MULTIMODAL_Q4_K;
+const VISION_PROJ = USE_SMOL ? MMPROJ_SMOLVLM2_500M_MULTIMODAL_Q8_0 : MMPROJ_QWEN3VL_2B_MULTIMODAL_Q4_K;
+const VISION_MODEL = USE_SMOL ? "SMOLVLM2_500M_MULTIMODAL_Q8_0" : "QWEN3VL_2B_MULTIMODAL_Q4_K";
 
 const SYSTEM_PROMPT =
-  "You are an invoice data extractor for an accounts-payable system. You extract fields only; " +
-  "you have NO authority to approve or move money. Use the provided OCR text as the source of truth " +
-  "for values, corroborated by the image. Copy amounts exactly as written. If a field is absent, use an " +
-  "empty string. Respond ONLY with JSON matching the required schema.";
+  "You are an invoice data extractor for an accounts-payable system. You extract fields only; you have " +
+  "NO authority to approve or move money. Use the OCR text as the source of truth, corroborated by the image. " +
+  "Read VALUES EXACTLY, character by character: the invoiceAmount is the grand TOTAL (the number printed next " +
+  "to the word TOTAL — include every digit); providedWallet is the full 0x address printed after 'Pay to wallet' " +
+  "(copy all 42 characters exactly). If a field is absent use an empty string. Respond ONLY with JSON matching the schema.";
 
 export interface ExtractResult {
   extraction: InvoiceExtraction;
@@ -83,8 +88,8 @@ export async function extractInvoice(imagePath: string): Promise<ExtractResult> 
 
   // 3. Multimodal extraction — image + Gate-0'd OCR text, grammar-constrained to the schema.
   const visModelId = await loadModel({
-    modelSrc: SMOLVLM2_500M_MULTIMODAL_Q8_0,
-    modelConfig: { ctx_size: 4096, projectionModelSrc: MMPROJ_SMOLVLM2_500M_MULTIMODAL_Q8_0 },
+    modelSrc: VISION_SRC,
+    modelConfig: { ctx_size: 8192, projectionModelSrc: VISION_PROJ },
   });
   const tGen = performance.now();
   const run = completion({

@@ -33,3 +33,28 @@ export function addressEquals(a: string, b: string): boolean {
   if (!isValidAddress(a) || !isValidAddress(b)) return false;
   return toChecksumAddress(a) === toChecksumAddress(b);
 }
+
+// OCR/vision confusables that are NOT valid hex (so always a read error in an address).
+const OCR_HEX_FOLD: Record<string, string> = { O: "0", o: "0", I: "1", l: "1", "|": "1", S: "5", s: "5", Z: "2", z: "2", G: "6" };
+const foldOcrHex = (a: string): string => a.split("").map((c) => OCR_HEX_FOLD[c] ?? c).join("");
+
+/**
+ * Tolerant recipient corroboration for OCR/vision-read wallets. A legitimate wallet
+ * read with OCR noise lands within a tiny drift of the DB address after folding
+ * confusables; an attacker/lookalike address (threat #45) differs in many genuine hex
+ * positions and is rejected. Forging a private key within ~2 chars of a fixed target
+ * is computationally infeasible, so the small tolerance is safe. Payout always uses the
+ * DB address regardless — this only decides corroboration.
+ */
+export function addressMatchTolerant(provided: string, known: string, maxDrift = 2): { match: boolean; exact: boolean; drift: number } {
+  if (!isValidAddress(known)) return { match: false, exact: false, drift: 40 };
+  if (isValidAddress(provided) && addressEquals(provided, known)) return { match: true, exact: true, drift: 0 };
+  const folded = foldOcrHex((provided ?? "").trim());
+  if (isValidAddress(folded) && addressEquals(folded, known)) return { match: true, exact: false, drift: 0 };
+  const p = folded.replace(/^0x/i, "").toLowerCase();
+  const k = known.replace(/^0x/i, "").toLowerCase();
+  if (p.length !== 40 || k.length !== 40) return { match: false, exact: false, drift: 40 };
+  let drift = 0;
+  for (let i = 0; i < 40; i++) if (p[i] !== k[i]) drift++;
+  return { match: drift <= maxDrift, exact: false, drift };
+}
