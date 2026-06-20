@@ -75,8 +75,9 @@ export function ensureSchema(db: Database.Database): void {
   db.exec(`CREATE VIRTUAL TABLE IF NOT EXISTS po_vectors USING vec0(embedding float[${EMBED_DIM}]);`);
 }
 
-/** Wipe and re-seed deterministically; embeds PO descriptions into the vector store. */
-export async function seedErp(db: Database.Database, embed: EmbedFn): Promise<void> {
+/** Wipe and re-seed deterministically. With `embed`, also populates the PO vector
+ *  store (RAG); without it, exact-match verification still works (no models needed). */
+export async function seedErp(db: Database.Database, embed?: EmbedFn): Promise<void> {
   db.exec("DELETE FROM settlements; DELETE FROM purchase_orders; DELETE FROM vendors; DELETE FROM po_vectors;");
 
   const insV = db.prepare("INSERT INTO vendors(name, name_canonical, known_wallet, status) VALUES (?,?,?,?)");
@@ -92,11 +93,18 @@ export async function seedErp(db: Database.Database, embed: EmbedFn): Promise<vo
     const minor = toMinorUnits(p.amount, 6);
     if (minor === null) throw new Error(`seed: bad amount ${p.amount}`);
     const info = insPo.run(vendorId.get(p.vendor), p.po, minor.toString(), p.currency, p.status, p.description);
-    const poId = Number(info.lastInsertRowid);
-    const vec = await embed(p.description);
-    if (vec.length !== EMBED_DIM) throw new Error(`seed: embed dim ${vec.length} != ${EMBED_DIM}`);
-    insVec.run(BigInt(poId), Buffer.from(new Float32Array(vec).buffer));
+    if (embed) {
+      const vec = await embed(p.description);
+      if (vec.length !== EMBED_DIM) throw new Error(`seed: embed dim ${vec.length} != ${EMBED_DIM}`);
+      insVec.run(BigInt(Number(info.lastInsertRowid)), Buffer.from(new Float32Array(vec).buffer));
+    }
   }
+}
+
+/** Record an on-chain settlement (Gate 5 / C4). UNIQUE invoice_ref blocks replays (#41). */
+export function recordSettlement(db: Database.Database, poId: number, invoiceRef: string, amountMinor: bigint, txHash: string | null, ts: string): void {
+  db.prepare("INSERT INTO settlements(po_id, invoice_ref, tx_hash, amount_minor, ts) VALUES (?,?,?,?,?)")
+    .run(poId, invoiceRef, txHash, amountMinor.toString(), ts);
 }
 
 /** Gate 2 — vendor existence by exact canonical name. */

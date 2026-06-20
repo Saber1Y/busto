@@ -12,6 +12,7 @@ export interface Verdict {
   matchedPO: string | null;
   knownWallet: string | null;
   checks: {
+    gate0Clean: boolean;
     vendorExists: boolean;
     vendorActive: boolean;
     amountParsed: boolean;
@@ -31,14 +32,19 @@ export async function computeVerdict(
   extraction: InvoiceExtraction,
   invoiceRef: string,
   embed?: EmbedFn,
+  gate0Flagged = false,
 ): Promise<Verdict> {
   const reasons: string[] = [];
   const checks: Verdict["checks"] = {
-    vendorExists: false, vendorActive: false, amountParsed: false,
+    gate0Clean: !gate0Flagged, vendorExists: false, vendorActive: false, amountParsed: false,
     poMatched: false, walletMatch: false, notDuplicate: false,
   };
   const ok = (r: string): void => void reasons.push(`ok: ${r}`);
   const reject = (r: string): void => void reasons.push(`REJECT: ${r}`);
+
+  // 0. Gate-0 — obfuscated injection detected upstream → block (Threat-Model §2).
+  if (gate0Flagged) reject("Gate-0 flagged an obfuscated/decoded imperative in the document text");
+  else ok("Gate-0: no obfuscated imperative detected");
 
   // 1. Vendor existence + status (Gate 2).
   const vendor = lookupVendor(db, extraction.vendorName);
@@ -86,7 +92,7 @@ export async function computeVerdict(
   else reject(`invoice_ref "${invoiceRef}" already settled (duplicate/replay)`);
 
   const decision: Verdict["decision"] =
-    checks.vendorExists && checks.vendorActive && checks.amountParsed &&
+    checks.gate0Clean && checks.vendorExists && checks.vendorActive && checks.amountParsed &&
     checks.poMatched && checks.walletMatch && checks.notDuplicate
       ? "PASS"
       : "REJECT";

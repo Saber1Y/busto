@@ -1,0 +1,20 @@
+{
+  "invoiceRef": "INV-1042",
+  "expect": "REJECT",
+  "note": "replays an already-settled invoice_ref",
+  "extraction": {
+    "vendorName": "ACME Robotics Ltd",
+    "invoiceAmount": "5,000.00",
+    "currency": "USDT",
+    "dueDate": "2026-07-15",
+    "providedWallet": "0x8ba1f109551bD432803012645Ac136ddd64DBA72",
+    "lineItems": [
+      {
+        "description": "Industrial servo motors (NEMA-34)",
+        "quantity": "10",
+        "unitPrice": "350.00",
+        "amount": "3,500.00"
+      }
+    ]
+  }
+}

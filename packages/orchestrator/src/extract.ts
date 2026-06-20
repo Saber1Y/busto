@@ -72,8 +72,14 @@ export async function extractInvoice(imagePath: string): Promise<ExtractResult> 
     event: `ocr blocks=${ocrBlocks.length}`,
   });
 
-  // 2. Gate 0 — normalize before the LLM. NOT bypassed (full decode battery = C-sec).
+  // 2. Gate 0 — normalize + screen before the LLM (full decode battery, C-sec).
   const gate0 = normalizeForLLM(ocrText);
+  if (gate0.flagged) {
+    logInference({
+      node: "orchestrator", op: "gate0-reject", model: "gate0", delegated: false,
+      event: `attack ${gate0.findings.map((f) => `${f.grade}:${f.encoding}`).join(",")}`,
+    });
+  }
 
   // 3. Multimodal extraction — image + Gate-0'd OCR text, grammar-constrained to the schema.
   const visModelId = await loadModel({
