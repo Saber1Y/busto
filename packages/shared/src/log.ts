@@ -1,6 +1,24 @@
-import { appendFileSync } from "node:fs";
+import { appendFileSync, existsSync } from "node:fs";
 import { LOG_PATH } from "./paths.ts";
 import type { CompletionStats } from "./qvac.ts";
+
+const CSV_PATH = LOG_PATH.replace(/\.jsonl$/, ".csv");
+const CSV_COLS = [
+  "ts", "node", "op", "model", "delegated", "provider_public_key", "load_ms", "ttft_ms",
+  "gen_ms", "prompt_tokens", "completion_tokens", "tok_per_sec", "cache_tokens", "backend_device",
+  "event", "platform", "metrics_source",
+] as const;
+
+function appendCsv(row: Record<string, unknown>): void {
+  if (!existsSync(CSV_PATH)) appendFileSync(CSV_PATH, CSV_COLS.join(",") + "\n");
+  const line = CSV_COLS.map((c) => {
+    const v = row[c];
+    if (v === null || v === undefined) return "";
+    const s = String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }).join(",");
+  appendFileSync(CSV_PATH, line + "\n");
+}
 
 /** One auditable row in evidence/inference-log.jsonl. */
 export interface InferenceRow {
@@ -71,5 +89,6 @@ export function logInference(o: LogOpts): InferenceRow {
   };
 
   appendFileSync(LOG_PATH, JSON.stringify(row) + "\n");
+  appendCsv(row as unknown as Record<string, unknown>);
   return row;
 }

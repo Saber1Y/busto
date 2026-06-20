@@ -1,0 +1,103 @@
+ts,node,op,model,delegated,provider_public_key,load_ms,ttft_ms,gen_ms,prompt_tokens,completion_tokens,tok_per_sec,cache_tokens,backend_device,event,platform,metrics_source
+2026-06-20T02:10:11.807Z,orchestrator,smoke,LLAMA_3_2_1B_INST_Q4_0,false,,348511,461.872,1748,55,116,99.02,0,gpu,,darwin/arm64,profiler-raw
+2026-06-20T02:11:11.860Z,orchestrator,smoke,LLAMA_3_2_1B_INST_Q4_0,false,,2782,139.76,1122,55,99,111.576,0,gpu,,darwin/arm64,profiler-raw
+2026-06-20T02:49:03.459Z,edge,heartbeat,LLAMA_3_2_1B_INST_Q4_0,false,d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737,,,,,,,,,provider-offline,darwin/arm64,none
+2026-06-20T02:49:10.717Z,edge,completion,LLAMA_3_2_1B_INST_Q4_0,false,d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737,7032,88.616,211,42,7,140.444,0,gpu,degraded-local-fallback,darwin/arm64,profiler-raw
+2026-06-20T02:49:13.222Z,orchestrator,completion,LLAMA_3_2_1B_INST_Q4_0,false,,,99.764,213,42,10,144.296,0,gpu,local-baseline,darwin/arm64,profiler-raw
+2026-06-20T02:49:22.593Z,edge,heartbeat,LLAMA_3_2_1B_INST_Q4_0,false,d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737,,,,,,,,,provider-offline,darwin/arm64,none
+2026-06-20T02:49:26.321Z,edge,completion,LLAMA_3_2_1B_INST_Q4_0,false,d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737,3511,58.853,210,42,10,142.849,0,gpu,degraded-local-fallback,darwin/arm64,profiler-raw
+2026-06-20T16:58:11.852Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,10,,,,,,ocr blocks=30,darwin/arm64,none
+2026-06-20T16:58:17.214Z,orchestrator,completion,SMOLVLM2_500M_MULTIMODAL_Q8_0,false,,,695.414,3571,420,275,105.243,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-06-20T17:39:15.166Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,,,,,,,seed-po-embeddings count=3,darwin/arm64,none
+2026-06-20T17:39:15.189Z,orchestrator,verdict,deterministic,false,,,,,,,,,,PASS INV-1042,darwin/arm64,none
+2026-06-20T17:39:15.190Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-9001,darwin/arm64,none
+2026-06-20T17:39:15.215Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-9002,darwin/arm64,none
+2026-06-20T17:39:15.236Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-9003,darwin/arm64,none
+2026-06-20T17:39:15.261Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-9004,darwin/arm64,none
+2026-06-20T17:39:31.108Z,orchestrator,tool-calling,QWEN3_1_7B_INST_Q4,false,,,,,,,,,,agent tool-calls=3,darwin/arm64,none
+2026-06-20T18:08:23.438Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,"grade-a-plaintext.txt A:plaintext,F:leet",darwin/arm64,none
+2026-06-20T18:08:23.440Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-b-morse.txt B:morse,darwin/arm64,none
+2026-06-20T18:08:23.441Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-c-base64.txt C:base64,darwin/arm64,none
+2026-06-20T18:08:23.441Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-c2-base32.txt C:base32,darwin/arm64,none
+2026-06-20T18:08:23.442Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-d-hex.txt D:hex,darwin/arm64,none
+2026-06-20T18:08:23.442Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-e-rot13.txt E:rot13,darwin/arm64,none
+2026-06-20T18:08:23.443Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-f-leet.txt F:leet,darwin/arm64,none
+2026-06-20T18:08:23.444Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-g-homoglyph.txt G:homoglyph,darwin/arm64,none
+2026-06-20T18:08:23.445Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,"grade-h-zerowidth.txt H:control-chars,A:plaintext",darwin/arm64,none
+2026-06-20T18:08:23.447Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,"grade-i-image-ocr.txt A:plaintext,F:leet",darwin/arm64,none
+2026-06-20T18:08:23.448Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-j-nested.txt J:nested:morse,darwin/arm64,none
+2026-06-20T18:08:23.463Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-7001 classic-homoglyph-vendor.json,darwin/arm64,none
+2026-06-20T18:08:23.463Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-7002 classic-split-amount.json,darwin/arm64,none
+2026-06-20T18:08:23.464Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-1042 classic-duplicate-replay.json,darwin/arm64,none
+2026-06-20T18:08:23.464Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-7004 classic-wallet-lookalike.json,darwin/arm64,none
+2026-06-20T18:53:38.890Z,orchestrator,verdict,deterministic,false,,,,,,,,,,PASS INV-C4-001,darwin/arm64,none
+2026-06-20T18:53:38.895Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-C4-EVIL,darwin/arm64,none
+2026-06-20T18:54:20.501Z,orchestrator,verdict,deterministic,false,,,,,,,,,,PASS INV-C4-001,darwin/arm64,none
+2026-06-20T18:54:22.317Z,edge,settle-broadcast,wdk,false,,,,,,,,,,tx 0xa3ed0f33fcfa685287185284079884c0ea0c3a260149443bfd945f083f79cd30 ref INV-C4-001,darwin/arm64,none
+2026-06-20T18:54:37.787Z,edge,settle-confirmed,wdk,false,,,,,,,,,,tx 0xa3ed0f33fcfa685287185284079884c0ea0c3a260149443bfd945f083f79cd30 conf=2 ref INV-C4-001,darwin/arm64,none
+2026-06-20T18:54:37.789Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-C4-EVIL,darwin/arm64,none
+2026-06-20T19:28:16.587Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,7,,,,,,ocr blocks=16,darwin/arm64,none
+2026-06-20T19:28:20.539Z,orchestrator,completion,SMOLVLM2_500M_MULTIMODAL_Q8_0,false,,,222.753,2079,314,207,124.589,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-06-20T19:33:43.007Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,"grade-a-plaintext.txt A:plaintext,F:leet",darwin/arm64,none
+2026-06-20T19:33:43.009Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-b-morse.txt B:morse,darwin/arm64,none
+2026-06-20T19:33:43.010Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-c-base64.txt C:base64,darwin/arm64,none
+2026-06-20T19:33:43.011Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-c2-base32.txt C:base32,darwin/arm64,none
+2026-06-20T19:33:43.012Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-d-hex.txt D:hex,darwin/arm64,none
+2026-06-20T19:33:43.012Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-e-rot13.txt E:rot13,darwin/arm64,none
+2026-06-20T19:33:43.013Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-f-leet.txt F:leet,darwin/arm64,none
+2026-06-20T19:33:43.014Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-g-homoglyph.txt G:homoglyph,darwin/arm64,none
+2026-06-20T19:33:43.015Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,"grade-h-zerowidth.txt H:control-chars,A:plaintext",darwin/arm64,none
+2026-06-20T19:33:43.016Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,"grade-i-image-ocr.txt A:plaintext,F:leet",darwin/arm64,none
+2026-06-20T19:33:43.017Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-j-nested.txt J:nested:morse,darwin/arm64,none
+2026-06-20T19:33:43.036Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-7001 classic-homoglyph-vendor.json,darwin/arm64,none
+2026-06-20T19:33:43.036Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-7002 classic-split-amount.json,darwin/arm64,none
+2026-06-20T19:33:43.037Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-1042 classic-duplicate-replay.json,darwin/arm64,none
+2026-06-20T19:33:43.037Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-7004 classic-wallet-lookalike.json,darwin/arm64,none
+2026-06-20T19:41:05.993Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,8,,,,,,ocr blocks=16,darwin/arm64,none
+2026-06-20T19:41:24.598Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,12659.318,15475,2779,153,67.011,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-06-20T19:43:22.123Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,8,,,,,,ocr blocks=19,darwin/arm64,none
+2026-06-20T19:43:22.128Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,"attack A:plaintext,F:leet",darwin/arm64,none
+2026-06-20T19:43:41.415Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,12329.812,16286,2801,222,66.833,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-06-20T19:43:41.416Z,edge,gate0-reject,gate0,false,,,,,,,,,,"ui A:plaintext,F:leet",darwin/arm64,none
+2026-06-20T19:43:48.959Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,6,,,,,,ocr blocks=15,darwin/arm64,none
+2026-06-20T19:44:08.165Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,12632.647,16057,2786,190,65.868,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-06-20T19:44:08.167Z,edge,verdict,deterministic,false,,,,,,,,,,REJECT INV-UI-MQMRMTTP,darwin/arm64,none
+2026-06-20T19:44:16.606Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,6,,,,,,ocr blocks=16,darwin/arm64,none
+2026-06-20T19:44:34.636Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,12317.399,15052,2779,151,65.433,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-06-20T19:44:34.638Z,edge,verdict,deterministic,false,,,,,,,,,,PASS INV-UI-MQMRNEGU,darwin/arm64,none
+2026-06-20T19:51:19.541Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,"grade-a-plaintext.txt A:plaintext,F:leet",darwin/arm64,none
+2026-06-20T19:51:19.542Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-b-morse.txt B:morse,darwin/arm64,none
+2026-06-20T19:51:19.543Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-c-base64.txt C:base64,darwin/arm64,none
+2026-06-20T19:51:19.544Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-c2-base32.txt C:base32,darwin/arm64,none
+2026-06-20T19:51:19.545Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-d-hex.txt D:hex,darwin/arm64,none
+2026-06-20T19:51:19.545Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-e-rot13.txt E:rot13,darwin/arm64,none
+2026-06-20T19:51:19.546Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-f-leet.txt F:leet,darwin/arm64,none
+2026-06-20T19:51:19.547Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-g-homoglyph.txt G:homoglyph,darwin/arm64,none
+2026-06-20T19:51:19.548Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,"grade-h-zerowidth.txt H:control-chars,A:plaintext",darwin/arm64,none
+2026-06-20T19:51:19.549Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,"grade-i-image-ocr.txt A:plaintext,F:leet",darwin/arm64,none
+2026-06-20T19:51:19.549Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-j-nested.txt J:nested:morse,darwin/arm64,none
+2026-06-20T19:51:19.558Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-7001 classic-homoglyph-vendor.json,darwin/arm64,none
+2026-06-20T19:51:19.559Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-7002 classic-split-amount.json,darwin/arm64,none
+2026-06-20T19:51:19.559Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-1042 classic-duplicate-replay.json,darwin/arm64,none
+2026-06-20T19:51:19.559Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-7004 classic-wallet-lookalike.json,darwin/arm64,none
+2026-06-20T19:51:49.554Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,7,,,,,,ocr blocks=19,darwin/arm64,none
+2026-06-20T19:51:49.559Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,"attack A:plaintext,F:leet",darwin/arm64,none
+2026-06-20T19:52:08.059Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,12479.568,15349,2801,157,68.131,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-06-20T19:52:08.061Z,edge,gate0-reject,gate0,false,,,,,,,,,,"ui A:plaintext,F:leet",darwin/arm64,none
+2026-06-20T20:03:52.848Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,8,,,,,,ocr blocks=16,darwin/arm64,none
+2026-06-20T20:04:12.165Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,13242.619,16113,2779,160,66.521,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-06-20T20:04:12.169Z,edge,verdict,deterministic,false,,,,,,,,,,PASS INV-UI-MQMSCKIG,darwin/arm64,none
+2026-06-20T20:04:34.789Z,edge,settle-broadcast,wdk,false,,,,,,,,,,tx 0x499bcf5f571652961badc4fe90160f3b775a1f047671e332a9e662a9bab60106 ref INV-UI-MQMSCKIG,darwin/arm64,none
+2026-06-20T20:05:02.555Z,edge,settle-confirmed,wdk,false,,,,,,,,,,tx 0x499bcf5f571652961badc4fe90160f3b775a1f047671e332a9e662a9bab60106 conf=2 ref INV-UI-MQMSCKIG,darwin/arm64,none
+2026-06-20T20:13:44.983Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,8,,,,,,ocr blocks=43,darwin/arm64,none
+2026-06-20T20:14:06.953Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,16777.289,18929,3482,111,64.263,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-06-20T20:14:06.955Z,edge,verdict,deterministic,false,,,,,,,,,,REJECT INV-UI-MQMSP9E7,darwin/arm64,none
+2026-06-20T20:14:41.171Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,7,,,,,,ocr blocks=15,darwin/arm64,none
+2026-06-20T20:15:00.695Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,12622.458,16190,2786,201,66.482,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-06-20T20:15:00.696Z,edge,verdict,deterministic,false,,,,,,,,,,REJECT INV-UI-MQMSQI3J,darwin/arm64,none
+2026-06-20T20:22:00.605Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,2236,,,,,,,,model loaded,darwin/arm64,none
+2026-06-20T20:22:08.569Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,8,,,,,,blocks=16,darwin/arm64,none
+2026-06-20T20:22:08.704Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-06-20T20:22:11.734Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,3026,,,,,,,,model loaded,darwin/arm64,none
+2026-06-20T20:22:27.127Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,12554.126,15392,2779,158,67.959,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-06-20T20:22:27.161Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none

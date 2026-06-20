@@ -4,6 +4,11 @@ export type { CompletionStats, RunResult } from "./qvac.ts";
 export { logInference } from "./log.ts";
 export type { InferenceRow, LogOpts } from "./log.ts";
 export {
+  setAuditNode, enableQvacAudit, exportProfilerSummary,
+  auditLoadModel, auditUnloadModel, auditCompletion, auditEmbed, auditOcr,
+} from "./audit.ts";
+export type { AuditCompletion } from "./audit.ts";
+export {
   invoiceExtractionSchema,
   lineItemSchema,
   INVOICE_JSON_SCHEMA,

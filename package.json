@@ -18,7 +18,8 @@
     "csec:test": "node scripts/csec-test.ts",
     "c4:demo": "node scripts/c4-settle-demo.ts",
     "serve": "node packages/edge/src/server.ts",
-    "gen:ui": "node scripts/gen-ui-samples.ts"
+    "gen:ui": "node scripts/gen-ui-samples.ts",
+    "c6:evidence": "node scripts/c6-evidence.ts"
   },
   "dependencies": {
     "@noble/hashes": "^2.2.0",

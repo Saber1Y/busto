@@ -1,8 +1,4 @@
 import {
-  loadModel,
-  unloadModel,
-  completion,
-  ocr,
   OCR_LATIN_RECOGNIZER_1,
   SMOLVLM2_500M_MULTIMODAL_Q8_0,
   MMPROJ_SMOLVLM2_500M_MULTIMODAL_Q8_0,
@@ -14,6 +10,11 @@ import {
   invoiceExtractionSchema,
   INVOICE_JSON_SCHEMA,
   crossCheckAgainstOcr,
+  setAuditNode,
+  auditLoadModel,
+  auditUnloadModel,
+  auditCompletion,
+  auditOcr,
   type InvoiceExtraction,
   type ExtractionReview,
 } from "../../shared/src/index.ts";
@@ -45,84 +46,46 @@ export interface ExtractResult {
 
 /**
  * C2 extraction pipeline (Orchestrator / M1): OCR → Gate-0 → multimodal
- * grammar-constrained JSON → Zod validate → OCR-vs-vision cross-check.
+ * grammar-constrained JSON → Zod validate → OCR-vs-vision cross-check. Every QVAC
+ * call goes through the audit wrappers (C6) — each is logged from the profiler.
  */
 export async function extractInvoice(imagePath: string): Promise<ExtractResult> {
+  setAuditNode("orchestrator");
+
   // 1. OCR — an independent, accurate text read of the document.
-  const tOcr = performance.now();
-  const ocrModelId = await loadModel({
+  const ocrModelId = await auditLoadModel({
     modelSrc: OCR_LATIN_RECOGNIZER_1,
     modelConfig: {
-      langList: ["en"],
-      useGPU: true,
-      timeout: 30_000,
-      magRatio: 1.5,
-      defaultRotationAngles: [90, 180, 270],
-      contrastRetry: false,
-      lowConfidenceThreshold: 0.5,
-      recognizerBatchSize: 1,
+      langList: ["en"], useGPU: true, timeout: 30_000, magRatio: 1.5,
+      defaultRotationAngles: [90, 180, 270], contrastRetry: false, lowConfidenceThreshold: 0.5, recognizerBatchSize: 1,
     },
-  });
-  const { blocks, stats } = ocr({ modelId: ocrModelId, image: imagePath, options: { paragraph: false } });
-  const ocrBlocks = await blocks;
-  const ocrStats = await stats;
-  const ocrText = ocrBlocks.map((b: { text: string }) => b.text).join("\n");
-  await unloadModel({ modelId: ocrModelId, clearStorage: false });
-  logInference({
-    node: "orchestrator",
-    op: "ocr",
-    model: OCR_MODEL,
-    delegated: false,
-    wallTotalMs: ocrStats?.totalTime ?? performance.now() - tOcr,
-    event: `ocr blocks=${ocrBlocks.length}`,
-  });
+  }, { model: OCR_MODEL });
+  const { blocks } = await auditOcr({ modelId: ocrModelId, image: imagePath, options: { paragraph: false } }, { model: OCR_MODEL });
+  const ocrText = blocks.map((b) => b.text).join("\n");
+  await auditUnloadModel({ modelId: ocrModelId, clearStorage: false }, { model: OCR_MODEL });
 
   // 2. Gate 0 — normalize + screen before the LLM (full decode battery, C-sec).
   const gate0 = normalizeForLLM(ocrText);
   if (gate0.flagged) {
-    logInference({
-      node: "orchestrator", op: "gate0-reject", model: "gate0", delegated: false,
-      event: `attack ${gate0.findings.map((f) => `${f.grade}:${f.encoding}`).join(",")}`,
-    });
+    logInference({ node: "orchestrator", op: "gate0-reject", model: "gate0", delegated: false, event: `attack ${gate0.findings.map((f) => `${f.grade}:${f.encoding}`).join(",")}` });
   }
 
   // 3. Multimodal extraction — image + Gate-0'd OCR text, grammar-constrained to the schema.
-  const visModelId = await loadModel({
+  const visModelId = await auditLoadModel({
     modelSrc: VISION_SRC,
     modelConfig: { ctx_size: 8192, projectionModelSrc: VISION_PROJ },
-  });
-  const tGen = performance.now();
-  const run = completion({
+  }, { model: VISION_MODEL });
+  const res = await auditCompletion({
     modelId: visModelId,
     history: [
       { role: "system", content: SYSTEM_PROMPT },
-      {
-        role: "user",
-        content: `OCR text from the invoice (Gate-0 normalized):\n"""\n${gate0.normalized}\n"""\nExtract the invoice fields as JSON.`,
-        attachments: [{ path: imagePath }],
-      },
+      { role: "user", content: `OCR text from the invoice (Gate-0 normalized):\n"""\n${gate0.normalized}\n"""\nExtract the invoice fields as JSON.`, attachments: [{ path: imagePath }] },
     ],
     stream: true,
     responseFormat: { type: "json_schema", json_schema: { name: "invoice_extraction", schema: INVOICE_JSON_SCHEMA } },
-  });
-  let wallTtftMs: number | null = null;
-  for await (const ev of run.events) {
-    if (ev.type === "contentDelta" && wallTtftMs === null) wallTtftMs = performance.now() - tGen;
-  }
-  const final = await run.final;
-  const wallTotalMs = performance.now() - tGen;
-  const rawModelOutput = final.contentText.trim();
-  await unloadModel({ modelId: visModelId, clearStorage: false });
-  logInference({
-    node: "orchestrator",
-    op: "completion",
-    model: VISION_MODEL,
-    delegated: false,
-    stats: final.stats,
-    wallTtftMs,
-    wallTotalMs,
-    event: "invoice-extraction",
-  });
+  }, { model: VISION_MODEL, event: "invoice-extraction" });
+  const rawModelOutput = res.contentText.trim();
+  await auditUnloadModel({ modelId: visModelId, clearStorage: false }, { model: VISION_MODEL });
 
   // 4. Parse + Zod validate (the grammar guarantees shape; validate anyway).
   const extraction = invoiceExtractionSchema.parse(JSON.parse(rawModelOutput));
@@ -130,5 +93,5 @@ export async function extractInvoice(imagePath: string): Promise<ExtractResult> 
   // 5. Cross-check vision vs OCR (threat #26).
   const review = crossCheckAgainstOcr(extraction, ocrText, gate0.flagged);
 
-  return { extraction, review, gate0, ocrText, ocrBlockCount: ocrBlocks.length, rawModelOutput, visionModel: VISION_MODEL };
+  return { extraction, review, gate0, ocrText, ocrBlockCount: blocks.length, rawModelOutput, visionModel: VISION_MODEL };
 }
