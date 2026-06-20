@@ -6,9 +6,17 @@
   "description": "Air-gapped agentic settlement — reads invoices locally via QVAC, verifies against an internal ERP, stages on-chain USD₮ settlement. Zero cloud.",
   "license": "Apache-2.0",
   "scripts": {
-    "smoke": "node scripts/smoke.js"
+    "smoke": "node scripts/smoke.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "provider": "node packages/orchestrator/src/provider.ts",
+    "consumer": "node packages/edge/src/consumer.ts",
+    "c1:demo": "node scripts/c1-local-demo.ts"
   },
   "dependencies": {
     "@qvac/sdk": "^0.13.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "typescript": "^6.0.3"
   }
 }
