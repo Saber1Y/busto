@@ -17,6 +17,13 @@ declare module "@qvac/sdk" {
     readonly engine?: string;
   }
   export const LLAMA_3_2_1B_INST_Q4_0: QvacModelDescriptor;
+  // C2 — multimodal invoice extraction + OCR
+  export const SMOLVLM2_500M_MULTIMODAL_Q8_0: QvacModelDescriptor;
+  export const MMPROJ_SMOLVLM2_500M_MULTIMODAL_Q8_0: QvacModelDescriptor;
+  export const QWEN3VL_2B_MULTIMODAL_Q4_K: QvacModelDescriptor;
+  export const MMPROJ_QWEN3VL_2B_MULTIMODAL_Q4_K: QvacModelDescriptor;
+  export const OCR_LATIN_RECOGNIZER_1: QvacModelDescriptor;
+  export const OCR_CRAFT_DETECTOR: QvacModelDescriptor;
 }
 
 export {};

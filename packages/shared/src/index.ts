@@ -3,6 +3,13 @@ export { runCompletion, isDelegated } from "./qvac.ts";
 export type { CompletionStats, RunResult } from "./qvac.ts";
 export { logInference } from "./log.ts";
 export type { InferenceRow, LogOpts } from "./log.ts";
+export {
+  invoiceExtractionSchema,
+  lineItemSchema,
+  INVOICE_JSON_SCHEMA,
+  crossCheckAgainstOcr,
+} from "./invoice.ts";
+export type { InvoiceExtraction, ExtractionReview } from "./invoice.ts";
 
 /** 64-char hex Hyperswarm identity seed (NOT a wallet seed). */
 export function generateHyperswarmSeed(): string {

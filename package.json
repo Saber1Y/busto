@@ -10,10 +10,13 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "provider": "node packages/orchestrator/src/provider.ts",
     "consumer": "node packages/edge/src/consumer.ts",
-    "c1:demo": "node scripts/c1-local-demo.ts"
+    "c1:demo": "node scripts/c1-local-demo.ts",
+    "gen:invoice": "node scripts/gen-invoice.ts",
+    "c2:demo": "node scripts/c2-extract-demo.ts"
   },
   "dependencies": {
-    "@qvac/sdk": "^0.13.5"
+    "@qvac/sdk": "^0.13.5",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^26.0.0",
