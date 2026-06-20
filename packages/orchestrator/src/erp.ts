@@ -39,6 +39,8 @@ const SEED_POS = [
     description: "Industrial servo motors NEMA-34 with on-site installation, calibration and extended warranty" },
   { vendor: "Acme Robotics Ltd", po: "PO-1043", amount: "2000", currency: "USDT", status: "open",
     description: "Replacement gripper assemblies and pneumatic spare parts" },
+  { vendor: "Acme Robotics Ltd", po: "PO-TEST", amount: "1", currency: "USDT", status: "open",
+    description: "C4 live-settlement test order — single unit, on-chain proof" },
   { vendor: "Globex Corporation", po: "PO-2001", amount: "12000", currency: "USDT", status: "open",
     description: "Annual SCADA software license and premium support" },
 ];

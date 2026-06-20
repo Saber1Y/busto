@@ -12,6 +12,8 @@ export {
 export type { InvoiceExtraction, ExtractionReview } from "./invoice.ts";
 export { isValidAddress, toChecksumAddress, isChecksumValid, addressEquals } from "./address.ts";
 export { toMinorUnits, fromMinorUnits } from "./money.ts";
+export { paymentIntentSchema, buildPaymentIntent } from "./intent.ts";
+export type { PaymentIntent } from "./intent.ts";
 
 /** 64-char hex Hyperswarm identity seed (NOT a wallet seed). */
 export function generateHyperswarmSeed(): string {

@@ -15,11 +15,13 @@
     "c2:demo": "node scripts/c2-extract-demo.ts",
     "c3:demo": "node scripts/c3-verdict-demo.ts",
     "gen:adversarial": "node scripts/gen-adversarial.ts",
-    "csec:test": "node scripts/csec-test.ts"
+    "csec:test": "node scripts/csec-test.ts",
+    "c4:demo": "node scripts/c4-settle-demo.ts"
   },
   "dependencies": {
     "@noble/hashes": "^2.2.0",
     "@qvac/sdk": "^0.13.5",
+    "@tetherto/wdk-wallet-evm": "^1.0.0-beta.13",
     "better-sqlite3": "^12.11.1",
     "sqlite-vec": "^0.1.9",
     "zod": "^4.4.3"

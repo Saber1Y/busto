@@ -1,0 +1,32 @@
+{
+  "_assertion": "ALL AI inference (LLM, multimodal, OCR, embeddings, RAG, tool-calling) runs 100% locally via @qvac/sdk. The only remote calls are the non-AI blockchain endpoints below. No cloud AI, ever.",
+  "remote_apis": [
+    {
+      "service": "Ethereum Sepolia RPC (send + read)",
+      "type": "non-AI",
+      "purpose": "Broadcast the USD₮ transfer and read balances/receipts for settlement (C4).",
+      "endpoints": [
+        "https://ethereum-sepolia-rpc.publicnode.com",
+        "https://sepolia.drpc.org"
+      ],
+      "chainId": 11155111,
+      "notes": "Public-mempool RPCs used for reliable testnet inclusion. WDK failover array."
+    },
+    {
+      "service": "Flashbots Protect (Sepolia) — MEV-protected RPC",
+      "type": "non-AI",
+      "purpose": "Production-pinned MEV-protected broadcast endpoint (Gate 5, threat #55).",
+      "endpoints": ["https://rpc-sepolia.flashbots.net"],
+      "chainId": 11155111,
+      "notes": "Pinned for production. The demo broadcasts via the public mempool because Sepolia private-mempool inclusion is unreliable and a plain ERC-20 transfer carries no extractable MEV."
+    },
+    {
+      "service": "Sepolia test USD₮ (ERC-20)",
+      "type": "non-AI",
+      "purpose": "Pinned settlement token. Funded via Pimlico/Candide faucet.",
+      "address": "0xd077a400968890eacc75cdc901f0356c943e4fdb",
+      "decimals": 6,
+      "chainId": 11155111
+    }
+  ]
+}
