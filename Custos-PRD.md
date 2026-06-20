@@ -70,8 +70,8 @@ Per the multi-device rule, the **M1 Pro (32 GB)** is the "main" node → General
                     │  signs + broadcasts on approve                                   │ (NEVER holds keys)
                     ▼                                                                  │
         ┌──────────────────────────────┐                                              │
-        │  Base Sepolia (EVM testnet)  │   ◀──────────── on-chain tUSDT transfer ──────┘ (via Edge signer)
-        │  tUSDT ERC-20 · disclosed RPC│
+        │  Ethereum Sepolia (EVM testnet)  │   ◀──────────── on-chain test USD₮ transfer ──────┘ (via Edge signer)
+        │  test USD₮ ERC-20 · disclosed RPC│
         └──────────────────────────────┘
 ```
 
@@ -81,7 +81,7 @@ Per the multi-device rule, the **M1 Pro (32 GB)** is the "main" node → General
 
 ---
 
-## 5. QVAC feature-coverage matrix (grounded in SDK v0.11 docs)
+## 5. QVAC feature-coverage matrix (grounded in SDK v0.13.5 docs)
 
 | Capability | QVAC primitive | Where | MVP? |
 |---|---|---|---|
@@ -117,7 +117,7 @@ sequenceDiagram
     participant U as User
     participant E as Edge (Intel 16GB, keys)
     participant O as Orchestrator (M1 32GB, Metal)
-    participant C as Base Sepolia
+    participant C as Ethereum Sepolia
     U->>E: Drop invoice (PDF/img)
     E->>E: Llama-3.2-1B classify + route
     E->>O: heartbeat(providerPublicKey)
@@ -132,7 +132,7 @@ sequenceDiagram
         E->>U: "Vendor verified, PO matched, wallet confirmed. Stage 5,000 USDT?"
         U->>E: Approve
         E->>E: re-check recipient == DB known_wallet (hard gate)
-        E->>C: signed tUSDT transfer
+        E->>C: signed test USD₮ transfer
         C-->>E: tx hash
         E->>U: receipt + explorer link
     else verdict FAIL (e.g. poisoned invoice)
@@ -154,7 +154,7 @@ sequenceDiagram
 6. **Orchestrator** — `embed(invoice desc)` → RAG retrieve top-k POs → `match_purchase_order(vendorId, 5000, desc)` → PO-1042 matches.
 7. **Orchestrator** — `verify_wallet(vendorId, providedWallet)` → `providedWallet == known_wallet` → ✅.
 8. **Orchestrator** — verdict PASS → build `PaymentIntent` → return over P2P.
-9. **Edge** — render summary + **Approve**. On click: hard re-check `intent.to == DB.known_wallet`. Sign + broadcast tUSDT transfer (Base Sepolia). Receipt + explorer link. Log settlement row.
+9. **Edge** — render summary + **Approve**. On click: hard re-check `intent.to == DB.known_wallet`. Sign + broadcast test USD₮ transfer (Ethereum Sepolia). Receipt + explorer link. Log settlement row.
 10. **Both** — every QVAC call appended to `evidence/inference-log.jsonl` via profiler.
 
 ---
@@ -225,7 +225,7 @@ settlements(id, po_id, invoice_ref UNIQUE, tx_hash, amount, ts)
 ```
 /evidence/inference-log.jsonl      # per call: {ts, node, delegated:bool, model, op,
 /evidence/inference-log.csv        #   prompt_tokens, completion_tokens, ttft_ms, tok_per_sec, event}
-/remote_apis.json                  # [{service:"Base Sepolia RPC", type:"non-AI", purpose:"settlement"}]
+/remote_apis.json                  # [{service:"Ethereum Sepolia RPC", type:"non-AI", purpose:"settlement"}]
                                     #  + assertion: inference = 100% local QVAC, zero AI cloud
 /hardware/m1pro-profiler.png       # system profiler screenshots
 /hardware/intel2019-profiler.png
@@ -241,7 +241,7 @@ demo.md                            # unlisted YouTube link + run notes
 ## 13. Tech stack & repo layout
 
 - **Runtime:** Node.js ≥ 22.17, npm ≥ 10.9 (Bare optional). TypeScript.
-- **AI:** `@qvac/sdk` v0.11 + `@qvac/ocr-onnx` (+ stretch `@qvac/tts-onnx`, Fabric).
+- **AI:** `@qvac/sdk` v0.13.5 + `@qvac/ocr-onnx` (+ stretch `@qvac/tts-onnx`, Fabric).
 - **P2P:** built-in Holepunch/Hyperswarm via SDK (`startProvider` / `delegate`).
 - **Chain/wallet:** **WDK** (`@tetherto/wdk`, `@tetherto/wdk-wallet-evm`, `@tetherto/wdk-secret-manager`) on **Ethereum Sepolia**, real test USD₮. `viem` = emergency fallback only.
 - **Storage:** SQLite (`better-sqlite3`) + sqlite-vec.

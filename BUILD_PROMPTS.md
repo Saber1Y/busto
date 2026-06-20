@@ -23,7 +23,7 @@ This is the P0 bootstrap for Custos. Goal: fully ingest the project and PROVE ev
 
 4. MODEL CATALOG. Enumerate the model constants actually exported by @qvac/sdk (inspect the installed package). Identify and document: (a) a multimodal/vision-capable LLM + its projection model for invoice reading, (b) an embeddings model for RAG, (c) confirm `@qvac/ocr-onnx` exists and how it's loaded. Record concrete IDs/paths. Do not guess — if a vision model isn't in the catalog, find the supported way to load a vision GGUF via the SDK and document it.
 
-5. P2P SANITY (docs only this phase). From the QVAC docs, document the exact delegation API: how a provider starts and exposes a public key (startProvider + QVAC_HYPERSWARM_SEED), and how a consumer delegates (loadModel delegate: { providerPublicKey, fallbackToLocal }) and checks health (heartbeat). Quote the real signatures. No bridge code yet — that's C1.
+5. P2P SANITY (docs only this phase). From the QVAC docs, document the exact delegation API: how a provider starts and exposes a public key (startQVACProvider + QVAC_HYPERSWARM_SEED), and how a consumer delegates (loadModel delegate: { providerPublicKey, fallbackToLocal }) and checks health (heartbeat). Quote the real signatures. No bridge code yet — that's C1.
 
 6. WDK SANITY. `npm i @tetherto/wdk @tetherto/wdk-wallet-evm @tetherto/wdk-secret-manager`. From the WDK docs, document the exact way to: create an EVM account on Sepolia with an RPC provider, read a balance, and send USD₮ (find the real ERC-20/USD₮ transfer method — do not assume the name). Create a throwaway test wallet, print its address, and tell me the Pimlico/Candide faucet URL to fund Sepolia test USD₮. Confirm a balance read works. NO real send this phase. Keep the seed in .env (gitignored) — never print or commit it.
 
@@ -42,7 +42,7 @@ Then STOP. Show me the report and the smoke numbers. Also: I will run step 3 sep
 C1: prove real Intel→M1 delegated inference over QVAC P2P. PRD §6/§7; threat-model E (75–84) + #82.
 
 Build a reusable delegation client in packages/shared (or orchestrator/edge as fits):
-- Orchestrator (M1): a provider entrypoint — startProvider with a stable identity seeded from QVAC_HYPERSWARM_SEED (.env), load the model, print the provider publicKey.
+- Orchestrator (M1): a provider entrypoint — startQVACProvider with a stable identity seeded from QVAC_HYPERSWARM_SEED (.env), load the model, print the provider publicKey.
 - Edge (Intel): a consumer entrypoint — heartbeat(providerPublicKey) then loadModel with delegate: { providerPublicKey, fallbackToLocal: true }, run a completion that executes ON the M1, and stream the result back.
 
 Prove all three, with real runs and logged rows (delegated:true where applicable):

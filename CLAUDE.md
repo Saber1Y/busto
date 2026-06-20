@@ -10,13 +10,15 @@ An **air-gapped agentic settlement** system. It reads a vendor invoice **locally
 
 1. **`Custos-PRD.md`** — full design, architecture, build order (C0–C7 + C-sec). Authoritative.
 2. **`Custos-Threat-Model.md`** — the 5 gates, Gate-0 encoding battery, 100 attack vectors. Any code you write must preserve these gates.
-3. **`README.md`** — setup + hardware.
+3. **`HACKATHON.md`** — the full hackathon brief: rules, tracks, **judging criteria**, prizes, validation stages, deadlines, build-in-public. Read it for **what wins** — optimize every decision toward these criteria.
+4. **`README.md`** — setup + hardware.
+4. **`evidence/p0-report.md`** (after C0) — **locked ground truth from real hardware**: exact model IDs (Qwen3-VL-2B multimodal + mmproj, GTE-large embeddings, OCR CRAFT+Latin), real API names (`startQVACProvider`, `account.transfer({token,recipient,amount})`), and profiler stats fields (`generatedTokens` — NOT `completionTokens` — `timeToFirstToken`, `tokensPerSecond`). The installed SDK (0.13.5) is the ground truth, not doc references.
 
 If anything you're about to do contradicts these, STOP and ask. Do not silently diverge.
 
 ## External docs — fetch and consult (do not guess APIs)
 
-- QVAC SDK: **https://docs.qvac.tether.io** (loadModel, completion, tool calling, multimodal, `startProvider`/delegate, heartbeat, profiler, `@qvac/ocr-onnx`, embeddings)
+- QVAC SDK: **https://docs.qvac.tether.io** (loadModel, completion, tool calling, multimodal, `startQVACProvider`/delegate, heartbeat, profiler, `@qvac/ocr-onnx`, embeddings)
 - WDK: **https://docs.wdk.tether.io** (`@tetherto/wdk`, `@tetherto/wdk-wallet-evm`, `@tetherto/wdk-secret-manager`; Sepolia test USD₮ via Pimlico/Candide faucets)
 
 **Never invent a model ID, package export, or method name.** Verify it from the installed package (`node -e`, read `node_modules`) or the docs. If unverified, say so.
@@ -87,3 +89,9 @@ ESM (`"type": "module"`). Prefer `better-sqlite3` + `sqlite-vec`. Keep the UI ba
 ## Build order
 
 **C0 (P0 gates)** → **C1** P2P bridge → **C2** multimodal extraction → **C3** ERP + verification tools → **C-sec** Gate-0 battery → **C4** WDK settlement → **C5** Edge UI → **C6** evidence/logging → **C7** ship (video + submit). Gate-0 (C-sec) lands **before** C4 so real money is only wired on a hardened pipeline.
+
+## Phase-specific notes
+
+- **C1 P2P networking:** the delegated round-trip needs the two machines to actually connect. **Same WiFi/LAN works** — hyperswarm discovers local peers and connects directly over the subnet. The failure mode is **two processes on the same host** (localhost hairpin → `HOLEPUNCH_ABORTED`/`PEER_NOT_FOUND`). If a same-LAN cross-machine run still aborts, put one Mac on a different network (e.g. phone hotspot → different NAT) or configure real `swarmRelays`. Never claim the delegated round-trip until it runs across two machines (Hard Rule 2).
+- **C5 UI design source:** use `DESIGN.md` (the provided style reference) + the rules given at C5 time for the Edge UI's visual language. Keep the UI barebones-but-intentional.
+- **Before the repo goes public (C7):** delete `DESIGN.md` and the empty `qvachack.md` — they are references/strays, not Custos artifacts, and the static review shouldn't see them.
