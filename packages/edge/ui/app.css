@@ -258,6 +258,9 @@ strong { font-weight: 700; }
 .hold-label { font-size: 17px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .hold-bar { width: 100%; height: 3px; background: var(--hair); }
 .hold-bar i { display: block; height: 100%; width: 0; background: var(--jetstream); transition: width 0.06s linear; }
+.hold.demo { border-color: var(--ink-40); color: var(--ink-40); cursor: not-allowed; }
+.hold.demo:hover { color: var(--ink-40); }
+.hold.demo .hold-bar { display: none; }
 .hold.signing { border-color: var(--onyx); }
 .hold.signing .hold-label::after { content: " — SIGNING…"; }
 .authorize-note { margin-top: 22px; font-size: 14px; line-height: 1.6; color: var(--ink-60); max-width: 42ch; }

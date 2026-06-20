@@ -121,6 +121,10 @@ async function handleVerify(req: import("node:http").IncomingMessage, res: impor
 }
 
 async function handleApprove(req: import("node:http").IncomingMessage, res: import("node:http").ServerResponse): Promise<void> {
+  if (!process.env.CUSTOS_WALLET_SEED) {
+    json(res, 200, { status: "blocked", reason: "Demo mode — set CUSTOS_WALLET_SEED in .env to a funded Sepolia wallet to settle for real." });
+    return;
+  }
   const { jobId } = JSON.parse((await readBody(req)).toString() || "{}") as { jobId?: string };
   const job = jobId ? jobs.get(jobId) : undefined;
   if (!job) { json(res, 404, { error: "unknown or expired job" }); return; }
@@ -145,10 +149,11 @@ const server = createServer(async (req, res) => {
   try {
     if (req.method === "GET" && url === "/api/samples") return json(res, 200, SAMPLE_LIST);
     if (req.method === "GET" && url === "/api/wallet") {
+      if (!process.env.CUSTOS_WALLET_SEED) return json(res, 200, { configured: false }); // keyless demo mode
       const w = await openEdgeWallet();
       const [eth, usdt] = [await w.account.getBalance(), await w.account.getTokenBalance(CHAIN.usdt)];
       w.dispose();
-      return json(res, 200, { address: w.address, eth: eth.toString(), usdt: usdt.toString(), chain: "Ethereum Sepolia", token: CHAIN.usdt });
+      return json(res, 200, { configured: true, address: w.address, eth: eth.toString(), usdt: usdt.toString(), chain: "Ethereum Sepolia", token: CHAIN.usdt });
     }
     if (req.method === "POST" && url === "/api/verify") return void (await handleVerify(req, res));
     if (req.method === "POST" && url === "/api/approve") return void (await handleApprove(req, res));

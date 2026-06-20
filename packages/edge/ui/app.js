@@ -7,6 +7,7 @@ const GATE_NAMES = {
   G3: "Recipient", G4: "Human approval", G5: "On-chain settle",
 };
 let currentJob = null;
+let walletConfigured = true;
 
 const short = (a) => (a && a.length > 14 ? `${a.slice(0, 8)}…${a.slice(-6)}` : a || "");
 const fmtUnits = (v, d) => {
@@ -31,6 +32,13 @@ const scrollToEl = (el) => el && el.scrollIntoView({ behavior: "smooth", block: 
 async function loadHeader() {
   try {
     const w = await (await fetch("/api/wallet")).json();
+    walletConfigured = w.configured !== false;
+    if (!walletConfigured) {
+      $("wallet").textContent = "demo mode";
+      $("wallet").removeAttribute("href");
+      $("balance").textContent = "read-only · no wallet";
+      return;
+    }
     $("wallet").textContent = short(w.address);
     $("wallet").href = `https://sepolia.etherscan.io/address/${w.address}`;
     $("balance").textContent = `${fmtUnits(w.usdt, 6)} USD₮`;
@@ -122,10 +130,21 @@ function handleEvent(e) {
 function finalize(d) {
   if (d.status === "VERIFIED") {
     currentJob = { jobId: d.jobId, intent: d.intent };
-    setGate("G4", "active", "awaiting your authorization");
-    setState("verified", "VERIFIED", "Every automated gate cleared. One deliberate human signature remains.");
     renderSummary(d.intent);
     $("bandSettle").hidden = false;
+    const auth = $("authorize"), label = auth.querySelector(".hold-label"), note = document.querySelector(".authorize-note");
+    if (walletConfigured) {
+      auth.classList.remove("demo");
+      label.textContent = "HOLD TO AUTHORIZE & SIGN";
+      setGate("G4", "active", "awaiting your authorization");
+      setState("verified", "VERIFIED", "Every automated gate cleared. One deliberate human signature remains.");
+    } else {
+      auth.classList.add("demo");
+      label.textContent = "SUPPLY A FUNDED WALLET TO SETTLE";
+      note.innerHTML = "Demo mode — no wallet configured. Set <strong>CUSTOS_WALLET_SEED</strong> in <strong>.env</strong> to a funded Sepolia wallet, then restart, to settle for real. The verification above is fully live.";
+      setGate("G4", "active", "demo mode — supply a funded wallet");
+      setState("verified", "VERIFIED", "Every automated gate cleared. Supply a funded Sepolia wallet to settle.");
+    }
     setTimeout(() => scrollToEl($("bandSettle")), 350);
   } else if (d.status === "BLOCKED") {
     (d.gates || []).forEach((g) => setGate(g.id, g.state, g.detail));
@@ -159,7 +178,7 @@ function wireAuthorize() {
     if (p >= 1) { if (!fired) { fired = true; authorize(); } return; }
     raf = requestAnimationFrame(tick);
   };
-  const down = (ev) => { ev.preventDefault(); fired = false; start = 0; raf = requestAnimationFrame(tick); };
+  const down = (ev) => { if (btn.classList.contains("demo")) return; ev.preventDefault(); fired = false; start = 0; raf = requestAnimationFrame(tick); };
   const up = () => { if (raf) cancelAnimationFrame(raf); raf = null; if (!fired) fill.style.width = "0%"; };
   btn.addEventListener("pointerdown", down);
   ["pointerup", "pointerleave", "pointercancel"].forEach((e) => btn.addEventListener(e, up));

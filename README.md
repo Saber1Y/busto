@@ -43,6 +43,20 @@ vectors + the Gate-0 encoding battery (Grades A–J).
 The Intel node *delegates* heavy inference to the Metal M1 over QVAC's E2E-encrypted P2P
 (Holepunch) — a real hardware necessity (macOS-x64 is CPU-only), not staged.
 
+```mermaid
+flowchart LR
+  subgraph Edge["Edge &middot; Intel &middot; QVAC CPU &middot; holds keys"]
+    UI["Edge console + WDK signer"]
+  end
+  subgraph Orch["Orchestrator &middot; M1 Pro &middot; QVAC Metal &middot; no keys"]
+    QV["Qwen3-VL-2B &middot; OCR &middot; GTE-large RAG &middot; tool-calling"]
+  end
+  UI <-->|"QVAC P2P (Holepunch, E2E)"| QV
+  UI -->|"signed USD&#8366; transfer"| SEP[("Ethereum Sepolia")]
+```
+
+Full design + the pipeline/sequence diagrams: [ARCHITECTURE.md](./ARCHITECTURE.md).
+
 ---
 
 ## Quickstart
@@ -53,16 +67,18 @@ Requires **Node ≥ 22.17** and **npm ≥ 10.9** (macOS ≥ 14.0 for QVAC).
 npm install
 npm i @qvac/sdk @tetherto/wdk-wallet-evm   # native + model deps
 
-# 1. one-time: a self-custodial test wallet (seed saved to gitignored .env)
-#    fund it with Sepolia ETH + test USD₮ via the Pimlico/Candide faucet.
-
-# 2. launch the Edge settlement console
+# launch the Edge settlement console
 npm run serve            # → http://localhost:4173
 ```
 
-Drop an invoice (or pick a sample), watch it pass the gate ladder, and **hold to
-authorize** — a real test-USD₮ transfer settles on Sepolia with a receipt + explorer link.
-A prompt-injection or amount-mismatch invoice is blocked at its gate, no funds moved.
+**No secrets needed to evaluate.** With no `.env`, the console runs the full pipeline and
+both blocked-attack cases and stops cleanly at Gate 4 (demo mode). The first run downloads
+the models from the QVAC registry. Drop an invoice (or pick a sample) and watch it pass the
+gate ladder; a prompt-injection or amount-mismatch invoice is blocked at its gate.
+
+**To settle for real:** set `CUSTOS_WALLET_SEED` in `.env` to a self-custodial wallet
+funded with Sepolia ETH + test USD₮ (Pimlico/Candide faucet), restart, and **hold to
+authorize** — a real transfer settles on Sepolia with a receipt + explorer link.
 
 ### Headless demos (one component at a time)
 
@@ -82,6 +98,14 @@ CUSTOS_APPROVE=I-APPROVE npm run c4:demo  # C4 · REAL on-chain USD₮ settlemen
 **C0** env + smoke + model probe → **C1** P2P bridge → **C2** multimodal extraction →
 **C3** ERP + verification → **C-sec** Gate-0 battery → **C4** WDK settlement → **C5** Edge
 UI → C6 evidence → C7 ship. Each phase has a report in [`evidence/`](./evidence/).
+
+## Documentation
+
+- [ARCHITECTURE.md](./ARCHITECTURE.md) — two-node mesh, pipeline + settlement diagrams.
+- [SECURITY.md](./SECURITY.md) — the six gates, trust boundaries, "LLM proposes / code authorizes".
+- [THREAT-MODEL.md](./THREAT-MODEL.md) — 100 vectors mapped to the gates (full catalogue: [Custos-Threat-Model.md](./Custos-Threat-Model.md)).
+- [ADVERSARIAL-TESTING.md](./ADVERSARIAL-TESTING.md) — the Gate-0 encoding battery (17/17).
+- [DEMO_SCRIPT.md](./DEMO_SCRIPT.md) · [SUBMISSION_CHECKLIST.md](./SUBMISSION_CHECKLIST.md).
 
 ## Evidence bundle
 
