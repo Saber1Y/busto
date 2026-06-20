@@ -1,0 +1,9 @@
+{
+  "name": "@custos/orchestrator",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Custos Orchestrator (M1/Metal): QVAC provider, OCR, multimodal LLM, RAG, tool-calling. No keys.",
+  "license": "Apache-2.0",
+  "main": "src/index.js"
+}

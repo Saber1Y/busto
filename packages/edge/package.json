@@ -1,0 +1,9 @@
+{
+  "name": "@custos/edge",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Custos Edge (Intel/CPU): UI, 1B routing, P2P consumer, WDK signer. Holds keys.",
+  "license": "Apache-2.0",
+  "main": "src/index.js"
+}

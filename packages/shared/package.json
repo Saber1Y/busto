@@ -1,0 +1,9 @@
+{
+  "name": "@custos/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Custos shared types: PaymentIntent, inference-log schema, Gate-0 contracts.",
+  "license": "Apache-2.0",
+  "main": "src/index.js"
+}

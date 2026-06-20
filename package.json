@@ -1,0 +1,14 @@
+{
+  "name": "custos",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Air-gapped agentic settlement — reads invoices locally via QVAC, verifies against an internal ERP, stages on-chain USD₮ settlement. Zero cloud.",
+  "license": "Apache-2.0",
+  "scripts": {
+    "smoke": "node scripts/smoke.js"
+  },
+  "dependencies": {
+    "@qvac/sdk": "^0.13.5"
+  }
+}

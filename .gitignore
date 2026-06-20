@@ -1,0 +1,22 @@
+# dependencies
+node_modules/
+
+# secrets — never commit (Hard Rule 7)
+.env
+.env.*
+!.env.example
+secrets/
+*.seed
+*.key
+
+# model weights (downloaded at runtime)
+*.gguf
+*.onnx
+.qvac/
+models/
+
+# build / logs / os
+dist/
+build/
+*.log
+.DS_Store
