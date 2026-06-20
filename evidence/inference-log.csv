@@ -182,3 +182,34 @@ ts,node,op,model,delegated,provider_public_key,load_ms,ttft_ms,gen_ms,prompt_tok
 2026-06-20T22:27:07.275Z,orchestrator,loadModel,QWEN3_1_7B_INST_Q4,false,,2985,,,,,,,,model loaded,darwin/arm64,none
 2026-06-20T22:27:08.804Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,false,,,753.254,1527,573,46,68.377,0,gpu,explain,darwin/arm64,profiler-raw
 2026-06-20T22:27:08.832Z,orchestrator,unloadModel,QWEN3_1_7B_INST_Q4,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-06-20T23:37:06.385Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,2161,,,,,,,,model loaded,darwin/arm64,none
+2026-06-20T23:37:13.308Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,7,,,,,,blocks=16,darwin/arm64,none
+2026-06-20T23:37:13.423Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-06-20T23:37:16.464Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,3036,,,,,,,,model loaded,darwin/arm64,none
+2026-06-20T23:37:31.466Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,12338.493,15001,2779,149,67.785,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-06-20T23:37:31.498Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-06-20T23:37:31.501Z,edge,verdict,deterministic,false,,,,,,,,,,PASS INV-UI-MQMZYYG0,darwin/arm64,none
+2026-06-20T23:37:50.216Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,1847,,,,,,,,model loaded,darwin/arm64,none
+2026-06-20T23:37:56.969Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,7,,,,,,blocks=17,darwin/arm64,none
+2026-06-20T23:37:57.097Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-06-20T23:38:00.104Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,3005,,,,,,,,model loaded,darwin/arm64,none
+2026-06-20T23:38:16.309Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,12630.528,16205,2784,209,68.652,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-06-20T23:38:16.348Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-06-20T23:38:16.349Z,edge,verdict,deterministic,false,,,,,,,,,,REJECT INV-UI-MQMZZWI9,darwin/arm64,none
+2026-06-20T23:40:22.658Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,2077,,,,,,,,model loaded,darwin/arm64,none
+2026-06-20T23:40:30.107Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,7,,,,,,blocks=16,darwin/arm64,none
+2026-06-20T23:40:30.234Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-06-20T23:40:33.249Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,3013,,,,,,,,model loaded,darwin/arm64,none
+2026-06-20T23:40:48.550Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,12383.03,15302,2779,158,66.734,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-06-20T23:40:48.591Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-06-20T23:40:48.592Z,edge,verdict,deterministic,false,,,,,,,,,,PASS INV-UI-MQN035YD,darwin/arm64,none
+2026-06-20T23:40:51.287Z,orchestrator,loadModel,QWEN3_1_7B_INST_Q4,false,,2649,,,,,,,,model loaded,darwin/arm64,none
+2026-06-20T23:40:52.516Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,false,,,633.187,1229,567,44,90.045,0,gpu,explain,darwin/arm64,profiler-raw
+2026-06-20T23:40:52.541Z,orchestrator,unloadModel,QWEN3_1_7B_INST_Q4,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-06-20T23:57:51.705Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,2367,,,,,,,,model loaded,darwin/arm64,none
+2026-06-20T23:58:01.075Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,9,,,,,,blocks=16,darwin/arm64,none
+2026-06-20T23:58:01.189Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-06-20T23:58:04.947Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,3753,,,,,,,,model loaded,darwin/arm64,none
+2026-06-20T23:58:22.253Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,14237.13,17304,2779,151,59.248,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-06-20T23:58:22.312Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-06-20T23:58:22.316Z,edge,verdict,deterministic,false,,,,,,,,,,PASS INV-UI-MQN0PN6I,darwin/arm64,none

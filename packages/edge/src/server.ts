@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
-import { dirname, resolve, extname } from "node:path";
+import { dirname, resolve, extname, sep } from "node:path";
 import { loadEnvSafe, logInference, buildPaymentIntent, toMinorUnits, fromMinorUnits, type PaymentIntent } from "../../shared/src/index.ts";
 import { openErp, ensureSchema, seedErp, lookupVendor } from "../../orchestrator/src/erp.ts";
 import { extractInvoice, type ExtractResult } from "../../orchestrator/src/extract.ts";
@@ -59,11 +59,14 @@ function buildExplainContext(invoiceRef: string, ex: ExtractResult, verdict: Ver
 }
 
 function gatesFromVerdict(v: Verdict, gate0Flagged: boolean): Array<{ id: string; name: string; state: "cleared" | "blocked" | "pending"; detail: string }> {
-  const g2 = v.checks.vendorExists && v.checks.vendorActive && v.checks.amountParsed && v.checks.poMatched;
+  // "Deterministic truth" (G2) also covers replay: a duplicate invoice is not a clean record,
+  // so the ladder stays consistent with the BLOCKED verdict instead of showing all gates cleared.
+  const g2 = v.checks.vendorExists && v.checks.vendorActive && v.checks.amountParsed && v.checks.poMatched && v.checks.notDuplicate;
+  const g2Detail = g2 ? `${v.matchedPO} matches the amount` : !v.checks.notDuplicate ? "this invoice was already settled" : "no vendor/PO match in the ERP";
   return [
     { id: "G0", name: "Hidden-instruction check", state: gate0Flagged ? "blocked" : "cleared", detail: gate0Flagged ? "a hidden instruction was found in the document" : "no hidden instructions" },
     { id: "G1", name: "The reader can't pay", state: gate0Flagged ? "pending" : "cleared", detail: "the AI only extracts fields" },
-    { id: "G2", name: "Vendor + purchase order", state: gate0Flagged ? "pending" : g2 ? "cleared" : "blocked", detail: g2 ? `${v.matchedPO} matches the amount` : "no vendor/PO match in the ERP" },
+    { id: "G2", name: "Vendor + purchase order", state: gate0Flagged ? "pending" : g2 ? "cleared" : "blocked", detail: g2Detail },
     { id: "G3", name: "Payment goes to the verified wallet", state: gate0Flagged || !g2 ? "pending" : v.checks.walletMatch ? "cleared" : "blocked", detail: v.checks.walletMatch ? "matches the wallet on file" : "the document's wallet doesn't match the ERP" },
     { id: "G4", name: "You approve", state: "pending", detail: "awaiting your authorization" },
     { id: "G5", name: "On-chain payment", state: "pending", detail: "pinned network + token, exact amount" },
@@ -96,8 +99,10 @@ async function handleVerify(req: Req, res: Res): Promise<void> {
     send({ t: "step", id: "G0", state: "active", detail: "checking for hidden instructions" });
     send({ t: "step", id: "extract", state: "active", detail: "reading the invoice on-device" });
 
+    const readT0 = performance.now();
     const ex = await extractInvoice(imagePath);
-    send({ t: "extraction", data: { ...ex.extraction, _ocrBlocks: ex.ocrBlockCount, _model: ex.visionModel } });
+    const readMs = Math.round(performance.now() - readT0);
+    send({ t: "extraction", data: { ...ex.extraction, _ocrBlocks: ex.ocrBlockCount, _model: ex.visionModel, _readMs: readMs } });
     send({ t: "step", id: "extract", state: "cleared", detail: `read with ${ex.visionModel}` });
 
     const gate0Flagged = ex.gate0.flagged;
@@ -112,6 +117,23 @@ async function handleVerify(req: Req, res: Res): Promise<void> {
     const verdict = await computeVerdict(db, ex.extraction, invoiceRef, undefined, gate0Flagged);
     logInference({ node: "edge", op: "verdict", model: "deterministic", delegated: false, event: `${verdict.decision} ${invoiceRef}` });
     const gates = gatesFromVerdict(verdict, gate0Flagged);
+
+    // Conversational reasoning stream (Workspace): real per-check results, derived
+    // from the deterministic verdict — no fabricated timing. Stop at the first failing
+    // check, mirroring the gate ladder ("a payment is impossible unless every gate clears").
+    const c = verdict.checks;
+    const r = (step: string, ok: boolean, detail: string): { step: string; ok: boolean; detail: string } => ({ step, ok, detail });
+    const reasonStream = gate0Flagged
+      ? [r("gate0", false, `a hidden instruction was found in the document and ignored — ${ex.gate0.findings[0]?.detail ?? ""}`)]
+      : [
+          r("gate0", true, "no hidden instructions in the document"),
+          r("vendor", c.vendorExists && c.vendorActive, c.vendorExists ? (c.vendorActive ? `${ex.extraction.vendorName} is on file and active` : `${ex.extraction.vendorName} is on file but not active`) : `“${ex.extraction.vendorName}” is not in your books`),
+          r("po", c.poMatched, c.poMatched ? `${verdict.matchedPO} matches ${ex.extraction.invoiceAmount} ${ex.extraction.currency}` : `no open purchase order matches ${ex.extraction.invoiceAmount} ${ex.extraction.currency}`),
+          r("wallet", c.walletMatch, c.walletMatch ? "the payout wallet matches the verified wallet on file" : "the payout wallet does not match the wallet on file"),
+          r("duplicate", c.notDuplicate, c.notDuplicate ? "not seen before — no duplicate" : "this invoice was already settled"),
+        ];
+    for (const rs of reasonStream) { send({ t: "reason", ...rs }); if (!rs.ok) break; }
+
     send({ t: "verdict", data: verdict });
     if (!gate0Flagged) for (const g of gates) if (g.id === "G2" || g.id === "G3") send({ t: "step", id: g.id, state: g.state, detail: g.detail });
 
@@ -169,13 +191,17 @@ async function handleApprove(req: Req, res: Res): Promise<void> {
   if (!job.intent || job.vendorId == null || job.poId == null) { json(res, 200, { status: "blocked", reason: "This invoice was not verified for payment." }); return; }
   const r = await settleIntent(db, { intent: job.intent, vendorId: job.vendorId, poId: job.poId, approve: true, confirmations: 2 });
   job.status = r.status;
+  if (r.status === "settled" && jobId) jobs.delete(jobId); // a settled job can't be re-submitted (anti-replay)
   json(res, 200, r);
 }
 
 async function serveStatic(url: string, res: Res): Promise<void> {
-  const file = url === "/" ? "index.html" : url.slice(1);
+  // The conversational dashboard is the product surface; the editorial page is kept at /landing.
+  const file = url === "/" || url === "/app" ? "dash.html" : url === "/landing" ? "index.html" : url.slice(1);
+  const full = resolve(UI, file);
+  if (full !== UI && !full.startsWith(UI + sep)) { res.writeHead(404); res.end("not found"); return; } // contain to UI (no path traversal)
   try {
-    const data = await readFile(resolve(UI, file));
+    const data = await readFile(full);
     res.writeHead(200, { "content-type": MIME[extname(file)] ?? "application/octet-stream" });
     res.end(data);
   } catch { res.writeHead(404); res.end("not found"); }
