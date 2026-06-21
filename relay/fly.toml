@@ -1,0 +1,18 @@
+app = "custos-relay"
+primary_region = "iad"
+
+[build]
+
+# Hyperswarm relay traffic is UDP. Fly forwards the public UDP port straight to
+# the container's internal port. UDP services on Fly require a DEDICATED IPv4:
+#   fly ips allocate-v4
+[[services]]
+  protocol = "udp"
+  internal_port = 49737
+
+  [[services.ports]]
+    port = 49737
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

@@ -1,0 +1,18 @@
+{
+  "name": "custos-relay",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Self-hosted Hyperswarm blind relay for Custos — bridges the QVAC delegated-inference connection when both nodes are behind symmetric (Starlink CGNAT) NAT and direct holepunch fails.",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.6"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "blind-relay": "1.6.1",
+    "hyperdht": "6.32.0"
+  }
+}
