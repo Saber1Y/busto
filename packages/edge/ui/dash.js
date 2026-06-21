@@ -53,7 +53,7 @@ const fmtUnits = (v, d) => {
   const i = s.slice(0, s.length - d), f = s.slice(s.length - d).replace(/0+$/, "");
   return i + (f ? "." + f : "");
 };
-const stripThinking = (s) => s.replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/<\/?think>/gi, "").trim();
+const stripThinking = (s) => s.replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/<\/?think>/gi, "").replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*\*/g, "").replace(/^\s{0,3}#{1,6}\s+/gm, "").trim();
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
 const scrollThread = () => { thread.scrollTop = thread.scrollHeight; };
 
@@ -265,17 +265,12 @@ function finalizeVerify(fin, ctx) {
   }
 }
 
-/* ── ask the explainer (in-thread, read-only) ─────────────────────── */
-async function askInThread(q) {
-  if (busy) return;
-  if (!currentJob || !currentJob.jobId) { addProse(appendAgent().bubble, "Drop an invoice first — then I can answer questions about it."); return; }
-  busy = true; setComposerEnabled(false);
-  appendUser(q);
-  const { bubble } = appendAgent();
-  const pr = addProse(bubble, ""); pr.classList.add("streaming");
+/* ── streamed answers (read-only) ─────────────────────────────────── */
+async function streamAnswer(pr, url, body) {
+  pr.classList.add("streaming");
   let acc = "";
   try {
-    const res = await fetch("/api/explain", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jobId: currentJob.jobId, question: q }) });
+    const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = "";
     for (;;) {
       const { value, done } = await reader.read(); if (done) break;
@@ -286,15 +281,42 @@ async function askInThread(q) {
         let ev; try { ev = JSON.parse(line); } catch { continue; }
         if (ev.t === "token") { acc += ev.text; pr.textContent = stripThinking(acc); scrollThread(); }
         else if (ev.t === "done") { if (ev.full) pr.textContent = ev.full; }
-        else if (ev.t === "error") { pr.textContent = "Couldn't explain that: " + ev.reason; }
+        else if (ev.t === "error") { pr.textContent = "Sorry — " + ev.reason; }
       }
     }
   } catch (err) {
-    pr.textContent = "The explainer is unavailable: " + String(err);
+    pr.textContent = "The assistant is unavailable: " + String(err);
   }
   pr.classList.remove("streaming");
+}
+
+// Route any free-text message: a loaded invoice -> explain it; otherwise the general
+// ERP-grounded assistant. (A dropped invoice goes through startVerify, not here.)
+function handleMessage(q) {
+  if (busy || !q) return;
+  if (currentJob && currentJob.jobId) askInThread(q);
+  else askAssistant(q);
+}
+
+// In-invoice questions (C8a explainInvoice).
+async function askInThread(q) {
+  if (busy || !currentJob || !currentJob.jobId) return;
+  busy = true; setComposerEnabled(false);
+  appendUser(q);
+  const { bubble } = appendAgent();
+  await streamAnswer(addProse(bubble, ""), "/api/explain", { jobId: currentJob.jobId, question: q });
   const chips = currentJob.status === "BLOCKED" ? ["What would make this pass?", "Is this vendor known?"] : ["What happens if I approve?", "Is this vendor known?"];
   addChips(bubble, chips, askInThread);
+  busy = false; setComposerEnabled(true);
+}
+
+// General, ERP-grounded, read-only assistant (no invoice loaded).
+async function askAssistant(q) {
+  if (busy) return;
+  busy = true; setComposerEnabled(false);
+  appendUser(q);
+  const { bubble } = appendAgent();
+  await streamAnswer(addProse(bubble, ""), "/api/assist", { question: q });
   busy = false; setComposerEnabled(true);
 }
 
@@ -332,7 +354,7 @@ function submitComposer() {
   const v = composerInput.value.trim();
   if (!v || busy) return;
   composerInput.value = ""; send.disabled = true;
-  askInThread(v);
+  handleMessage(v);
 }
 function wireComposer() {
   send.disabled = true;
@@ -348,7 +370,8 @@ function wireComposer() {
 /* ── intro + inbox picker ─────────────────────────────────────────── */
 function renderIntro() {
   const { bubble } = appendAgent();
-  addProse(bubble, "I'm Custos — your air-gapped accounts-payable agent. Drop a vendor invoice or pick one from your inbox, and I'll read it on this machine and verify it against your books before any payment.");
+  addProse(bubble, "I'm Custos — your air-gapped accounts-payable agent. Drop a vendor invoice and I'll verify it against your books and settle it on-chain after you approve — or ask me about a vendor, a past payment, or how the gates work.");
+  addChips(bubble, ["What can you do?", "How do the gates work?", "Is Acme a known vendor?"], handleMessage);
   pickerEl = renderPicker(bubble);
 }
 function renderPicker(bubble) {
@@ -461,10 +484,22 @@ function runDemoBlocked(EX) {
   appendUser("Why was this blocked?");
   addProse(appendAgent().bubble, "The invoice was blocked because the wallet provided did not match the known wallet for the vendor, resulting in a drift of 38. Despite other checks passing, the wallet verification failed, leading to the rejection.");
 }
+// Representative free-text conversation (real captured answers) for screenshots.
+function runDemoChat() {
+  const { bubble } = appendAgent();
+  addProse(bubble, "I'm Custos — your air-gapped accounts-payable agent. Drop a vendor invoice and I'll verify it against your books and settle it on-chain after you approve — or ask me about a vendor, a past payment, or how the gates work.");
+  addChips(bubble, ["What can you do?", "How do the gates work?", "Is Acme a known vendor?"], () => {});
+  const exchange = (q, a) => { appendUser(q); addProse(appendAgent().bubble, a); };
+  exchange("hi", "Hello, I am Custos, your accounts-payable system. I can help verify invoices, check them against the ERP, and ensure every gate passes before any payment is made. Let me know if you need assistance with an invoice or your vendors.");
+  exchange("what can you do?", "I can read vendor invoices on-device, verify them against my internal ERP, run them through six security gates, settle them as USD₮ on Ethereum Sepolia after human approval, and answer questions about vendors, purchase orders, and past settlements.");
+  exchange("is Acme a known vendor?", "Yes, Acme Robotics Ltd is a known vendor.");
+  exchange("have we paid Acme before?", "Acme Robotics Ltd is not in the settlement history, which means Custos has made no payment to this vendor yet. They do have open purchase orders (PO-1042 and PO-1043) that have not been paid.");
+}
 function runDemo(kind) {
   document.body.classList.add("demo-full");
   walletConfigured = true;
   signerAddr.textContent = "0x90F8bf…DA62A8"; signer.href = "#"; balance.textContent = "3.50 USD₮"; inboxCount.textContent = "4";
+  if (kind === "chat") return runDemoChat();
   const EX = { vendorName: "ACME ROBOTICS LTD", invoiceAmount: "1.00", currency: "USDT", dueDate: "2026-07-15", providedWallet: "0x8ba1f109551bD432803012645Ac136ddd64DBA72", _model: "QWEN3VL_2B_MULTIMODAL_Q4_K", _ocrBlocks: 16, _readMs: 2380 };
   if (kind === "blocked") runDemoBlocked(EX); else runDemoVerified(EX, kind === "settled");
 }

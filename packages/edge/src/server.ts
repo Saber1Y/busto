@@ -8,6 +8,7 @@ import { openErp, ensureSchema, seedErp, lookupVendor } from "../../orchestrator
 import { extractInvoice, type ExtractResult } from "../../orchestrator/src/extract.ts";
 import { computeVerdict, type Verdict } from "../../orchestrator/src/verdict.ts";
 import { explainInvoice, type ExplainContext } from "../../orchestrator/src/explain.ts";
+import { assistChat, buildErpSnapshot } from "../../orchestrator/src/assistant.ts";
 import { openEdgeWallet, CHAIN } from "./wallet.ts";
 import { settleIntent } from "./settle.ts";
 
@@ -164,6 +165,23 @@ async function handleVerify(req: Req, res: Res): Promise<void> {
   }
 }
 
+async function handleAssist(req: Req, res: Res): Promise<void> {
+  const { question } = JSON.parse((await readBody(req)).toString() || "{}") as { question?: string };
+  res.writeHead(200, { "content-type": "application/x-ndjson", "cache-control": "no-cache" });
+  const send = (e: unknown): void => { res.write(JSON.stringify(e) + "\n"); };
+  if (busy) { send({ t: "token", text: "One moment — finishing the current task." }); send({ t: "done" }); res.end(); return; }
+  busy = true;
+  try {
+    const full = await assistChat(question ?? "", buildErpSnapshot(db), (tok) => send({ t: "token", text: tok }));
+    send({ t: "done", full });
+  } catch (e) {
+    send({ t: "error", reason: String((e as Error)?.message ?? e) });
+  } finally {
+    busy = false;
+    res.end();
+  }
+}
+
 async function handleExplain(req: Req, res: Res): Promise<void> {
   const { jobId, question } = JSON.parse((await readBody(req)).toString() || "{}") as { jobId?: string; question?: string };
   const job = jobId ? jobs.get(jobId) : undefined;
@@ -220,6 +238,7 @@ const server = createServer(async (req, res) => {
     }
     if (req.method === "POST" && url === "/api/verify") return void (await handleVerify(req, res));
     if (req.method === "POST" && url === "/api/explain") return void (await handleExplain(req, res));
+    if (req.method === "POST" && url === "/api/assist") return void (await handleAssist(req, res));
     if (req.method === "POST" && url === "/api/approve") return void (await handleApprove(req, res));
     if (req.method === "GET") return void (await serveStatic(url, res));
     res.writeHead(405); res.end();
