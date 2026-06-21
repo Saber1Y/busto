@@ -20,6 +20,14 @@ const DEFAULT_PROMPT = "In one sentence, why is on-device AI better for confiden
 const HEARTBEAT_TIMEOUT_MS = 45_000; // cold DHT bootstrap can take 15–45s on first contact
 const DELEGATE_TIMEOUT_ONLINE_MS = 60_000;
 const DELEGATE_TIMEOUT_OFFLINE_MS = 8_000; // provider known-down → fail fast → local fallback
+const HEARTBEAT_ATTEMPTS = 3;
+// Cold `dht.ready()` takes ~6s, but the SDK caps its pre-connect bootstrap wait
+// at 5s (DHT_BOOTSTRAP_WAIT_CAP_MS) and then connects on an empty routing table,
+// which fails instantly. The first heartbeat warms the SDK's cached swarm DHT;
+// retries land on a bootstrapped DHT and connect (~7s incl. holepunch/relay).
+const DHT_WARMUP_DELAY_MS = 2_000;
+
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 export interface ConsumerResult {
   providerOnline: boolean;
@@ -52,12 +60,18 @@ export async function runConsumer(opts: {
   const node = opts.node ?? "edge";
 
   let providerOnline = false;
-  try {
-    await heartbeat({ delegate: { providerPublicKey, timeout: opts.heartbeatTimeoutMs ?? HEARTBEAT_TIMEOUT_MS } });
-    providerOnline = true;
-  } catch {
-    providerOnline = false;
-    logInference({ node, op: "heartbeat", model: MODEL, delegated: false, providerPublicKey, event: "provider-offline" });
+  for (let attempt = 1; attempt <= HEARTBEAT_ATTEMPTS; attempt++) {
+    try {
+      await heartbeat({ delegate: { providerPublicKey, timeout: opts.heartbeatTimeoutMs ?? HEARTBEAT_TIMEOUT_MS } });
+      providerOnline = true;
+      break;
+    } catch {
+      if (attempt < HEARTBEAT_ATTEMPTS) {
+        await sleep(DHT_WARMUP_DELAY_MS);
+        continue;
+      }
+      logInference({ node, op: "heartbeat", model: MODEL, delegated: false, providerPublicKey, event: "provider-offline" });
+    }
   }
 
   const tLoad = performance.now();
