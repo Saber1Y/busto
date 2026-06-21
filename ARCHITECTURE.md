@@ -8,8 +8,8 @@ Orchestrator reads and verifies; the Edge holds keys and signs. The full design 
 
 ```mermaid
 flowchart LR
-  subgraph Edge["Edge &middot; Intel i5 &middot; 16GB &middot; QVAC CPU &middot; holds keys"]
-    UI["Edge console (server.ts)<br/>WDK signer (wallet.ts, settle.ts)<br/>Llama-3.2-1B routing"]
+  subgraph Edge["Edge &middot; Intel i5 &middot; 16GB &middot; no local inference &middot; holds keys"]
+    UI["Edge console (server.ts)<br/>WDK signer (wallet.ts, settle.ts)<br/>P2P consumer (consumer.ts)"]
   end
   subgraph Orch["Orchestrator &middot; M1 Pro &middot; 32GB &middot; QVAC Metal &middot; no keys"]
     QV["Qwen3-VL-2B + ocr-onnx (extract.ts)<br/>GTE-large RAG + tool-calling (erp.ts, tools.ts)"]
@@ -18,12 +18,15 @@ flowchart LR
   UI -->|"signed USD&#8366; transfer"| SEP[("Ethereum Sepolia<br/>test USD&#8366; 0xd077a4&hellip;e4fdb")]
 ```
 
-macOS-x64 gives QVAC **CPU-only** inference, so the Intel node cannot run Qwen3-VL-2B at
-usable speed and **delegates** to the Metal M1. The C1 demo
-([evidence/c1-report.md](./evidence/c1-report.md)) proves delegated round-trip,
-offline-detect via `heartbeat`, and `fallbackToLocal` (which never auto-settles — threat
-#82). Keys exist only on the Edge ([packages/edge/src/wallet.ts](./packages/edge/src/wallet.ts));
-the Orchestrator has no key API surface.
+QVAC's macOS-x64 build can't run these models reliably (its llama.cpp build suppresses stop
+tokens → runaway generation), so the Intel node runs **no local inference at all** and
+**delegates every AI task** to the Metal M1. The consumer uses `fallbackToLocal: false`: if the
+Orchestrator is unreachable the Edge **hard-stops** ("orchestrator offline, cannot proceed")
+and never settles on a degraded result (threat #82). The C1 demo
+([evidence/c1-report.md](./evidence/c1-report.md)) proves the delegated round-trip and the
+offline hard-stop. Keys exist only on the Edge
+([packages/edge/src/wallet.ts](./packages/edge/src/wallet.ts)); the Orchestrator has no key API
+surface.
 
 ## Pipeline
 

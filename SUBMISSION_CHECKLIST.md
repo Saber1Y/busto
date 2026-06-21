@@ -9,7 +9,7 @@
 | Team | Tim (`@winsznx`) + Anu (`@svector`) |
 | Tracks | **General Purpose** (≤32 GB) + **Build in Public** |
 | Hashtag | `#Custos` (tag `@QVAC` on every post) |
-| Repo | `<public GitHub URL>` — Apache-2.0 |
+| Repo | [github.com/winsznx/custos](https://github.com/winsznx/custos) — Apache-2.0 |
 | Video | `<unlisted YouTube URL>` (≤5 min) |
 
 ## Evidence inventory (in the repo)
@@ -21,7 +21,7 @@
 - **Gate-0 battery:** `npm run csec:test` → 17/17 ([ADVERSARIAL-TESTING.md](./ADVERSARIAL-TESTING.md)).
 - **Hardware:** [evidence/hardware/specs.md](./evidence/hardware/specs.md).
 - **UI screenshots:** [evidence/ui/](./evidence/ui/).
-- **Per-phase reports:** `evidence/p0-report.md … c6-report.md`.
+- **Per-phase reports:** `evidence/p0-report.md … c9-…` (one per build phase).
 - **Docs:** [README](./README.md), [ARCHITECTURE](./ARCHITECTURE.md), [SECURITY](./SECURITY.md), [THREAT-MODEL](./THREAT-MODEL.md), [LICENSE](./LICENSE) (Apache-2.0).
 
 ## Reproduce (judge, no secrets needed)
