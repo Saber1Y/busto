@@ -34,7 +34,14 @@ const relay = new BlindRelayServer({
 const server = dht.createServer((socket) => {
   // The Protomux channel id must be the *connecting peer's* key, mirroring the
   // client's `relay.Client.from(socket, { id: socket.publicKey })`.
-  relay.accept(socket, { id: socket.remotePublicKey })
+  const who = socket.remotePublicKey.toString('hex').slice(0, 8)
+  console.log(`+ session from ${who}`)
+  const session = relay.accept(socket, { id: socket.remotePublicKey })
+  session.on('pair', (isInitiator, token) => {
+    console.log(`= paired ${who} isInitiator=${isInitiator} token=${token.toString('hex').slice(0, 8)}`)
+  })
+  session.on('error', (err) => console.log(`! session ${who} error: ${err.message}`))
+  session.on('close', () => console.log(`- session ${who} closed`))
 })
 
 await server.listen(keyPair)
