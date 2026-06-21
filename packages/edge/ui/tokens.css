@@ -1,0 +1,95 @@
+/* ============================================================================
+   Custos design tokens — "Vault Ledger"
+   The single source of truth for the visual language. Every screen reads from
+   these; no one-off hex anywhere else. Bespoke, air-gapped (system-safe type,
+   no external CDN). Light, warm, archival — a guardian of payments.
+   ========================================================================== */
+
+:root {
+  /* ── neutral ramp — warm bone -> graphite ink (not flat white, not blue-gray) */
+  --bone:        #faf8f3;  /* app background — warm paper */
+  --surface:     #ffffff;  /* cards / raised */
+  --surface-2:   #f4f1e9;  /* sidebar / sunken */
+  --surface-3:   #ece8dd;  /* deeper sunken / track */
+  --hair:        #e7e2d6;  /* hairline border */
+  --hair-strong: #d8d2c3;  /* stronger border */
+  --ink:         #1b1a16;  /* primary text — warm near-black */
+  --ink-2:       #4c483f;  /* secondary text */
+  --ink-3:       #6b6456;  /* tertiary / caption — AA on every warm surface (≥4.79:1) */
+  --ink-4:       #a8a293;  /* faint — decorative/disabled icons only (not AA for text) */
+  --on-dark:     #f6f2e9;  /* text on dark/brand surfaces */
+  --on-dark-2:   #b9bcae;  /* secondary on dark */
+
+  /* ── brand — Custos Pine (primary interactive) + Brass (seal accent) */
+  --brand:        #0e5247; /* pine — buttons, links, active, focus */
+  --brand-strong: #0a3e36;
+  --brand-press:  #082f29;
+  --brand-tint:   #e3efeb; /* soft fill */
+  --brand-tint-2: #cfe2dc;
+  --brass:        #9a7b3f; /* antique gold — guardian/seal motif, used sparingly */
+  --brass-strong: #7d6230;
+  --brass-tint:   #f1e8d3;
+
+  /* ── semantic states — never color-only (always paired with glyph + label) */
+  --ok:        #15715a;  /* cleared / verified */
+  --ok-tint:   #e3efe9;
+  --warn:      #8a6314;  /* caution */
+  --warn-tint: #f4ead2;
+  --danger:    #9b2c2c;  /* block emphasis (oxblood, not alarm-red) */
+  --danger-tint:#f3e3df;
+  --onyx:      #16151a;  /* blocked surface (inversion) */
+  --onyx-2:    #211f26;
+
+  /* ── alpha derivations (the only place rgba literals live) */
+  --scrim:     rgba(20, 16, 8, .42);     /* drawer overlay — warm near-black */
+  --ring-ok:   rgba(21, 113, 90, .25);   /* verified-pill hairline — from --ok */
+  --seal-line: rgba(154, 123, 63, .28);  /* settled-card divider — from --brass */
+
+  /* ── typography (system-safe; bespoke through discipline) */
+  --font-sans:  -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", system-ui, sans-serif;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, ui-serif, serif;
+  --font-mono:  ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  --fs-display: 30px;  --lh-display: 1.06;
+  --fs-h1:      19px;  --lh-h1: 1.2;
+  --fs-h2:      15px;  --lh-h2: 1.3;
+  --fs-title:   13.5px;
+  --fs-body:    14px;  --lh-body: 1.55;
+  --fs-sm:      13px;
+  --fs-caption: 12px;
+  --fs-micro:   11px;
+
+  --fw-regular: 400;
+  --fw-medium:  500;
+  --fw-semibold:600;
+  --fw-bold:    700;
+  --fw-heavy:   800;
+
+  --track-tight: -0.02em;
+  --track-snug:  -0.01em;
+  --track-label: 0.07em;  /* uppercase micro-labels */
+
+  /* ── spacing (4px base) */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px; --sp-8: 32px; --sp-10: 40px;
+  --sp-12: 48px; --sp-16: 64px;
+
+  /* ── radius */
+  --r-xs: 5px; --r-sm: 7px; --r-md: 10px; --r-lg: 14px; --r-xl: 18px; --r-pill: 999px;
+
+  /* ── elevation (warm-tinted, never pure black) */
+  --e-1: 0 1px 2px rgba(40,33,20,.05), 0 1px 1px rgba(40,33,20,.04);
+  --e-2: 0 4px 16px rgba(40,33,20,.08), 0 1px 3px rgba(40,33,20,.05);
+  --e-3: 0 20px 52px rgba(30,24,12,.16), 0 3px 10px rgba(30,24,12,.08);
+
+  /* ── interaction */
+  --focus-ring: 0 0 0 3px var(--brand-tint-2);
+  --dur-1: .12s; --dur-2: .2s; --dur-3: .32s;
+  --ease: cubic-bezier(.4, 0, .2, 1);
+
+  /* ── layout */
+  --sidebar-w: 252px;
+  --sidebar-w-collapsed: 72px;
+  --topbar-h: 58px;
+  --thread-max: 780px;
+}

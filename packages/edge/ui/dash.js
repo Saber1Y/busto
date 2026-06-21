@@ -406,7 +406,7 @@ function renderStub(name, meta) {
     el("svg", { class: "ico-lg", viewBox: "0 0 16 16", html: '<path d="M2 3.5h12v9H2zM2 6.5h12" fill="none" stroke="currentColor" stroke-width="1.2"/>' }),
     el("h2", { text: meta.title }),
     el("p", { text: meta.stub }),
-    el("span", { class: "stub-soon", text: "Available in C9-2" })));
+    el("span", { class: "stub-soon", text: "Available in C9-3" })));
 }
 function switchView(name) {
   for (const b of nav.querySelectorAll(".nav-item")) b.classList.toggle("is-active", b.dataset.view === name);
@@ -469,7 +469,27 @@ function runDemo(kind) {
   if (kind === "blocked") runDemoBlocked(EX); else runDemoVerified(EX, kind === "settled");
 }
 
+/* ── shell: collapse (persisted) + mobile drawer ──────────────────── */
+function applySidebar(state) { document.documentElement.dataset.sidebar = state; }
+function wireShell() {
+  const override = new URLSearchParams(location.search).get("sidebar");
+  let saved = null; try { saved = localStorage.getItem("custos.sidebar"); } catch { /* storage optional */ }
+  applySidebar(override || saved || "expanded");
+  const toggle = $("sideToggle");
+  if (toggle) toggle.addEventListener("click", () => {
+    const next = document.documentElement.dataset.sidebar === "collapsed" ? "expanded" : "collapsed";
+    applySidebar(next);
+    try { localStorage.setItem("custos.sidebar", next); } catch { /* storage optional */ }
+  });
+  const menuBtn = $("menuBtn"), scrim = $("scrim");
+  const setDrawer = (open) => { document.body.dataset.drawer = open ? "open" : ""; };
+  if (menuBtn) menuBtn.addEventListener("click", () => setDrawer(document.body.dataset.drawer !== "open"));
+  if (scrim) scrim.addEventListener("click", () => setDrawer(false));
+  nav.addEventListener("click", (e) => { if (e.target.closest(".nav-item")) setDrawer(false); });
+}
+
 /* ── init ─────────────────────────────────────────────────────────── */
-loadHeader(); wireComposer(); wireNav();
+loadHeader(); wireComposer(); wireNav(); wireShell();
 const demoKind = new URLSearchParams(location.search).get("demo");
 if (demoKind) runDemo(demoKind); else renderIntro();
+

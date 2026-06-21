@@ -3,20 +3,37 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Custos · Edge Settlement Console</title>
+  <title>Custos · Air-gapped agentic settlement</title>
+  <meta name="description" content="Air-gapped agentic settlement — no payment moves until every gate clears." />
+  <link rel="icon" type="image/svg+xml" href="/brand/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/brand/apple-touch-icon.png" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Custos — guardian of the ledger" />
+  <meta property="og:description" content="Air-gapped agentic settlement — no payment moves until every gate clears." />
+  <meta property="og:image" content="/brand/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="/brand/og.png" />
+  <meta name="theme-color" content="#0e5247" />
   <link rel="stylesheet" href="/app.css" />
+  <style>
+    .wordmark.lockup { display: inline-flex; align-items: center; gap: 11px; text-decoration: none; color: inherit; }
+    .wordmark.lockup img { width: 30px; height: 30px; display: block; }
+    .nav-meta .enter { font-weight: 700; }
+  </style>
 </head>
 <body data-state="idle">
   <!-- ── HERO ─────────────────────────────────────────────────────────── -->
   <header class="hero" id="hero">
     <nav class="nav">
-      <div class="wordmark">CUSTOS</div>
+      <a class="wordmark lockup" href="/" aria-label="Open the Custos console"><img src="/brand/mark.svg" alt="" />CUSTOS</a>
       <div class="nav-meta">
         <span class="node">EDGE · AP CLERK</span>
         <span class="airgap"><i></i>AIR-GAPPED</span>
         <span class="chain" id="chain">ETHEREUM SEPOLIA</span>
         <a class="wallet ghost" id="wallet" href="#" target="_blank" rel="noreferrer">0x…</a>
         <span class="balance" id="balance">— USD₮</span>
+        <a class="ghost enter" href="/">Open console →</a>
       </div>
     </nav>
     <div class="hero-copy">
