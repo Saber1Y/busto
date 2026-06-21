@@ -19,7 +19,6 @@ const MODEL = "LLAMA_3_2_1B_INST_Q4_0";
 const DEFAULT_PROMPT = "In one sentence, why is on-device AI better for confidential invoices?";
 const HEARTBEAT_TIMEOUT_MS = 45_000; // cold DHT bootstrap can take 15–45s on first contact
 const DELEGATE_TIMEOUT_ONLINE_MS = 60_000;
-const DELEGATE_TIMEOUT_OFFLINE_MS = 8_000; // provider known-down → fail fast → local fallback
 const HEARTBEAT_ATTEMPTS = 3;
 // Cold `dht.ready()` takes ~6s, but the SDK caps its pre-connect bootstrap wait
 // at 5s (DHT_BOOTSTRAP_WAIT_CAP_MS) and then connects on an empty routing table,
@@ -74,13 +73,27 @@ export async function runConsumer(opts: {
     }
   }
 
+  // The Edge holds the wallet keys but runs NO local inference (the x64 build
+  // suppresses stop tokens). If the orchestrator is unreachable, hard-stop and
+  // block settlement rather than degrade — threat #82. No fallbackToLocal.
+  if (!providerOnline) {
+    return {
+      providerOnline: false,
+      delegated: false,
+      degradedMode: false,
+      autoSettleBlocked: true,
+      load_ms: 0,
+      text: "Orchestrator offline — cannot proceed. Settlement blocked (threat #82).",
+    };
+  }
+
   const tLoad = performance.now();
   const modelId = await loadModel({
     modelSrc: LLAMA_3_2_1B_INST_Q4_0,
     delegate: {
       providerPublicKey,
-      timeout: opts.delegateTimeoutMs ?? (providerOnline ? DELEGATE_TIMEOUT_ONLINE_MS : DELEGATE_TIMEOUT_OFFLINE_MS),
-      fallbackToLocal: true,
+      timeout: opts.delegateTimeoutMs ?? DELEGATE_TIMEOUT_ONLINE_MS,
+      fallbackToLocal: false,
     },
   });
   const load_ms = performance.now() - tLoad;
@@ -144,8 +157,8 @@ if (isMain) {
     ),
   );
   console.log(`\nResult text: ${r.text.trim()}`);
-  if (r.degradedMode) {
-    console.warn("⚠️  DEGRADED MODE (local 1B fallback): low-confidence — settlement auto-BLOCKED (threat #82).");
+  if (!r.providerOnline) {
+    console.warn("⛔ ORCHESTRATOR OFFLINE — hard-stop. The Edge runs no local inference; settlement BLOCKED (threat #82).");
   }
   await close();
   process.exit(0);
