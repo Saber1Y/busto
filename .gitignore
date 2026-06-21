@@ -28,3 +28,9 @@ build/
 
 # runtime invoice uploads
 data/uploads/
+
+# stray reference docs — not Custos artifacts (design refs + scratch); the
+# design system's single source of truth is packages/edge/ui/tokens.css
+DESIGN.md
+DESIGN-SYSTEM.md
+qvachack.md
