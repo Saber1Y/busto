@@ -19,6 +19,9 @@ const fmtUnits = (v, d) => {
 };
 // Qwen3 is a hybrid reasoning model; drop any <think> block so the clerk sees prose only.
 const stripThinking = (s) => s.replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/<\/?think>/gi, "").trim();
+// Brand the settlement asset uniformly for display (the ledger speaks USD₮);
+// the ERP keeps the raw "USDT" ticker as data.
+const assetLabel = (c) => (/^usd[t₮]$/i.test(c || "") ? "USD₮" : c || "USD₮");
 
 /* ── hero state ─────────────────────────────────────────────────────── */
 function setState(name, word, sub) {
@@ -83,7 +86,7 @@ function setGate(id, state, detail) {
 function renderReadout(x) {
   $("readout").innerHTML = `
     <div class="field"><div class="field-label">Vendor</div><div class="field-value">${x.vendorName || "—"}</div></div>
-    <div class="field"><div class="field-label">Invoice total</div><div class="field-value huge">${x.invoiceAmount || "—"} <span style="font-size:.4em">${x.currency || ""}</span></div></div>
+    <div class="field"><div class="field-label">Invoice total</div><div class="field-value huge">${x.invoiceAmount || "—"} <span style="font-size:.4em">${assetLabel(x.currency)}</span></div></div>
     <div class="field"><div class="field-label">Due</div><div class="field-value">${x.dueDate || "—"}</div></div>
     <div class="field"><div class="field-label">Wallet on document</div><div class="field-value mono">${x.providedWallet || "—"}</div></div>
     <div class="field-meta">read on-device · ${x._model || ""} · ${x._ocrBlocks || 0} OCR blocks</div>`;

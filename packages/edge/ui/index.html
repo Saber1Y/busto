@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Custos · Air-gapped agentic settlement</title>
-  <meta name="description" content="Air-gapped agentic settlement — no payment moves until every gate clears." />
+  <meta name="description" content="Custos reads a vendor invoice on your own machine, verifies it against your books, and settles it in test USD₮ on Ethereum Sepolia — and no payment can move until it clears six independent gates. Zero cloud, zero data leakage." />
   <link rel="icon" type="image/svg+xml" href="/brand/favicon.svg" />
   <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="/brand/apple-touch-icon.png" />
@@ -14,43 +14,96 @@
   <meta property="og:image" content="/brand/og.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="/brand/og.png" />
-  <meta name="theme-color" content="#0e5247" />
+  <meta name="theme-color" content="#0a3e36" />
+  <link rel="stylesheet" href="/tokens.css" />
   <link rel="stylesheet" href="/app.css" />
-  <style>
-    .wordmark.lockup { display: inline-flex; align-items: center; gap: 11px; text-decoration: none; color: inherit; }
-    .wordmark.lockup img { width: 30px; height: 30px; display: block; }
-    .nav-meta .enter { font-weight: 700; }
-  </style>
 </head>
 <body data-state="idle">
   <!-- ── HERO ─────────────────────────────────────────────────────────── -->
   <header class="hero" id="hero">
     <nav class="nav">
-      <a class="wordmark lockup" href="/" aria-label="Open the Custos console"><img src="/brand/mark.svg" alt="" />CUSTOS</a>
+      <a class="wordmark" href="/" aria-label="Open the Custos console"><img src="/brand/mark.svg" alt="" />CUSTOS</a>
       <div class="nav-meta">
-        <span class="node">EDGE · AP CLERK</span>
-        <span class="airgap"><i></i>AIR-GAPPED</span>
-        <span class="chain" id="chain">ETHEREUM SEPOLIA</span>
-        <a class="wallet ghost" id="wallet" href="#" target="_blank" rel="noreferrer">0x…</a>
+        <span class="node">Edge · AP Clerk</span>
+        <span class="airgap"><i></i>Air-gapped</span>
+        <span class="chain" id="chain">Ethereum Sepolia</span>
+        <a class="wallet" id="wallet" href="#" target="_blank" rel="noreferrer">0x…</a>
         <span class="balance" id="balance">— USD₮</span>
-        <a class="ghost enter" href="/">Open console →</a>
+        <a class="enter" href="/">Open console →</a>
       </div>
     </nav>
     <div class="hero-copy">
       <p class="eyebrow" id="eyebrow">Air-gapped agentic settlement</p>
       <h1 class="display state-word" id="stateWord">AWAITING<br />INVOICE</h1>
-      <p class="hero-sub" id="heroSub">Read locally. Verified against the air-gapped ERP. Settled on-chain only after every gate clears.</p>
+      <p class="hero-sub" id="heroSub">Custos reads a vendor invoice on this machine, checks it against your own books, and settles it on-chain — and no payment can move until it clears six independent gates. Zero cloud, zero data leakage.</p>
     </div>
   </header>
+
+  <!-- ── WHY ──────────────────────────────────────────────────────────── -->
+  <section class="band band-cloud band-why" id="bandWhy">
+    <p class="kicker">Why Custos</p>
+    <h2 class="statement">An AI that pays your invoices is a liability —<br /><em>unless it can't be tricked.</em></h2>
+    <p class="lede">Hand an agent your accounts payable and you inherit its failure modes: a hidden instruction buried in a PDF, a vendor that doesn't exist, a swapped wallet address, the same invoice paid twice — and every figure and document shipped off to someone else's cloud. Custos is built so none of that can move money. It reads each invoice on your own hardware, takes the truth from your books rather than the document, and routes every payment through six independent gates. The model can propose. It can never pay.</p>
+  </section>
+
+  <!-- ── HOW ──────────────────────────────────────────────────────────── -->
+  <section class="band band-cloud" id="bandHow">
+    <h2 class="heading-sm">From scan to settlement, on one machine</h2>
+    <ol class="steps">
+      <li class="step">
+        <span class="step-no">01</span>
+        <div class="step-body">
+          <h3>Read it locally</h3>
+          <p>On-device OCR and a multimodal model read the invoice on your own hardware — vendor, amount, due date, the wallet printed on the page. Nothing is uploaded.</p>
+        </div>
+      </li>
+      <li class="step">
+        <span class="step-no">02</span>
+        <div class="step-body">
+          <h3>Verify it against your books</h3>
+          <p>Vendor, purchase order, and the wallet to pay come from your air-gapped ERP — never the document. The invoice can claim anything; it can't introduce a new payee.</p>
+        </div>
+      </li>
+      <li class="step">
+        <span class="step-no">03</span>
+        <div class="step-body">
+          <h3>Clear six gates</h3>
+          <p>Input decode, role bounding, deterministic truth, recipient re-check, human approval, on-chain safety. A payment is impossible unless every one clears — no single component can move funds.</p>
+        </div>
+      </li>
+      <li class="step">
+        <span class="step-no">04</span>
+        <div class="step-body">
+          <h3>Settle on-chain</h3>
+          <p>You hold to authorize on the Edge node — the only machine that holds keys. Custos signs locally and moves real test USD₮ on Ethereum Sepolia, an exact-amount transfer you can open in a block explorer.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ── THE SIX GATES ────────────────────────────────────────────────── -->
+  <section class="band band-cloud" id="bandGates">
+    <h2 class="heading-sm">The six gates</h2>
+    <p class="band-intro">A payment is impossible unless it clears every one. No single component — least of all the model — can move funds.</p>
+    <ul class="gatedex">
+      <li class="gx"><span class="gx-no">G0</span><div class="gx-body"><h3>Input decode</h3><p>Obfuscated text — base64, homoglyphs, zero-width characters, Morse, nesting — is normalized and decoded <em>before</em> the model ever sees it. A hidden "pay this now" is flagged, logged, and rejected, never executed.</p></div></li>
+      <li class="gx"><span class="gx-no">G1</span><div class="gx-body"><h3>Role bounding</h3><p>The model only reads and proposes. It has no authority to settle — moving money is not a tool it can call.</p></div></li>
+      <li class="gx"><span class="gx-no">G2</span><div class="gx-body"><h3>Deterministic truth</h3><p>Vendor, purchase order, and the payee wallet are read from your ERP, not the document. The numbers that matter never come from the page being verified.</p></div></li>
+      <li class="gx"><span class="gx-no">G3</span><div class="gx-body"><h3>Recipient re-check</h3><p>Immediately before signing, plain code re-checks the recipient against the wallet on file. A swapped address stops here, on the machine that holds the keys.</p></div></li>
+      <li class="gx"><span class="gx-no">G4</span><div class="gx-body"><h3>Human approval</h3><p>A deliberate hold-to-authorize on the Edge node. Nothing moves without a person, and only the Edge — never the inference machine — can sign.</p></div></li>
+      <li class="gx"><span class="gx-no">G5</span><div class="gx-body"><h3>On-chain safety</h3><p>Pinned chain and token, a checksummed address, an exact-amount transfer with no blanket approvals, and confirmations before it's called settled.</p></div></li>
+    </ul>
+  </section>
 
   <!-- ── INTAKE ───────────────────────────────────────────────────────── -->
   <section class="band band-cloud" id="bandIntake">
     <h2 class="heading-sm">Verify an invoice</h2>
+    <p class="band-intro">Drop a real vendor invoice, or run one of the prepared cases. Everything below happens on this machine.</p>
     <div class="intake">
-      <button class="dropzone ghost" id="dropzone" type="button">
+      <button class="dropzone" id="dropzone" type="button">
         <span class="drop-lead">Drop a vendor invoice</span>
-        <span class="drop-sub">PNG or PDF — read on this machine, never uploaded to the cloud</span>
-        <input type="file" id="file" accept="image/*" hidden />
+        <span class="drop-sub">PNG or JPG — read on this machine, never uploaded to the cloud</span>
+        <input type="file" id="file" accept="image/png,image/jpeg" aria-label="Upload a vendor invoice (PNG or JPG)" hidden />
       </button>
       <div class="samples" id="samples"></div>
     </div>
@@ -96,7 +149,7 @@
     <div class="settle">
       <dl class="summary" id="summary"></dl>
       <div class="authorize">
-        <button class="hold ghost" id="authorize" type="button">
+        <button class="hold" id="authorize" type="button">
           <span class="hold-label">HOLD TO AUTHORIZE PAYMENT</span>
           <span class="hold-bar"><i id="holdFill"></i></span>
         </button>
@@ -113,6 +166,29 @@
     <h2 class="heading-sm">Payment settled — view on-chain</h2>
     <div class="receipt" id="receipt"></div>
     <button class="ghost" id="resetReceipt" type="button">Verify another invoice</button>
+  </section>
+
+  <!-- ── PROOF ────────────────────────────────────────────────────────── -->
+  <section class="band band-cloud" id="bandProof">
+    <h2 class="heading-sm">Not a mock</h2>
+    <div class="proof">
+      <div class="proof-item">
+        <h3>Real inference, on-device</h3>
+        <p>QVAC runs the OCR, the multimodal read, the ERP retrieval, and the explainer locally. No cloud AI, ever — confidential financials never leave the building.</p>
+      </div>
+      <div class="proof-item">
+        <h3>A real on-chain transfer</h3>
+        <p>Settlement is an actual test USD₮ transfer on Ethereum Sepolia, with a real transaction hash you can open in a block explorer. No simulated success states.</p>
+      </div>
+      <div class="proof-item">
+        <h3>A two-node mesh</h3>
+        <p>Heavy inference runs on the orchestrator; keys and signing are isolated on the Edge node. The machine that thinks never holds a key; the machine that holds keys never runs the model.</p>
+      </div>
+      <div class="proof-item">
+        <h3>Disclosed by design</h3>
+        <p>Every remote call is listed in the open <span class="mono">remote_apis.json</span> — only non-AI endpoints: the chain RPC and a blind, end-to-end-encrypted P2P relay.</p>
+      </div>
+    </div>
   </section>
 
   <!-- ── FOOTER (onyx) ────────────────────────────────────────────────── -->

@@ -54,6 +54,9 @@ const fmtUnits = (v, d) => {
   return i + (f ? "." + f : "");
 };
 const stripThinking = (s) => s.replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/<\/?think>/gi, "").replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*\*/g, "").replace(/^\s{0,3}#{1,6}\s+/gm, "").trim();
+// Brand the settlement asset uniformly for display (the ledger speaks USD₮);
+// the ERP keeps the raw "USDT" ticker as data.
+const assetLabel = (c) => (/^usd[t₮]$/i.test(c || "") ? "USD₮" : c || "USD₮");
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
 const scrollThread = () => { thread.scrollTop = thread.scrollHeight; };
 
@@ -143,7 +146,7 @@ function renderVerdictCard(bubble, fin, ctx) {
   const left = el("div", {}, pill, el("div", { class: "card-sub", style: "margin-top:7px", text: ctx.sourceLabel || "invoice" }));
   const right = el("div", { style: "text-align:right" });
   if (ctx.extraction) {
-    right.append(el("div", { class: "amount-big", text: `${ctx.extraction.invoiceAmount || "—"} ${ctx.extraction.currency || ""}` }));
+    right.append(el("div", { class: "amount-big", text: `${ctx.extraction.invoiceAmount || "—"} ${assetLabel(ctx.extraction.currency)}` }));
     right.append(el("div", { class: "card-sub", text: ctx.extraction.vendorName || "" }));
   }
   const ol = el("ol", { class: "gates" });
@@ -239,7 +242,7 @@ function handleVerifyEvent(e, ctx) {
   if (e.t === "extraction") {
     ctx.extraction = e.data;
     setReasonLine(ctx.readLine, "check", { text: "Read the invoice on-device", detailNode: readDetail(e.data._model || "on-device", e.data._ocrBlocks || 0, e.data._readMs || 0) });
-    addReasonLine(ctx.box, `Extracted ${e.data.vendorName || "—"} · ${e.data.invoiceAmount || "—"} ${e.data.currency || ""} · due ${e.data.dueDate || "—"}`, "info");
+    addReasonLine(ctx.box, `Extracted ${e.data.vendorName || "—"} · ${e.data.invoiceAmount || "—"} ${assetLabel(e.data.currency)} · due ${e.data.dueDate || "—"}`, "info");
   } else if (e.t === "reason") {
     addReasonLine(ctx.box, REASON_LABEL[e.step] || e.step, e.ok ? "check" : "cross", reasonDetail(e.detail));
   } else if (e.t === "intent") {
@@ -253,7 +256,7 @@ function finalizeVerify(fin, ctx) {
   currentJob = { jobId: fin.jobId, intent: fin.intent || null, status: fin.status };
   renderVerdictCard(ctx.bubble, fin, ctx);
   if (fin.status === "VERIFIED") {
-    const amt = ctx.extraction ? `${ctx.extraction.invoiceAmount} ${ctx.extraction.currency}` : "the amount";
+    const amt = ctx.extraction ? `${ctx.extraction.invoiceAmount} ${assetLabel(ctx.extraction.currency)}` : "the amount";
     const vendor = ctx.extraction?.vendorName || "the vendor";
     addProse(ctx.bubble, `Every gate cleared. I've prepared a payment of ${amt} to ${vendor}'s verified wallet — the recipient comes from your books, not the document. Review it below and hold to authorize; I can't move the money myself.`);
     addChips(ctx.bubble, ["What happens if I approve?", "Is this vendor known?", "What does Custos check?"], askInThread);
@@ -445,20 +448,20 @@ function runDemoVerified(EX, settled) {
   const { bubble } = appendAgent();
   const box = addReasoning(bubble);
   setReasonLine(addReasonLine(box, "Reading the invoice on-device…", "run"), "check", { text: "Read the invoice on-device", detailNode: readDetail(EX._model, EX._ocrBlocks, EX._readMs) });
-  addReasonLine(box, `Extracted ${EX.vendorName} · ${EX.invoiceAmount} ${EX.currency} · due ${EX.dueDate}`, "info");
+  addReasonLine(box, `Extracted ${EX.vendorName} · ${EX.invoiceAmount} ${assetLabel(EX.currency)} · due ${EX.dueDate}`, "info");
   addReasonLine(box, REASON_LABEL.gate0, "check", reasonDetail("no hidden instructions in the document"));
   addReasonLine(box, REASON_LABEL.vendor, "check", reasonDetail("ACME ROBOTICS LTD is on file and active"));
-  addReasonLine(box, REASON_LABEL.po, "check", reasonDetail("PO-TEST matches 1.00 USDT"));
+  addReasonLine(box, REASON_LABEL.po, "check", reasonDetail("PO-TEST matches 1.00 USD₮"));
   addReasonLine(box, REASON_LABEL.wallet, "check", reasonDetail("the payout wallet matches the verified wallet on file"));
   addReasonLine(box, REASON_LABEL.duplicate, "check", reasonDetail("not seen before — no duplicate"));
   const intent = { to: "0x8ba1f109551bD432803012645Ac136ddd64DBA72", amount: "1000000", token: "0xd077a400968890eacc75cdc901f0356c943e4fdb", chainId: 11155111, invoiceRef: "INV-UI-01", memo: "Custos · PO-TEST" };
   currentJob = { jobId: "demo", intent, status: "VERIFIED" };
   renderVerdictCard(bubble, { status: "VERIFIED", gates: DEMO_GATES_VERIFIED }, { sourceLabel: "ui-clean.png", extraction: EX });
-  addProse(bubble, `Every gate cleared. I've prepared a payment of ${EX.invoiceAmount} ${EX.currency} to ${EX.vendorName}'s verified wallet — the recipient comes from your books, not the document. Review it below and hold to authorize; I can't move the money myself.`);
+  addProse(bubble, `Every gate cleared. I've prepared a payment of ${EX.invoiceAmount} ${assetLabel(EX.currency)} to ${EX.vendorName}'s verified wallet — the recipient comes from your books, not the document. Review it below and hold to authorize; I can't move the money myself.`);
   addChips(bubble, ["What happens if I approve?", "Is this vendor known?", "What does Custos check?"], () => {});
   if (!settled) renderAuthorizeCard(bubble, true);
   appendUser("What happens if I approve?");
-  addProse(appendAgent().bubble, "If you approve, the invoice will be processed and the specified amount (1 USDT) will be transferred to the vendor's wallet. The transaction will be verified against the database and confirmed as unique. The payout wallet matches the one recorded in the system.");
+  addProse(appendAgent().bubble, "If you approve, the invoice will be processed and the specified amount (1 USD₮) will be transferred to the vendor's wallet. The transaction will be verified against the database and confirmed as unique. The payout wallet matches the one recorded in the system.");
   if (settled) {
     appendUser("Authorize payment");
     const s = appendAgent();
@@ -472,10 +475,10 @@ function runDemoBlocked(EX) {
   const { bubble } = appendAgent();
   const box = addReasoning(bubble);
   setReasonLine(addReasonLine(box, "Reading the invoice on-device…", "run"), "check", { text: "Read the invoice on-device", detailNode: readDetail(EX._model, 17, 2510) });
-  addReasonLine(box, `Extracted ${EXF.vendorName} · ${EXF.invoiceAmount} ${EXF.currency} · due ${EXF.dueDate}`, "info");
+  addReasonLine(box, `Extracted ${EXF.vendorName} · ${EXF.invoiceAmount} ${assetLabel(EXF.currency)} · due ${EXF.dueDate}`, "info");
   addReasonLine(box, REASON_LABEL.gate0, "check", reasonDetail("no hidden instructions in the document"));
   addReasonLine(box, REASON_LABEL.vendor, "check", reasonDetail("ACME ROBOTICS LTD is on file and active"));
-  addReasonLine(box, REASON_LABEL.po, "check", reasonDetail("PO-TEST matches 1.00 USDT"));
+  addReasonLine(box, REASON_LABEL.po, "check", reasonDetail("PO-TEST matches 1.00 USD₮"));
   addReasonLine(box, REASON_LABEL.wallet, "cross", reasonDetail("the payout wallet does not match the wallet on file"));
   currentJob = { jobId: "demo", intent: null, status: "BLOCKED" };
   renderVerdictCard(bubble, { status: "BLOCKED", blockedGate: "G3", gates: DEMO_GATES_BLOCKED }, { sourceLabel: "ui-fraud.png", extraction: EXF });

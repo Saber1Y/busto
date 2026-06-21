@@ -44,6 +44,10 @@
   --scrim:     rgba(20, 16, 8, .42);     /* drawer overlay — warm near-black */
   --ring-ok:   rgba(21, 113, 90, .25);   /* verified-pill hairline — from --ok */
   --seal-line: rgba(154, 123, 63, .28);  /* settled-card divider — from --brass */
+  --pulse:        rgba(246, 242, 233, .45); /* air-gap dot pulse — from --on-dark */
+  --pulse-0:      rgba(246, 242, 233, 0);   /* pulse fade-out — from --on-dark */
+  --hair-on-dark: rgba(246, 242, 233, .5);  /* hairline on dark/brand surfaces — from --on-dark */
+  --wash-on-dark: rgba(246, 242, 233, .08); /* faint hover wash on dark — from --on-dark */
 
   /* ── typography (system-safe; bespoke through discipline) */
   --font-sans:  -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", system-ui, sans-serif;
