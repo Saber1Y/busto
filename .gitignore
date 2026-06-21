@@ -34,3 +34,7 @@ data/uploads/
 DESIGN.md
 DESIGN-SYSTEM.md
 qvachack.md
+
+# internal/reference docs kept out of the public repo
+HACKATHON.md
+BUILD_PROMPTS.md
