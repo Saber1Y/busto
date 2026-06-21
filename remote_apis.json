@@ -1,6 +1,15 @@
 {
-  "_assertion": "ALL AI inference (LLM, multimodal, OCR, embeddings, RAG, tool-calling) runs 100% locally via @qvac/sdk. The only remote calls are the non-AI blockchain endpoints below. No cloud AI, ever.",
+  "_assertion": "ALL AI inference (LLM, multimodal, OCR, embeddings, RAG, tool-calling) runs 100% locally via @qvac/sdk. The only remote calls are the non-AI blockchain endpoints and the blind P2P transport relay below — the relay carries only end-to-end-encrypted UDX stream bytes and cannot read any payload. No cloud AI, ever.",
   "remote_apis": [
+    {
+      "service": "Custos blind relay (Hyperswarm/hyperdht) — P2P transport",
+      "type": "non-AI",
+      "purpose": "Self-hosted blind relay that bridges the QVAC delegated-inference P2P connection when direct UDP holepunch fails (both nodes behind symmetric Starlink CGNAT). C1.",
+      "endpoints": ["169.155.63.190:49737/udp"],
+      "host": "custos-relay.fly.dev (Fly.io, region iad, dedicated IPv4)",
+      "relayPublicKey": "cdc9bb588cf1622d29ddb872429d81aeb5a3bb9ea6b55c783b52231e5bf4c288",
+      "notes": "Hyperswarm blind-relay node (blind-relay@1.6.1 + hyperdht@6.32.0). Registered in qvac.config.json swarmRelays on both provider and consumer. Relays only E2E-encrypted UDX stream messages — blind to invoices, inference, and keys (threat model: transport, not a data/AI dependency). Self-hosted, not third-party. Peer discovery also uses the public hyperdht bootstrap nodes (node1/2/3.hyperdht.org)."
+    },
     {
       "service": "Ethereum Sepolia RPC (send + read)",
       "type": "non-AI",
