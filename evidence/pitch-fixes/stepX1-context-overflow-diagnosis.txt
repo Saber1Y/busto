@@ -1,0 +1,83 @@
+X1 DIAGNOSIS — sequential verifies die on CONTEXT_OVERFLOW
+==========================================================
+Timeboxed root-cause investigation. No production code was changed; the one
+diagnostic edit (ctx_size) was reverted at the end.
+
+--- H1: "clearStorage:true resets the context"  => ELIMINATED, AND DESTRUCTIVE ---
+node_modules/@qvac/sdk/dist/server/bare/ops/unload-model.js:
+
+    if (clearStorage && entry.local.path) {
+        ...
+        const target = getClearStorageTarget(modelPath);
+        await fsPromises.rm(target.path, { recursive: target.kind === "directory", force: true });
+        logger.info(`Model storage cleared (${target.kind}): ${target.path}`);
+    }
+
+dist/server/utils/cache/paths.d.ts:30
+    "Returns the deletion target for `clearStorage`. Scoped to the SDK cache
+     directory — companion set and legacy ONNX paths delete the parent directory."
+
+clearStorage DELETES THE MODEL WEIGHTS FROM DISK. It is a cache-eviction flag,
+not a context reset. Running this test would have removed Qwen3-VL-2B from the
+local model cache and forced a re-download. NOT RUN.
+
+Also note the same file unloads unconditionally:
+    if (entry.local.model.unload) { await entry.local.model.unload(); }
+    unregisterModel(modelId)
+so the model IS being released each cycle regardless of clearStorage.
+
+--- H2: "SDK KV-cache session accumulates across calls"  => ELIMINATED ---
+completion accepts an undocumented `kvCache?: boolean | string`. extract.ts never
+passes it, so it is falsy, and the plugin takes this branch
+(dist/server/bare/plugins/llamacpp-completion/ops/completion-stream.js:292):
+
+    if (!kvCache) {
+        // KV-cache disabled — straight passthrough, no session involvement.
+        ...
+        logCacheDisabled();
+        logMessagesToAddon(transformedHistory, "NO_CACHE");
+
+No SDK session layer is involved in our path.
+
+--- Evidence from the existing inference log (never modified) ---
+Healthy vision completions are FLAT at ~2780 prompt tokens against ctx_size 8192:
+  21:15:53 invoice-extraction prompt_tok=2779 gen_tok=151 wall=14791ms
+  21:17:40 invoice-extraction prompt_tok=2779 gen_tok=161 wall=14399ms
+  21:18:08 invoice-extraction prompt_tok=2784 gen_tok=220 wall=14864ms
+  21:18:33 invoice-extraction prompt_tok=2801 gen_tok=154 wall=13860ms
+A single prompt therefore CANNOT overflow 8192 on its own (3x headroom).
+Failing calls log an OCR row (blocks=15 / blocks=19 — normal) and then NO
+completion row, because the completion throws.
+
+--- H3: cumulative context consumption, ~2780 tok/call  => CONFIRMED ---
+Prediction: the overflow point should scale linearly with ctx_size.
+  8192  / 2780 = 2.95  -> expect failure on call 3-4
+  16384 / 2780 = 5.89  -> expect failure on call 6
+
+Observed, 8 sequential verifies at ctx_size=16384:
+  call 1 [ui-clean]      21792ms  VERIFIED
+  call 2 [ui-fraud]      23781ms  BLOCKED G3
+  call 3 [ui-injection]  23056ms  BLOCKED G0
+  call 4 [ui-amount]     21690ms  BLOCKED G2
+  call 5 [ui-clean]      24277ms  VERIFIED
+  call 6 [ui-fraud]     291138ms  *** ERROR: prompt exceeds the model's context window ***
+  call 7 [ui-injection]  25457ms  BLOCKED G0     <- self-clears after the failure
+  (call 8 not run — harness timeout)
+
+Baseline at ctx_size=8192 for comparison:
+  run A (4 samples): PASS PASS PASS  ERROR(call 4, 110s)
+  run B (4 samples): PASS PASS ERROR(call 3, 113s) PASS
+
+The wall moved from call 3-4 to call 6 when the window doubled. Mechanism
+confirmed: context is consumed cumulatively across verifies within one server
+process, ~2780 tokens per verify, and is not released by the load/unload cycle.
+The overflow self-clears — the call after the failure succeeds.
+
+--- IMPORTANT TRADE-OFF ---
+Doubling ctx_size buys headroom but makes the eventual failure WORSE:
+  ctx 8192  -> fails at call 3-4, hangs ~110s
+  ctx 16384 -> fails at call 6,   hangs ~291s (nearly 5 minutes)
+
+--- STATE ---
+ctx_size reverted to the committed value of 8192. `git diff` on
+packages/orchestrator/src/extract.ts is empty. typecheck exit 0.

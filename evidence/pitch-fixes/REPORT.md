@@ -306,3 +306,91 @@ breaks.**
 Zero-cost mitigation available right now: **restart `npm run serve` between demo segments**, or keep
 a session to at most 2 verifies. I have not changed any behaviour here — flagging for your call on
 whether to promote Step 11 ahead of Tier 1.
+
+---
+
+## Finding X1 — diagnosis (timeboxed, no production change kept)
+
+**Status: root cause CONFIRMED. No fix applied. `extract.ts` reverted to the committed value;
+`git diff` on it is empty and typecheck is clean.**
+
+Raw evidence: `stepX1-context-overflow-diagnosis.txt`.
+
+### The proposed test would have deleted the model weights — I did not run it
+
+`clearStorage` is **not** a context reset. It is a disk cache-eviction flag
+(`@qvac/sdk/dist/server/bare/ops/unload-model.js`):
+
+```js
+if (clearStorage && entry.local.path) {
+    const target = getClearStorageTarget(modelPath);
+    await fsPromises.rm(target.path, { recursive: target.kind === "directory", force: true });
+    logger.info(`Model storage cleared (${target.kind}): ${target.path}`);
+}
+```
+
+and `paths.d.ts:30` confirms it: *"Returns the deletion target for `clearStorage`. Scoped to the
+SDK cache directory — companion set and legacy ONNX paths delete the parent directory."*
+
+Flipping it would have `rm`'d Qwen3-VL-2B out of the local model cache and forced a re-download
+the night before the pitch. This is the CLAUDE.md "never guess an API" rule earning its keep.
+
+Note also that the same function calls `entry.local.model.unload()` and `unregisterModel(modelId)`
+**unconditionally** — so the model genuinely is released each cycle. That kills the "unload isn't
+really unloading" premise independently.
+
+### Your reasoning about Step 11 was right, for a stronger reason than either of us had
+
+You said a resident cache would preserve the very state that accumulates. It's worse than that:
+the SDK-session KV cache **isn't involved at all** in our path. `completion` takes an undocumented
+`kvCache?: boolean | string`; `extract.ts` never passes it, so the plugin takes the explicit
+disabled branch (`completion-stream.js:292`):
+
+```js
+if (!kvCache) {
+    // KV-cache disabled — straight passthrough, no session involvement.
+    logCacheDisabled();
+    logMessagesToAddon(transformedHistory, "NO_CACHE");
+```
+
+So Step 11 would have been built on a false model of the failure either way.
+
+### What is actually happening — confirmed by prediction, not by guess
+
+The existing inference log (untouched) shows healthy vision completions are **flat at ~2780 prompt
+tokens** against `ctx_size: 8192` — 3× headroom, so one prompt cannot overflow on its own. Failing
+verifies log a normal OCR row (`blocks=15`, `blocks=19`) and then no completion row.
+
+That yields a falsifiable prediction: if context is consumed cumulatively at ~2780/call, the
+overflow point must scale linearly with `ctx_size`.
+
+| `ctx_size` | Predicted failure | Observed failure |
+|---|---|---|
+| 8192 | call 2.95 → 3–4 | call 4 (run A), call 3 (run B) |
+| 16384 | call 5.89 → 6 | **call 6** |
+
+Eight sequential verifies at 16384: calls 1–5 pass (21–24s each), call 6 ERRORs, call 7 passes
+again. **Confirmed: context accumulates across verifies within one server process, ~2780 tokens per
+verify, and the load/unload cycle does not release it. The overflow self-clears afterwards.**
+
+### The trade-off you need to know before choosing a mitigation
+
+Doubling the window buys headroom but makes the eventual failure **much worse**:
+
+| `ctx_size` | Safe verifies per process | Failure mode |
+|---|---|---|
+| 8192 (current) | ~2–3 | ~110s hang |
+| 16384 | ~5 | **~291s hang (nearly 5 minutes)** |
+
+I therefore did **not** keep the 16384 change. A 5-minute dead screen mid-pitch is a worse outcome
+than the thing it prevents, and the real protection is procedural.
+
+### Recommendation
+
+**Runbook, not code.** Restart `npm run serve` between demo segments. Your planned demo is 2
+verifies (clean + fraud), comfortably inside the safe window at the current 8192. If a judge asks
+for a third and fourth sample in Q&A, restart first — it takes seconds.
+
+Step 11 should be reconsidered from scratch later, on the confirmed mechanism: the leak is inside
+the llamacpp completion plugin's context handling across load/unload within a process, not in the
+SDK session layer and not in anything a userland cache would fix.
