@@ -32,6 +32,7 @@ await seedErp(db); // exact-match verdict needs no models
 interface Job { explainContext: ExplainContext; status: string; intent?: PaymentIntent; vendorId?: number; poId?: number }
 const jobs = new Map<string, Job>();
 let busy = false; // one QVAC op (verify or explain) at a time
+let settlingJobId: string | null = null; // one real on-chain transfer at a time (one wallet, one nonce)
 
 const SAMPLE_LIST = [
   { id: "ui-clean", label: "Clean invoice", note: "Acme Robotics · 1 USD₮ · matches the PO", expect: "verified" },
@@ -208,12 +209,24 @@ async function handleApprove(req: Req, res: Res): Promise<void> {
   if (!process.env.CUSTOS_WALLET_SEED) { json(res, 200, { status: "blocked", reason: "Demo mode — set CUSTOS_WALLET_SEED in .env to a funded Sepolia wallet to settle for real." }); return; }
   const { jobId } = JSON.parse((await readBody(req)).toString() || "{}") as { jobId?: string };
   const job = jobId ? jobs.get(jobId) : undefined;
-  if (!job) { json(res, 404, { error: "unknown or expired job" }); return; }
+  if (!job || !jobId) { json(res, 404, { status: "blocked", error: "unknown or expired job", reason: "This invoice is no longer awaiting approval — it was already settled, or the console restarted. Re-run the verification." }); return; }
   if (!job.intent || job.vendorId == null || job.poId == null) { json(res, 200, { status: "blocked", reason: "This invoice was not verified for payment." }); return; }
-  const r = await settleIntent(db, { intent: job.intent, vendorId: job.vendorId, poId: job.poId, approve: true, confirmations: 2 });
-  job.status = r.status;
-  if (r.status === "settled" && jobId) jobs.delete(jobId); // a settled job can't be re-submitted (anti-replay)
-  json(res, 200, r);
+  // Gate 4 is a single-shot authorization, but the hold gesture is client-side and the
+  // settle window is ~24s. Without this guard a double-click, a second tab, or a replayed
+  // request broadcasts a second REAL transfer. One wallet, one nonce, one send at a time.
+  if (settlingJobId === jobId) { json(res, 409, { status: "blocked", reason: "This invoice is already being settled — one moment." }); return; }
+  if (settlingJobId !== null) { json(res, 409, { status: "blocked", reason: "Another settlement is in progress. Wait for it to finish before authorizing this one." }); return; }
+  settlingJobId = jobId;
+  try {
+    const r = await settleIntent(db, { intent: job.intent, vendorId: job.vendorId, poId: job.poId, approve: true, confirmations: 2 });
+    job.status = r.status;
+    // Anti-replay: a job whose funds are committed can't be re-submitted. "pending" counts —
+    // the transfer is broadcast and recorded, so re-approving it must be impossible too.
+    if (r.status === "settled" || r.status === "pending") jobs.delete(jobId);
+    json(res, 200, r);
+  } finally {
+    settlingJobId = null;
+  }
 }
 
 async function serveStatic(url: string, res: Res): Promise<void> {
@@ -246,7 +259,11 @@ const server = createServer(async (req, res) => {
     if (req.method === "GET") return void (await serveStatic(url, res));
     res.writeHead(405); res.end();
   } catch (e) {
-    json(res, 500, { error: String((e as Error)?.message ?? e) });
+    // Full detail to the terminal; a readable sentence to the screen. This text can land
+    // on a projector, and it must not overclaim about funds — an approve that threw here
+    // may or may not have broadcast, so it says to check rather than "nothing was sent".
+    console.error(`[custos] unhandled error on ${req.method} ${url}:`, e);
+    json(res, 500, { status: "blocked", error: String((e as Error)?.message ?? e), reason: "Something went wrong inside the console — the detail is in the terminal. If you were settling an invoice, check the explorer before authorizing it again." });
   }
 });
 

@@ -104,3 +104,205 @@ which is where the pitch is driven from.
 1. `npm run serve` on the M1.
 2. Confirm the banner reads `bound to 127.0.0.1 (loopback only — …)`.
 3. Open `http://localhost:4173/` — the dash should load exactly as before.
+
+---
+
+## Step 2 — Demo-safety trio (settlement correctness)
+
+**Status: DONE.** All three sub-fixes verified against real money on Sepolia.
+**Also surfaced a pre-existing demo-breaking bug the audit missed — see "Finding X1" below.**
+
+### (a) ETH gas pre-flight
+
+`settle.ts:49-53` checked USD₮ only. A wallet flush with USD₮ and empty of ETH would fail deep
+inside the WDK signer mid-demo, landing in the generic 500 handler.
+
+Changed `packages/edge/src/settle.ts:52-73`:
+- Both balance reads (`getTokenBalance`, `getBalance`) are wrapped so an unreachable RPC gets
+  its own named failure — *"Couldn't read the wallet balance — the Sepolia RPC didn't respond.
+  Nothing was sent."* — instead of throwing into the 500 catch. This was your explicit condition 2.
+- Gas requirement is computed live: `eth_gasPrice × 65_000 gas × 2` headroom, falling back to a
+  0.0005 ETH floor only if `eth_gasPrice` is unreachable. Not a magic number.
+- Added `eth()` wei→ETH formatter trimmed to 6 decimals; the raw 18 (`0.00013823047459`) are
+  unreadable on a shared screen.
+
+**Proof** — `evidence/pitch-fixes/step02-preflight-test.ts`, run against the REAL WDK wallet and
+REAL Sepolia RPC (no mocks). The throwaway hardhat seed holds 0 ETH / 0 USD₮, confirmed by
+`step02-probe-balances.ts`. Requesting 0 USD₮ passes the USD₮ check (`0 >= 0`) and so reaches the
+gas branch — that is how the branch is entered through production code:
+
+```
+[A · 1 USD₮ requested, wallet has none]
+  status : BLOCKED
+  reason : Not enough USD₮ — the wallet holds 0 but this invoice needs 1. Nothing was sent.
+  txHash : (none — nothing was broadcast)
+
+[B · 0 USD₮ requested, so execution reaches the ETH-gas check]
+  status : BLOCKED
+  reason : Not enough ETH for gas — the wallet holds 0 ETH but needs about 0.00013 to send this
+           transfer. Top up 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 from a Sepolia faucet.
+           Nothing was sent.
+  txHash : (none — nothing was broadcast)
+```
+
+### (b) False SETTLED — **I diverged from the literal instruction; please read**
+
+You said *"bail before recording if confirmations < required."* I implemented the honesty
+requirement in full — **`settled` is now unreachable below the required confirmations** — but I
+moved `recordSettlement` *earlier* (to immediately after broadcast) rather than skipping it.
+
+Reason: the **broadcast** is the irreversible act, not the confirmation. `settlements.invoice_ref`
+is UNIQUE and is what `isDuplicateInvoice` reads, so it is the only thing preventing the same
+invoice being paid twice. Bailing without recording would leave a ~4-minute window in which an
+unconfirmed-but-broadcast invoice could be approved again and **paid a second time** — the exact
+hazard (c) exists to close, just sequential instead of concurrent. Recording at broadcast states
+something strictly true ("this invoice_ref was sent, here is the hash") and closes that window.
+
+So `settle.ts:88-124` now:
+- records at broadcast (comment explains why),
+- returns a new `"pending"` status when `confirmations < need`, carrying the hash, the explorer
+  URL, the real confirmation count and the real elapsed seconds,
+- returns `"reverted"` on receipt status 0, leaving the row in place and saying so in the reason.
+
+**On revert I deliberately did not write rollback logic.** A revert would mean the row blocks a
+legitimate retry, so the reason text says to clear it manually. I can't force a revert on Sepolia
+to test rollback code, and untested recovery code touching real money the night before a pitch is
+worse than a documented manual step. Flagging it as a known gap.
+
+`SettleResult.status` gained `"pending"`; `dash.js` renders it with a **BROADCAST · UNCONFIRMED**
+pill (never the SETTLED pill) and does not re-arm the hold button, since funds are committed.
+
+### (c) Double-pay window
+
+`handleApprove` ignored the busy lock entirely. Added `settlingJobId` (`server.ts:32`) and a guard
+at `server.ts:216-219`. There are **no `await`s between reading the body and setting the flag**, so
+the check-and-set is atomic with respect to the event loop — no TOCTOU. One wallet, one nonce, one
+send at a time. Jobs are now deleted on `pending` as well as `settled`, since both committed funds.
+
+### (d) Failure reasons (your correction to the audit)
+
+Fixed server-side as agreed, not client-side:
+- `server.ts:208` unknown/expired job — now carries a readable `reason` alongside `error`.
+- `server.ts:255-259` the 500 catch — now `console.error`s full detail (with method + URL) to the
+  terminal and returns a readable sentence. It deliberately does **not** claim "nothing was sent":
+  an approve that threw there may or may not have broadcast, so it says *"check the explorer before
+  authorizing it again."* Overclaiming safety would be the same class of error as a false SETTLED.
+
+### Commands run
+
+```
+npm run typecheck                                            # exit 0 (run 3x across edits)
+node evidence/pitch-fixes/step02-probe-balances.ts           # real balances
+node evidence/pitch-fixes/step02-preflight-test.ts           # (a) both branches
+node evidence/pitch-fixes/step02-concurrent-approve-test.ts  # (b)+(c) live, real money
+node evidence/pitch-fixes/step02-samples-regression.ts       # 4-sample regression
+```
+
+Raw output: `step02-settlement-safety.txt`.
+
+### Live concurrent-approve result — the headline proof
+
+Funded wallet `0x5C6C…Be13`, 0.042824 ETH / 4990.00 USD₮. Two approves fired concurrently on the
+same jobId:
+
+```
+  [approve #2] HTTP 409 after 32ms
+     status : blocked
+     reason : This invoice is already being settled — one moment.
+     txHash : (none — nothing broadcast)
+
+  [approve #1] HTTP 200 after 32695ms
+     status : settled
+     reason : ok
+     txHash : 0xeb7d8299183abf8e4fd0250ea6dfb7778bce7c2fabefa4ee00d5dd9d1d8b0adf
+     confirmations : 2
+
+  [approve #3, after settlement] HTTP 404 after 2ms
+     reason : This invoice is no longer awaiting approval — it was already settled, or the
+              console restarted. Re-run the verification.
+```
+
+**On-chain confirmation that only one transfer happened:** USD₮ balance went
+`4990000000 → 4989000000`, i.e. exactly 1.00 USD₮. The second approve moved nothing.
+Etherscan: https://sepolia.etherscan.io/tx/0xeb7d8299183abf8e4fd0250ea6dfb7778bce7c2fabefa4ee00d5dd9d1d8b0adf
+
+Inference log gained exactly two rows for this tx (`settle-broadcast`, `settle-confirmed conf=2`).
+`git diff --numstat` on the log: **11 added, 0 removed** — append-only intact, nothing rewritten.
+
+### PASS/FAIL
+
+| Sub-fix | Result |
+|---|---|
+| (a) USD₮ branch | PASS — observed |
+| (a) ETH gas branch | PASS — observed, named itself, no 500 |
+| (a) RPC-unreachable branch | **NOT FORCED** — see below |
+| (b) never SETTLED below required confirmations | PASS — settled only at conf=2 |
+| (b) `pending` path | **NOT FORCED** — see below |
+| (c) concurrent double-pay | PASS — 409 in 32ms, zero second broadcast, on-chain verified |
+| (d) readable reasons | PASS — observed on 404 path |
+| typecheck | PASS — exit 0 |
+
+### Not verified programmatically
+
+1. **The RPC-unreachable branch was not forced.** `openEdgeWallet` puts `SEPOLIA_RPC_URL` first but
+   keeps two public fallbacks, so WDK fails over and the branch is unreachable without editing
+   production code. The code path is straightforward (`try` around two awaits) but I did not see it
+   execute. Stated as unproven rather than claimed.
+2. **The `pending` branch was not forced.** Sepolia confirmed in ~32s, well inside the 240s window.
+   Forcing it would mean raising the confirmation requirement artificially. The logic is a plain
+   `confirmations < need` comparison on the same counter that produced the verified `conf=2`, but I
+   did not observe the branch fire. The **BROADCAST · UNCONFIRMED** pill is therefore also unrendered
+   and unscreenshotted.
+3. **No UI screenshots.** No headless browser is installed and I did not install one offline. See
+   the manual checks below.
+4. **The revert path** — cannot be triggered on demand; no rollback logic written (deliberate, above).
+
+### MANUAL CHECK
+
+1. `npm run serve`, load a clean invoice, hold to authorize → expect the gold **SETTLED** pill,
+   2 confirmations, and a working Etherscan link.
+2. During the ~30s settle, open a second tab on `http://localhost:4173/` — you cannot re-approve
+   the same job from there because the job is per-jobId and the guard is server-side. (Proven by
+   script above; listed here only if you want to see it by hand.)
+3. After settling, the receipt card should be the only one; no duplicate card appears.
+
+---
+
+## Finding X1 — PRE-EXISTING: sequential verifies die on a context-window overflow
+
+**This is the most serious thing I found tonight and the audit did not mention it. It will bite you
+on stage.** It is not caused by Step 2 — I proved that by stashing.
+
+Running the four UI samples back to back **in one server process**, the 3rd or 4th verify fails:
+
+```
+status  : ERROR
+reason  : prompt exceeds the model's context window for model "70969eb22b374ebe".
+          Reduce the prompt size or start a new conversation.
+elapsed : ~110s  (vs ~25s for a healthy verify)
+```
+
+Evidence it is pre-existing, not mine — identical sequence, with my Step 2 changes stashed:
+
+| Run | Code | ui-clean | ui-fraud | ui-injection | ui-amount |
+|---|---|---|---|---|---|
+| A | with Step 2 | PASS 27s | PASS 28s | PASS 25s | **ERROR 110s** |
+| B | Step 2 stashed | PASS 23s | PASS 24s | **ERROR 113s** | PASS 24s |
+
+The failure **moves between samples across runs**, so it is not sample-specific — it is cumulative
+process state. `ui-amount` alone on a fresh server passes in 21.5s (`BLOCKED`, gate G2, correct).
+Note in run B the call *after* the failure succeeded, so the overflow appears to self-clear.
+
+Likely cause: `extract.ts:74-88` loads the vision model with `ctx_size: 8192` and unloads with
+`clearStorage: false` on every verify. If the SDK is reusing a cached model instance whose KV
+cache/conversation state survives the unload, the effective prompt grows every call until it
+overflows, then resets. That is exactly the territory of **Step 11** (model cache + warm-up, and
+the missing `try/finally` in `extract.ts`).
+
+**Impact on tomorrow: you plan to show a clean invoice AND a fraud invoice — that is 2 verifies,
+which is inside the safe window. A third (e.g. the injection sample during Q&A) is roughly where it
+breaks.**
+
+Zero-cost mitigation available right now: **restart `npm run serve` between demo segments**, or keep
+a session to at most 2 verifies. I have not changed any behaviour here — flagging for your call on
+whether to promote Step 11 ahead of Tier 1.

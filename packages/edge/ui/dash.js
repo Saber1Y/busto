@@ -179,12 +179,17 @@ function renderDemoNote(bubble) {
 }
 function renderReceiptCard(bubble, r) {
   const intent = currentJob.intent;
+  // An unconfirmed broadcast still gets a receipt — the funds are committed and the
+  // operator needs the hash — but it must never wear the SETTLED pill.
+  const pending = r.status === "pending";
   const kv = el("div", { class: "kv" },
     kvRow("Amount", `${fmtUnits(intent.amount, 6)} USD₮`),
     kvRow("Recipient", el("span", { class: "mono", text: intent.to })),
     kvRow("Transaction", el("a", { class: "tx-link", href: r.explorerUrl, target: "_blank", rel: "noreferrer", text: r.txHash })));
   bubble.append(el("div", { class: "card settled" },
-    el("div", { class: "card-head" }, el("span", { class: "verdict-pill ok" }, el("i"), "SETTLED"), el("span", { class: "card-sub", text: `${r.confirmations} confirmations · Ethereum Sepolia` })),
+    el("div", { class: "card-head" },
+      el("span", { class: "verdict-pill " + (pending ? "bad" : "ok") }, el("i"), pending ? "BROADCAST · UNCONFIRMED" : "SETTLED"),
+      el("span", { class: "card-sub", text: `${r.confirmations} confirmation${r.confirmations === 1 ? "" : "s"} · Ethereum Sepolia` })),
     kv));
   scrollThread();
 }
@@ -332,8 +337,11 @@ async function doAuthorize(btn) {
   try {
     const r = await (await fetch("/api/approve", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jobId: currentJob.jobId }) })).json();
     pr.classList.remove("streaming");
-    if (r.status === "settled") {
-      pr.textContent = `Settled. ${fmtUnits(currentJob.intent.amount, 6)} USD₮ moved on Ethereum Sepolia with ${r.confirmations} confirmations.`;
+    if (r.status === "settled" || r.status === "pending") {
+      // Both outcomes committed funds, so neither re-arms the hold button.
+      pr.textContent = r.status === "settled"
+        ? `Settled. ${fmtUnits(currentJob.intent.amount, 6)} USD₮ moved on Ethereum Sepolia with ${r.confirmations} confirmations.`
+        : r.reason;
       renderReceiptCard(bubble, r);
       loadHeader();
     } else {
