@@ -15,5 +15,11 @@ Record terminals + the Edge console on screen. Have these ready: `npm run serve`
 | **4:20–4:50** | `cat remote_apis.json` | "The only remote calls are non-AI — the Sepolia RPC. Inference is 100% local QVAC. Zero cloud AI." |
 | **4:50–5:00** | The console hero | "Custos — confidential accounts-payable that settles USD₮ without your vendor data ever leaving the building. #Custos" |
 
-Backup: `npm run csec:test` (17/17) for the full Gate-0 battery; `npm run c1:demo` for the
-P2P delegation across two machines.
+Backup: `npm run csec:test` (17/17) for the full Gate-0 battery.
+
+`npm run c1:demo` runs the P2P delegation as two processes **on one host**. Its scorecard
+currently reports `❌ C1 LOCAL INCOMPLETE`: check (a), the true delegated round-trip, **passes**
+(`delegated=true`, profiler-raw row in the audit log), while check (c) still asserts the
+superseded `degradedMode` expectation from before the consumer moved to `fallbackToLocal: false`
+— under the current hard-stop design `degradedMode` is never true. Don't put it on camera
+without that explanation.

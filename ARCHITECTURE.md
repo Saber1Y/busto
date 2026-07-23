@@ -23,8 +23,10 @@ tokens → runaway generation), so the Intel node runs **no local inference at a
 **delegates every AI task** to the Metal M1. The consumer uses `fallbackToLocal: false`: if the
 Orchestrator is unreachable the Edge **hard-stops** ("orchestrator offline, cannot proceed")
 and never settles on a degraded result (threat #82). The C1 demo
-([evidence/c1-report.md](./evidence/c1-report.md)) proves the delegated round-trip and the
-offline hard-stop. Keys exist only on the Edge
+([evidence/c1-report.md](./evidence/c1-report.md)) proves the offline hard-stop, and proves the
+delegated round-trip **on a single host** (`delegated:true`, profiler-raw, in the audit log).
+Running the two roles on separate machines needs them on different NATs — that transport step is
+still pending, and the app currently runs consolidated on one Mac. Keys exist only on the Edge
 ([packages/edge/src/wallet.ts](./packages/edge/src/wallet.ts)); the Orchestrator has no key API
 surface.
 

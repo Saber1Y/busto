@@ -73,25 +73,34 @@ Full security write-up: [SECURITY.md](./SECURITY.md) · the 100-attack-vector ca
 
 ---
 
-## The setup: two machines, one job
+## The setup: two node roles, one job
 
-Custos runs as a small **two-machine mesh**, joined by QVAC's encrypted peer-to-peer link.
-Splitting the work is the whole safety idea: **the machine that thinks never holds a key, and
-the machine that holds keys never runs the AI.**
+Custos is built as a **two-node mesh**, joined by QVAC's encrypted peer-to-peer link. Splitting
+the work is the whole safety idea: **the node that thinks never holds a key, and the node that
+holds keys never runs the AI.**
 
-| Machine | Its job | Holds keys? | Runs AI? |
+| Node role | Its job | Holds keys? | Runs AI? |
 |---|---|---|---|
 | **Orchestrator** ("Vault") — M1 Pro · 32 GB | Reads & verifies the invoice (OCR, vision, database checks, tool-calling) and prepares the payment. | **No** | **Yes** — all of it, on the Apple GPU (QVAC Metal). |
-| **Edge** ("AP Clerk") — Intel i5 · 16 GB | Shows the console, holds the wallet, and lets a human approve & sign. | **Yes** | **No** — it sends every AI task to the Orchestrator over the encrypted P2P link. |
+| **Edge** ("AP Clerk") — Intel i5 · 16 GB | Shows the console, holds the wallet, and lets a human approve & sign. | **Yes** | **No** — by design it delegates AI work over the encrypted P2P link. |
 
-> **Why the Edge runs no AI:** QVAC's macOS-x64 build can't run these models reliably, so the
-> Intel machine **delegates every inference to the M1**. If the Orchestrator is unreachable,
-> the Edge **stops** ("orchestrator offline, cannot proceed") rather than guessing — it never
-> settles on a degraded result. This is a real hardware necessity, not a staged demo.
+> **Why the Edge runs no AI:** QVAC's macOS-x64 build can't run these models reliably. If the
+> Orchestrator is unreachable, the Edge **stops** ("orchestrator offline, cannot proceed")
+> rather than guessing — it never settles on a degraded result. This is a real hardware
+> necessity, not a staged demo. The hard-stop is `fallbackToLocal: false` in
+> [consumer.ts](./packages/edge/src/consumer.ts).
 
-You can also run the whole thing on **one capable Mac** for evaluation (below) — the two-machine
-split is the "your nodes can be anywhere" story, proven across networks via a self-hosted
-relay. Full diagrams and the file-by-file map: [ARCHITECTURE.md](./ARCHITECTURE.md).
+### Where the mesh actually stands
+
+Stated plainly, because it matters: the mesh is **designed and coded** — provider, hard-stop
+consumer, and a self-hosted blind relay deployed. A delegated round-trip is **proven on a single
+host** (both roles as separate processes on the M1) after a DHT cold-start fix, and it is
+recorded in the audit log as a `delegated:true` row with profiler-raw metrics. **Cross-machine
+transport over hostile NAT is a known Hyperswarm limitation and is the documented pending step.**
+
+Everything demonstrated below runs **consolidated on one Mac** — that is what you are watching.
+Full diagrams and the file-by-file map: [ARCHITECTURE.md](./ARCHITECTURE.md) · relay setup:
+[relay/README.md](./relay/README.md).
 
 ---
 
@@ -147,12 +156,16 @@ npm run csec:test                        # the Gate-0 hidden-text battery → 17
 CUSTOS_APPROVE=I-APPROVE npm run c4:demo  # a REAL on-chain USD₮ settlement, behind every gate
 ```
 
-### 5) The real two-machine version
+### 5) The delegated path (two node roles, currently one host)
 
 On the M1 (Orchestrator): `npm run provider` — it prints a public key.
-On the Intel (Edge): `npm run consumer -- <that public key>`.
-The Edge delegates every AI task to the M1 over the encrypted link. Step-by-step (including the
-cross-network relay setup): [evidence/c1-report.md](./evidence/c1-report.md).
+In a second terminal (Edge role): `npm run consumer -- <that public key>`.
+
+The consumer reports `delegated=true` and appends a profiler-raw row to the audit log. This is
+proven **on one host**; running the two roles on *separate machines* requires them on different
+NATs, and that transport step is still pending. Relay setup:
+[relay/README.md](./relay/README.md) · the full P2P findings, including what failed and why:
+[evidence/c1-report.md](./evidence/c1-report.md).
 
 ---
 
@@ -179,8 +192,8 @@ Nothing here is faked — and you can check all of it:
 
 **Core criteria**
 - **Innovation** — "safe by construction" agentic settlement: a 6-gate design where no component, including the AI, can move money on its own, with real on-chain settlement.
-- **Multi-agent / orchestration / tool-calling** — a two-node mesh that orchestrates OCR + a vision model + RAG + QVAC-native tool-calling to reach a deterministic verdict.
-- **Performance / P2P** — the constrained Intel machine offloads inference to the M1 over encrypted P2P; on-device speed is logged in tok/s from the profiler.
+- **Multi-agent / orchestration / tool-calling** — a pipeline that orchestrates OCR + a vision model + RAG + QVAC-native tool-calling to reach a deterministic verdict, split across two node roles.
+- **Performance / P2P** — QVAC-native delegation over an encrypted P2P link, proven single-host and logged as `delegated:true` (cross-machine transport pending); on-device speed is logged in tok/s from the profiler.
 - **Complexity & UX** — a polished operator console (the "Vault Ledger" design), a hold-to-authorize control, and a plain-English on-device explainer for every decision.
 - **Model usage & coverage** — multiple QVAC models in one pipeline: a multimodal vision model (Qwen3-VL-2B), an OCR pipeline (`@qvac/ocr-onnx`), embeddings for RAG (GTE-large), and a small model for tool-calling.
 - **Build in Public** — progress shared throughout with `#Custos`, tagging `@QVAC`.

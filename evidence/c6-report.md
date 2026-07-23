@@ -27,7 +27,7 @@ The raw QVAC profiler export is written to
 [evidence/profiler-summary.txt](./profiler-summary.txt) (model-execution, ttfb,
 load/checksum/init timing, server breakdown) — the source of those numbers.
 
-**Log to date:** 102 rows across C0–C5 — `smoke·2 heartbeat·2 loadModel·2 ocr·11
+**Log at the time of C6 (2026-06-21):** 102 rows across C0–C5 — `smoke·2 heartbeat·2 loadModel·2 ocr·11
 completion·14 embed·1 verdict·26 tool-calling·1 gate0-reject·37 settle-broadcast·2
 settle-confirmed·2 unloadModel·2`. Backend `gpu` on the M1 throughout; the C4 settlement
 rows carry the real tx hash.
@@ -49,3 +49,11 @@ demos → gates → evidence). [LICENSE](../LICENSE) is **Apache-2.0**.
 ## What's left
 - `system_profiler` **screenshots** for both Macs (a manual capture) → `evidence/hardware/*.png`.
 - Intel CPU smoke baseline row (`CUSTOS_NODE=edge npm run smoke`) — yours to run on the Intel Mac.
+
+---
+
+*Addendum 2026-07-23:* the row counts above are the state **at C6** and are preserved as that
+record. The log is append-only and has grown with every run since — it stands at **480 rows** as of
+2026-07-23, now including the first `delegated:true` row (see
+[c1-report.md](./c1-report.md) addendum). Check the file rather than trusting any count quoted in a
+phase report.

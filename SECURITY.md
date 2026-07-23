@@ -26,9 +26,9 @@ flowchart TD
 |---|---|---|---|
 | **G0** | [gate0.ts](./security/gate0.ts) `normalizeForLLM` | NFKC; strip zero-width/bidi/PUA/tag; decode Morse/base64/32/hex/ROT13/Caesar/Atbash/leet/homoglyph (nested, depth 3). A decoded imperative → flag + REJECT + log. | 1–22 |
 | **G1** | [extract.ts](./packages/orchestrator/src/extract.ts) | The model returns a Zod-validated `{vendorName, invoiceAmount, …}` object via `responseFormat: json_schema`. It has no tool that moves money. | 1, 20 |
-| **G2** | [verdict.ts](./packages/orchestrator/src/verdict.ts), [erp.ts](./packages/orchestrator/src/erp.ts) | `computeVerdict` reads vendor/PO/wallet from SQLite. Exact canonical-name match; integer minor-units; currency exact; `sqlite-vec` RAG only *suggests*. | 36–54 |
+| **G2** | [verdict.ts](./packages/orchestrator/src/verdict.ts), [erp.ts](./packages/orchestrator/src/erp.ts) | `computeVerdict` reads vendor/PO/wallet from SQLite. Exact canonical-name match; integer minor-units; currency exact. `sqlite-vec` RAG can only *suggest*, never authorize — and it is **inert in the shipped server** (the app seeds without embeddings, so the KNN branch never executes); it is exercised in `npm run c3:demo`. | 36–54 |
 | **G3** | [settle.ts](./packages/edge/src/settle.ts) | Before signing, `addressEquals(intent.to, DB.known_wallet)` is re-checked from a fresh DB read. A forged `intent.to` is blocked. | 45, 48, 61 |
-| **G4** | [server.ts](./packages/edge/src/server.ts), [ui/](./packages/edge/ui/) | The send requires an explicit hold-to-authorize. No `.env` wallet → stops here (demo mode). | 87, 88 |
+| **G4** | [server.ts](./packages/edge/src/server.ts), [ui/](./packages/edge/ui/) | The send requires an explicit hold-to-authorize. The console binds **`127.0.0.1` only** — `/api/approve` signs a real transfer, so it is never exposed to the local network — and only one settlement may be in flight at a time. No `.env` wallet → stops here (demo mode). | 87, 88 |
 | **G5** | [settle.ts](./packages/edge/src/settle.ts) | Pinned `chainId` (11155111) + token (`0xd077a4…e4fdb`); pre-flight balance; exact-amount `transfer` (no unbounded approve); waits 2 confirmations. | 55, 58–60, 64, 65, 72 |
 
 ## LLM proposes, code authorizes

@@ -1,0 +1,53 @@
+=== STEP 4 FALSIFICATION GREP — every removed phrase must show ZERO hits ===
+
+  "proven across networks"                             0 hit(s)
+  "sends every AI task"                                0 hit(s)
+  "delegates every inference"                          0 hit(s)
+  "constrained Intel machine offloads"                 0 hit(s)
+  "the inference log shows the CPU→Metal offload"      0 hit(s)
+  "Llama-3.2-1B routing, P2P"                          0 hit(s)
+  "the Intel Mac delegates Qwen3-VL"                   0 hit(s)
+  "102 rows"                                           1 hit(s)
+      evidence/c6-report.md:30:**Log to date:** 102 rows across C0–C5 — `smoke·2 heartbeat·2 loadModel·2 ocr·11
+  "proves the delegated round-trip and the"            0 hit(s)
+  "local-only console"                                 0 hit(s)
+  "the machine that thinks never holds a key"          0 hit(s)
+
+=== 'air-gapped' remaining (UI must be zero; prose//filenames may remain) ===
+
+=== hard-stop sentence still present VERBATIM (must be kept) ===
+  ARCHITECTURE.md:24:Orchestrator is unreachable the Edge **hard-stops** ("orchestrator offline, cannot proceed")
+  Custos-PRD.md:185:| Orchestrator offline / unreachable | `heartbeat` timeout | **Hard stop** — "orchestrator offline, cannot proceed." `fallbackToLocal: false`: the Edge does NOT attempt degraded local inference (x64 QVAC llamacpp suppresses EOS → overflow), so there is no degraded path to mis-settle from (threat #82 trivially satisfied). |
+  Custos-Threat-Model.md:161:| 82 | Force `fallbackToLocal` to downgrade to 1B | **superseded, and stronger:** the consumer sets `fallbackToLocal: false` and hard-stops ("orchestrator offline, cannot proceed"), so no degraded local path exists to downgrade *to* — see [consumer.ts](./packages/edge/src/consumer.ts) | HARD |
+  README.md:88:> Orchestrator is unreachable, the Edge **stops** ("orchestrator offline, cannot proceed")
+  CLAUDE.md:35:**⚠️ The Edge runs NO local QVAC inference.** The Intel's x64 QVAC llamacpp build suppresses stop tokens (EOS/EOT `logit bias = −∞`) → runaway generation → context overflow; the same code is clean on the M1 (arm64). So **all** inference (routing, OCR, vision, RAG, tools) delegates to the M1. The consumer uses `fallbackToLocal: false`: if the M1 is unreachable the Edge **hard-stops** ("orchestrator offline, cannot proceed") and never attempts degraded local inference (threat #82 satisfied trivially).
+
+=== re-grep '102 rows' after dating it ===
+evidence/c6-report.md:30:**Log at the time of C6 (2026-06-21):** 102 rows across C0–C5 — `smoke·2 heartbeat·2 loadModel·2 ocr·11
+
+=== typecheck ===
+
+> custos@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json
+
+typecheck exit=0
+
+=== POST-EDIT: does the UI still serve and the demo path still run? ===
+--- GET / (dash) ---
+http_code=200 bytes=6856
+--- GET /landing ---
+http_code=200 bytes=14437
+--- served dash: vault chip markup (no fake dot) ---
+<span class="stat stat-vault" id="vaultStat"><span>Vault · on-device</span></span>
+--- served dash: zero-cloud-AI chips ---
+Zero cloud AI
+Zero cloud AI · on-device
+--- served landing: reframed proof item ---
+Two node roles, separable by design
+--- any stray 'Air-gapped' served? ---
+/tmp/landing.html:0
+/tmp/dash.html:0
+
+--- one clean verify end to end (demo path intact?) ---
+[ui-clean] 22933ms status=VERIFIED gate=-
+  reason: -

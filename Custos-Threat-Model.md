@@ -158,7 +158,7 @@ Gate 0 must neutralize obfuscated instructions. Each **Grade** = an encoding wit
 | 79 | Relay node snooping (blind relay) | payload E2E-encrypted; relay sees ciphertext | DOC |
 | 80 | Replay of a prior delegated response | per-session nonce/request id; reject stale | HARD |
 | 81 | DoS flooding the provider | auth to pinned consumer key; rate-limit; heartbeat | DOC |
-| 82 | Force `fallbackToLocal` to downgrade to 1B | degraded mode NEVER auto-settles; flagged low-confidence | MVP |
+| 82 | Force `fallbackToLocal` to downgrade to 1B | **superseded, and stronger:** the consumer sets `fallbackToLocal: false` and hard-stops ("orchestrator offline, cannot proceed"), so no degraded local path exists to downgrade *to* — see [consumer.ts](./packages/edge/src/consumer.ts) | HARD |
 | 83 | `QVAC_HYPERSWARM_SEED` leak → provider-identity takeover | seed in secret manager/env, never committed; rotate | HARD |
 | 84 | Peer fingerprinting / metadata leak | direct encrypted link minimizes; documented | DOC |
 

@@ -15,7 +15,7 @@
 ## Evidence inventory (in the repo)
 
 - **Real settlement:** [`0xa3ed0f33…f79cd30`](https://sepolia.etherscan.io/tx/0xa3ed0f33fcfa685287185284079884c0ea0c3a260149443bfd945f083f79cd30) (Sepolia, 1 USD₮, block 11,103,356).
-- **Audit log:** [evidence/inference-log.jsonl](./evidence/inference-log.jsonl) + [.csv](./evidence/inference-log.csv) (102 rows, profiler-raw, `gpu`).
+- **Audit log:** [evidence/inference-log.jsonl](./evidence/inference-log.jsonl) + [.csv](./evidence/inference-log.csv) (480 rows as of 2026-07-23, profiler-raw, `gpu`; append-only — the count grows with every run, so check the file rather than trusting this number).
 - **Profiler export:** [evidence/profiler-summary.txt](./evidence/profiler-summary.txt).
 - **Remote calls:** [remote_apis.json](./remote_apis.json) (non-AI only; inference 100% local).
 - **Gate-0 battery:** `npm run csec:test` → 17/17 ([ADVERSARIAL-TESTING.md](./ADVERSARIAL-TESTING.md)).
@@ -48,7 +48,7 @@ funded Sepolia wallet (`CUSTOS_WALLET_SEED` in `.env`).
 | Day | Post |
 |---|---|
 | Join | "shipping **Custos** for @QVAC — confidential accounts-payable that never touches the cloud. #Custos" |
-| Bridge | "QVAC P2P bridge live: the Intel Mac delegates Qwen3-VL to the M1 over an E2E link. #Custos" |
+| Bridge | "QVAC P2P delegation working: a hard-stop consumer delegates inference to the provider over an E2E link — `delegated:true`, profiler-raw, in the audit log. Proven single-host; cross-machine transport is the next step. #Custos" |
 | Security | "drop a poisoned invoice → Gate 0 decodes the hidden instruction and blocks it. 17/17. #Custos" |
 | Settlement | "real test USD₮ settled on Sepolia, behind six gates: `0xa3ed0f33…`. #Custos" |
 | Video | "≤5-min demo — read, verify, settle, on-device. #Custos" |

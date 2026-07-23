@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Custos · Air-gapped agentic settlement</title>
+  <title>Custos · Zero-cloud-AI agentic settlement</title>
   <meta name="description" content="Custos reads a vendor invoice on your own machine, verifies it against your books, and settles it in test USD₮ on Ethereum Sepolia — and no payment can move until it clears six independent gates. Zero cloud, zero data leakage." />
   <link rel="icon" type="image/svg+xml" href="/brand/favicon.svg" />
   <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="/brand/apple-touch-icon.png" />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Custos — guardian of the ledger" />
-  <meta property="og:description" content="Air-gapped agentic settlement — no payment moves until every gate clears." />
+  <meta property="og:description" content="Zero-cloud-AI agentic settlement — no payment moves until every gate clears." />
   <meta property="og:image" content="/brand/og.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="/brand/og.png" />
@@ -25,7 +25,7 @@
       <a class="wordmark" href="/" aria-label="Open the Custos console"><img src="/brand/mark.svg" alt="" />CUSTOS</a>
       <div class="nav-meta">
         <span class="node">Edge · AP Clerk</span>
-        <span class="airgap"><i></i>Air-gapped</span>
+        <span class="airgap"><i></i>Zero cloud AI</span>
         <span class="chain" id="chain">Ethereum Sepolia</span>
         <a class="wallet" id="wallet" href="#" target="_blank" rel="noreferrer">0x…</a>
         <span class="balance" id="balance">— USD₮</span>
@@ -33,7 +33,7 @@
       </div>
     </nav>
     <div class="hero-copy">
-      <p class="eyebrow" id="eyebrow">Air-gapped agentic settlement</p>
+      <p class="eyebrow" id="eyebrow">Zero-cloud-AI agentic settlement</p>
       <h1 class="display state-word" id="stateWord">AWAITING<br />INVOICE</h1>
       <p class="hero-sub" id="heroSub">Custos reads a vendor invoice on this machine, checks it against your own books, and settles it on-chain — and no payment can move until it clears six independent gates. Zero cloud, zero data leakage.</p>
     </div>
@@ -61,7 +61,7 @@
         <span class="step-no">02</span>
         <div class="step-body">
           <h3>Verify it against your books</h3>
-          <p>Vendor, purchase order, and the wallet to pay come from your air-gapped ERP — never the document. The invoice can claim anything; it can't introduce a new payee.</p>
+          <p>Vendor, purchase order, and the wallet to pay come from your internal ERP — never the document. The invoice can claim anything; it can't introduce a new payee.</p>
         </div>
       </li>
       <li class="step">
@@ -90,7 +90,7 @@
       <li class="gx"><span class="gx-no">G1</span><div class="gx-body"><h3>Role bounding</h3><p>The model only reads and proposes. It has no authority to settle — moving money is not a tool it can call.</p></div></li>
       <li class="gx"><span class="gx-no">G2</span><div class="gx-body"><h3>Deterministic truth</h3><p>Vendor, purchase order, and the payee wallet are read from your ERP, not the document. The numbers that matter never come from the page being verified.</p></div></li>
       <li class="gx"><span class="gx-no">G3</span><div class="gx-body"><h3>Recipient re-check</h3><p>Immediately before signing, plain code re-checks the recipient against the wallet on file. A swapped address stops here, on the machine that holds the keys.</p></div></li>
-      <li class="gx"><span class="gx-no">G4</span><div class="gx-body"><h3>Human approval</h3><p>A deliberate hold-to-authorize on the Edge node. Nothing moves without a person, and only the Edge — never the inference machine — can sign.</p></div></li>
+      <li class="gx"><span class="gx-no">G4</span><div class="gx-body"><h3>Human approval</h3><p>A deliberate hold-to-authorize in the Edge role. Nothing moves without a person, and signing authority lives only in the key-holding role — never in the code that runs the model.</p></div></li>
       <li class="gx"><span class="gx-no">G5</span><div class="gx-body"><h3>On-chain safety</h3><p>Pinned chain and token, a checksummed address, an exact-amount transfer with no blanket approvals, and confirmations before it's called settled.</p></div></li>
     </ul>
   </section>
@@ -181,8 +181,8 @@
         <p>Settlement is an actual test USD₮ transfer on Ethereum Sepolia, with a real transaction hash you can open in a block explorer. No simulated success states.</p>
       </div>
       <div class="proof-item">
-        <h3>A two-node mesh</h3>
-        <p>Heavy inference runs on the orchestrator; keys and signing are isolated on the Edge node. The machine that thinks never holds a key; the machine that holds keys never runs the model.</p>
+        <h3>Two node roles, separable by design</h3>
+        <p>Inference and key custody are split into distinct roles: the Orchestrator reads and verifies, the Edge holds the wallet and signs. The delegated link between them is real and logged, and is proven with both roles on one host — running them on separate machines is the pending step. What you are running here is the consolidated single-Mac build.</p>
       </div>
       <div class="proof-item">
         <h3>Disclosed by design</h3>
@@ -196,7 +196,7 @@
     <div class="footer-cols">
       <div>
         <h3>Custos</h3>
-        <p>Air-gapped agentic settlement. A payment is impossible unless it clears every gate — no single component, least of all the model, can move funds.</p>
+        <p>Zero-cloud-AI agentic settlement — every inference runs on-device through QVAC, provable from the audit log. A payment is impossible unless it clears every gate — no single component, least of all the model, can move funds.</p>
       </div>
       <div>
         <h3>The gates</h3>

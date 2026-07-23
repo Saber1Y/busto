@@ -483,3 +483,139 @@ and are deliberately left alone.
   in Step 2(a) against the empty wallet, but the preflight-specific failure output is unexercised.
 - **The >60s "download-shaped" guard is unexercised** — the weights are all present, and I was not
   going to delete one to test it.
+
+---
+
+## Step 4 — Honesty sweep (docs + UI)
+
+**Status: DONE.** Every claim below was re-verified against the code or the log *before* the line
+was touched. Falsification grep at the end shows zero hits for every removed phrase.
+
+Raw output: `step04-honesty-sweep.txt`.
+
+### Ground truth established first
+
+| Fact | How verified | Result |
+|---|---|---|
+| Delegated rows in the log | `grep -c '"delegated":true'` | was **0**, now **1** (see below) |
+| Intel/x64 rows in the log | `grep -c 'darwin/x64'` | **0** |
+| Relay docs location | `ls relay/` | `relay/README.md` exists (audit was right, the c1-report pointer was wrong) |
+| Hard-stop sentences | `consumer.ts:76-88` | confirmed verbatim — **kept unchanged everywhere** |
+| RAG dead in app path | `server.ts:30` seeds without embed, `server.ts:122` passes `undefined`, `erp.ts:135` is `if (embed)` | confirmed inert |
+| Vault status dot | `grep vaultStat packages/edge/ui/*.js` | **no JS references** — hard-coded green dot, genuinely fake |
+| `npm run c1:demo` | ran it | **audit was wrong** — see below |
+
+### The audit was wrong about `c1:demo`, and it mattered
+
+The audit said c1:demo "currently FAILS". It exits `❌ C1 LOCAL INCOMPLETE`, but the scorecard is:
+
+```
+provider identity (stable, pinnable key) ... ✅
+(b) heartbeat detects offline ............... ✅
+(c) fallbackToLocal degraded + auto-block ... ❌
+(a) TRUE delegated round-trip .............. ✅
+```
+
+**Check (a) — the delegated round-trip — passes.** Check (c) asserts `degradedMode=true`, an
+expectation written *before* the consumer moved to `fallbackToLocal: false`. Under the current
+hard-stop design `degradedMode` can never be true, so the observed
+`delegated=false degradedMode=false autoSettleBlocked=true providerOnline=false` is the **correct
+modern behaviour**. The scorecard is stale, not the code. I documented that rather than "fixing"
+either one.
+
+**This run also captured Step 5's deliverable as a side effect** — the log's first `delegated:true`
+row, written through the normal audit wrapper, never hand-edited:
+
+```json
+{"ts":"2026-07-23T22:21:20.777Z","node":"edge","op":"completion","model":"LLAMA_3_2_1B_INST_Q4_0",
+ "delegated":true,"provider_public_key":"d04ab232…8737","load_ms":1427,"ttft_ms":316.886,
+ "tok_per_sec":53.311,"backend_device":"gpu","platform":"darwin/arm64","metrics_source":"profiler-raw"}
+```
+
+`platform: darwin/arm64` on both sides — **one host, two processes.** It proves the delegation
+path, not cross-machine transport.
+
+### Every claim changed — before → after
+
+| File:line | Before | After |
+|---|---|---|
+| `README.md:76` | "two machines, one job" / table column **Machine** | "two node roles, one job" / column **Node role** |
+| `README.md:85` | Edge "**sends every AI task** to the Orchestrator over the encrypted P2P link" | "**by design it delegates** AI work over the encrypted P2P link" |
+| `README.md:87-90` | "the Intel machine **delegates every inference to the M1**" | removed; hard-stop sentence **kept verbatim**, now cites `consumer.ts` |
+| `README.md:92-94` | "the two-machine split is the 'your nodes can be anywhere' story, **proven across networks via a self-hosted relay**" | new **"Where the mesh actually stands"** section: designed + coded, round-trip proven **single-host** and logged, **cross-machine over hostile NAT is the pending step**, demo runs consolidated on one Mac |
+| `README.md:150-155` | "### 5) The real two-machine version … The Edge delegates every AI task to the M1 … (including the cross-network relay setup): evidence/c1-report.md" | "### 5) The delegated path (two node roles, currently one host)" … relay pointer corrected to **`relay/README.md`** |
+| `README.md:164` | "the **constrained Intel machine offloads inference to the M1** over encrypted P2P" | "QVAC-native delegation over an encrypted P2P link, **proven single-host and logged as `delegated:true` (cross-machine transport pending)**" |
+| `ARCHITECTURE.md:25-27` | "The C1 demo … **proves the delegated round-trip** and the offline hard-stop" | "proves the offline hard-stop, and proves the delegated round-trip **on a single host**… transport step still pending" |
+| `evidence/hardware/specs.md:35-38` | "…not staged; **the inference log shows the CPU→Metal offload**" + "Llama-3.2-1B routing" in the role line | claim removed; added an explicit block: log has **no `darwin/x64` rows**, the one delegated row is `darwin/arm64` on both sides, **CPU→Metal offload remains unmeasured** |
+| `Custos-PRD.md:6` | (no status marker) | **one dated banner** marking it the original design spec, with a 4-row table of PRD-says vs actually-today (mesh, Edge routing, RAG, "air-gapped") |
+| `DEMO_SCRIPT.md:18-19` | "`npm run c1:demo` for the P2P delegation **across two machines**" | corrected: two processes on one host, (a) passes / (c) stale, "don't put it on camera without that explanation" |
+| `SUBMISSION_CHECKLIST.md:18` | "**102 rows**" | "**480 rows as of 2026-07-23** … append-only, count grows every run, check the file rather than trusting this number" |
+| `SUBMISSION_CHECKLIST.md:51` | "the **Intel Mac delegates Qwen3-VL to the M1** over an E2E link" | redrafted: hard-stop consumer delegates, `delegated:true` profiler-raw in the log, **"proven single-host; cross-machine transport is the next step"** |
+| `THREAT-MODEL.md:17` | "local-only console" | "console binds **`127.0.0.1` only**… one settlement in flight at a time" (now true, post Step 1 + 2c) |
+| `THREAT-MODEL.md:24` | "`fallbackToLocal` never auto-settles (#82)" | "consumer sets `fallbackToLocal: false` and **hard-stops**… no degraded path to mis-settle from" |
+| `THREAT-MODEL.md:15` | "RAG suggests only" | "…and in the shipped server it is **inert**: the app seeds without embeddings, so the KNN branch never runs" |
+| `THREAT-MODEL.md:36` | "P2P (75–84): `npm run c1:demo`" | same pointer + what actually passes/fails and why |
+| `SECURITY.md:29` | "`sqlite-vec` RAG only *suggests*" | "…**inert in the shipped server**… exercised in `npm run c3:demo`" |
+| `SECURITY.md` G4 row | "explicit hold-to-authorize. No `.env` → stops here" | + "binds **`127.0.0.1` only**… one settlement in flight at a time" |
+| `Custos-Threat-Model.md:161` | "#82 … degraded mode NEVER auto-settles; flagged low-confidence \| MVP" | "**superseded, and stronger:** … hard-stops, so no degraded local path exists to downgrade *to*" \| **HARD** |
+| `ui/index.html:184-185` | "**A two-node mesh** … The machine that thinks never holds a key; the machine that holds keys never runs the model." | "**Two node roles, separable by design**" … "proven with both roles on one host — running them on separate machines is the pending step. What you are running here is the consolidated single-Mac build." |
+| `ui/index.html:93` | "only the Edge — **never the inference machine** — can sign" | "signing authority lives only in the **key-holding role** — never in the code that runs the model" |
+| `ui/index.html` (6, 28, 36, 199) + `dash.html` (7, 13, 59, 80) | "Air-gapped" badges/titles | **"Zero cloud AI"** — the claim the log actually proves. Zero `air-gapped` strings remain in any served HTML. |
+| `ui/index.html:51` | "on one machine" | **unchanged** — accurate, kept as instructed |
+| `ui/dash.html:79` | `class="stat stat-ok stat-vault"` with `<i></i>` → hard-coded green dot no JS ever sets | `stat-ok` and `<i></i>` removed + comment: *"nothing polls the orchestrator, so a green 'live' indicator would be decoration, not state"* |
+| `evidence/c1-report.md` | (not rewritten) | **dated addendum appended** capturing the `c7da4db` fix, the re-run, the new log row, and an explicit "what this does and does not prove" |
+| `evidence/c6-report.md:30` | "**Log to date:** 102 rows" | "**Log at the time of C6 (2026-06-21):** 102 rows" + dated addendum pointing at the current count |
+
+### Falsification grep — zero hits
+
+```
+  "proven across networks"                             0 hit(s)
+  "sends every AI task"                                0 hit(s)
+  "delegates every inference"                          0 hit(s)
+  "constrained Intel machine offloads"                 0 hit(s)
+  "the inference log shows the CPU→Metal offload"      0 hit(s)
+  "Llama-3.2-1B routing, P2P"                          0 hit(s)
+  "the Intel Mac delegates Qwen3-VL"                   0 hit(s)
+  "102 rows"                                           0 hit(s)   (after dating it)
+  "proves the delegated round-trip and the"            0 hit(s)
+  "local-only console"                                 0 hit(s)
+  "the machine that thinks never holds a key"          0 hit(s)
+
+=== 'air-gapped' remaining in any .html ===  none
+```
+
+The hard-stop sentence is still present verbatim in `ARCHITECTURE.md:24`, `README.md:88`,
+`Custos-PRD.md:185`, `Custos-Threat-Model.md:161` and `CLAUDE.md:35`, as instructed.
+
+### Regression — nothing broke
+
+```
+GET /        http_code=200 bytes=6856
+GET /landing http_code=200 bytes=14437
+served dash vault chip: <span class="stat stat-vault" id="vaultStat"><span>Vault · on-device</span></span>
+served chips: "Zero cloud AI", "Zero cloud AI · on-device"
+air-gapped occurrences in served HTML: 0
+[ui-clean] 22933ms status=VERIFIED   ← demo path intact
+```
+
+`npm run typecheck` → exit 0.
+
+### Not verified programmatically
+
+- **No UI screenshots** (no headless browser). The served-HTML greps above confirm the markup
+  changed and renders as served, but I have not *seen* the pages.
+- **Only `ui-clean` was re-run** post-edit rather than all four samples. Step 4 touched no verify
+  code, and the X1 ceiling makes a 4-sample run in one process unreliable. The full 4-sample pass
+  is in the final rehearsal.
+- **Transport for the delegated row** (relay vs direct holepunch) could not be attributed from the
+  output for a same-host connection. Stated as unknown in the c1-report addendum rather than guessed.
+
+### ⚠ NEEDS YOUR ANSWER — the build-in-public post
+
+`SUBMISSION_CHECKLIST.md:51` contained *"QVAC P2P bridge live: the Intel Mac delegates Qwen3-VL to
+the M1 over an E2E link."* **That never happened** — the Intel has never produced a logged inference
+row, and Qwen3-VL was never delegated (the delegated model is Llama-3.2-1B). The draft in the repo
+is now redrafted, but **if that text was ever actually posted to X, the redraft is not the whole
+fix.** Only you can check the timeline. If it went out, the clean move is a short follow-up
+correcting it before the pitch — a public correction reads as rigour; being caught reads as the
+opposite.

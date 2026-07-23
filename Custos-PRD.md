@@ -6,6 +6,25 @@
 
 ---
 
+> ## ⚠ This is the original design spec, not a status report
+>
+> **Read this first (added 2026-07-23).** This document is the **design intent** written before
+> the build, and it is preserved unedited as the record of that intent. Several things below
+> describe the target architecture rather than what ships today. Where this document and the
+> shipped code disagree, **the code wins** — see [ARCHITECTURE.md](./ARCHITECTURE.md) and
+> [README.md](./README.md) for current reality.
+>
+> Current status of the claims most likely to be misread:
+>
+> | This PRD says | Actually today |
+> |---|---|
+> | Two heterogeneous machines connected by QVAC P2P delegation | Designed and coded; a delegated round-trip is proven **single-host** (`delegated:true` in the audit log). **Cross-machine transport over hostile NAT is pending.** The app runs consolidated on one Mac. |
+> | The Edge runs 1B routing and delegates heavy inference | The Edge role runs **no** inference by design (x64 build suppresses stop tokens). In the shipped app, the whole pipeline runs on the M1. |
+> | RAG over the ERP informs verification | `sqlite-vec` RAG exists and is exercised by `npm run c3:demo`, but the **server app seeds without embeddings**, so the KNN branch is inert in the live path. Verification is exact-match and deterministic. |
+> | "Air-gapped" | No cloud **AI** — provable from the inference log. The process does make disclosed **non-AI** network calls (Sepolia RPC, P2P relay), all listed in [remote_apis.json](./remote_apis.json). |
+
+---
+
 ## 0. One-line
 
 > A privacy-first, air-gapped agent mesh that reads vendor invoices locally, cross-checks them against an internal ERP via on-device tool calling + RAG, and stages **real on-chain USDT settlement** — with **zero cloud, zero data leakage**, every inference call running through the QVAC SDK across two heterogeneous machines connected by QVAC's P2P delegation.
@@ -61,7 +80,7 @@ Per the multi-device rule, the **M1 Pro (32 GB)** is the "main" node → General
         │  QVAC: CPU-only inference    │                                 │  QVAC: Metal GPU acceleration │
         │                              │                                 │                              │
         │  • Local UI (drop invoice)   │                                 │  • Heavy multimodal LLM      │
-        │  • Llama-3.2-1B routing      │                                 │  • OCR (ocr-onnx)            │
+        │  • No local inference        │                                 │  • OCR (ocr-onnx)            │
         │  • P2P routing               │                                 │  • Embeddings + RAG          │
         │  • Holds wallet keys 🔑       │                                 │  • Tool calling → SQLite ERP │
         │  • Human approve + sign      │                                 │  • Builds PaymentIntent      │
@@ -163,7 +182,7 @@ sequenceDiagram
 
 | Failure | Detection | Recovery |
 |---|---|---|
-| Orchestrator offline / unreachable | `heartbeat` timeout | Surface "offline"; `fallbackToLocal: true` runs a degraded 1B extraction on Edge (flagged "low-confidence, CPU"); **never** auto-settles in degraded mode. |
+| Orchestrator offline / unreachable | `heartbeat` timeout | **Hard stop** — "orchestrator offline, cannot proceed." `fallbackToLocal: false`: the Edge does NOT attempt degraded local inference (x64 QVAC llamacpp suppresses EOS → overflow), so there is no degraded path to mis-settle from (threat #82 trivially satisfied). |
 | P2P swarm drops mid-call | RPC error | Delegated *reply* RPCs auto-recover on swarm reconnect; delegated *stream* RPCs re-issued on `resume()`. Retry with backoff. |
 | OCR/vision low confidence | Confidence threshold + schema validation | Mark fields "needs review"; block settlement; request human correction. |
 | Vendor not in ERP | `lookup_vendor` → null | **REJECT** — no settlement; flag "unknown vendor." |

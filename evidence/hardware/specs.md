@@ -32,10 +32,16 @@ calling, P2P **provider**. Holds **no keys**.
 | OS | macOS 15.7.7 · x86-64 (≥ 14.0 required for QVAC) |
 | QVAC inference | **CPU** |
 
-Role: UI (the Edge console), Llama-3.2-1B routing, P2P **consumer**, **holds the WDK
-wallet keys**, human approve + sign. Cannot run the heavy multimodal model at usable
-speed on CPU — which is *why* it delegates to the Metal M1 over QVAC P2P (a real
-hardware necessity, not staged; the inference log shows the CPU→Metal offload).
+Role (as designed): UI (the Edge console), P2P **consumer**, **holds the WDK wallet keys**,
+human approve + sign. Cannot run the heavy multimodal model at usable speed on CPU — which is
+*why* the Edge role delegates to the Metal M1 over QVAC P2P (a real hardware necessity, not
+staged).
+
+> **What the log does and does not show.** The inference log contains **no `darwin/x64` rows**
+> and **no Intel-originated inference** — this machine has not yet produced a logged row. The one
+> `delegated:true` row in the log was captured with both roles running on the **M1** (`platform:
+> darwin/arm64`), so it proves the delegation path, **not** a CPU→Metal offload between the two
+> physical machines. That cross-machine measurement is still outstanding.
 
 > To capture the Intel row for real: run `node -v && npm -v && sw_vers && uname -m`
 > and `system_profiler SPHardwareDataType` on the Intel Mac, and paste the smoke

@@ -28,9 +28,11 @@ If anything you're about to do contradicts these, STOP and ask. Do not silently 
 | Node | Role | Machine | Inference |
 |---|---|---|---|
 | **Orchestrator** "Vault" | heavy LLM, OCR, RAG, tool calling, builds PaymentIntent — **no keys** | M1 Pro · 32 GB · macOS 26.5.1 (arm64) | QVAC **Metal** |
-| **Edge** "AP Clerk" | UI, routing, **holds WDK keys**, human approve + sign | Intel i5 · 16 GB · macOS 15.7.7 (x64) | QVAC **CPU** |
+| **Edge** "AP Clerk" | UI, P2P client, **holds WDK keys**, human approve + sign — **no local inference** | Intel i5 · 16 GB · macOS 15.7.7 (x64) | **delegation-only** |
 
-Develop primarily on the **M1 Pro**. The Edge package runs on the **Intel** for P2P tests (C1) and holds the wallet. Node ≥ 22.17, npm ≥ 10.9.
+Develop primarily on the **M1 Pro**. The Edge package runs on the **Intel** for P2P + WDK signing and holds the wallet. Node ≥ 22.17, npm ≥ 10.9 (Intel is Node 22.17 → run `.ts` with `NODE_OPTIONS=--experimental-strip-types`; M1 is Node 24, unflagged — pin both via `.nvmrc` or set the flag in the npm scripts for parity).
+
+**⚠️ The Edge runs NO local QVAC inference.** The Intel's x64 QVAC llamacpp build suppresses stop tokens (EOS/EOT `logit bias = −∞`) → runaway generation → context overflow; the same code is clean on the M1 (arm64). So **all** inference (routing, OCR, vision, RAG, tools) delegates to the M1. The consumer uses `fallbackToLocal: false`: if the M1 is unreachable the Edge **hard-stops** ("orchestrator offline, cannot proceed") and never attempts degraded local inference (threat #82 satisfied trivially).
 
 ## HARD RULES (non-negotiable)
 
@@ -41,6 +43,7 @@ Develop primarily on the **M1 Pro**. The Edge package runs on the **Intel** for 
 5. **Disclose every remote call** in `remote_apis.json`. Only **non-AI** services allowed (Sepolia RPC, optional WDK indexer). Inference must read as 100% local QVAC.
 6. **Every QVAC call is logged** to `evidence/inference-log.jsonl` via the profiler (node, delegated?, model, prompt/completion tokens, TTFT, tok/s, load/unload). Metrics come from the profiler raw — never hand-write a number.
 7. **Secrets never touch git.** Seeds in `.env` / secret-manager. `.gitignore` already blocks `secrets/ *.seed *.key *.gguf`.
+8. **Always cap generation** with an explicit `maxTokens`/`nPredict` on every `completion` call. Runaway generation is a DoS vector, and the x64 build won't self-stop (suppressed EOS). All inference runs on the M1, but cap regardless.
 
 ## THE 5 GATES — preserve in all code (see threat model)
 
@@ -92,6 +95,6 @@ ESM (`"type": "module"`). Prefer `better-sqlite3` + `sqlite-vec`. Keep the UI ba
 
 ## Phase-specific notes
 
-- **C1 P2P networking:** the delegated round-trip needs the two machines to actually connect. **Same WiFi/LAN works** — hyperswarm discovers local peers and connects directly over the subnet. The failure mode is **two processes on the same host** (localhost hairpin → `HOLEPUNCH_ABORTED`/`PEER_NOT_FOUND`). If a same-LAN cross-machine run still aborts, put one Mac on a different network (e.g. phone hotspot → different NAT) or configure real `swarmRelays`. Never claim the delegated round-trip until it runs across two machines (Hard Rule 2).
+- **C1 P2P networking (corrected):** two peers behind **one NAT cannot hairpin** — same-WiFi holepunch fails (`PEER_CONNECTION_FAILED` / `0 swarm relay(s) configured`), confirmed on the two Macs. Holepunch works across **different NATs**, so for the cross-machine round-trip put one Mac on a **phone hotspot** (different NAT) — or configure real `swarmRelays` for a same-network setup. The provider's public key is stable identity (seed-derived), not network-bound, so only the consumer side needs re-running after a network change. Document the network requirement in the C6 repro instructions. Never claim the delegated round-trip until it runs across two NATs (Hard Rule 2). Cross-network P2P ("the nodes can be anywhere") is the demo story.
 - **C5 UI design source:** use `DESIGN.md` (the provided style reference) + the rules given at C5 time for the Edge UI's visual language. Keep the UI barebones-but-intentional.
 - **Before the repo goes public (C7):** delete `DESIGN.md` and the empty `qvachack.md` — they are references/strays, not Custos artifacts, and the static review shouldn't see them.

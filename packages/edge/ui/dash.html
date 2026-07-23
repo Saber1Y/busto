@@ -4,13 +4,13 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Custos · Edge Console</title>
-  <meta name="description" content="Air-gapped agentic settlement — no payment moves until every gate clears." />
+  <meta name="description" content="Zero-cloud-AI agentic settlement — no payment moves until every gate clears." />
   <link rel="icon" type="image/svg+xml" href="/brand/favicon.svg" />
   <link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="/brand/apple-touch-icon.png" />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Custos — Edge Console" />
-  <meta property="og:description" content="Air-gapped agentic settlement — no payment moves until every gate clears." />
+  <meta property="og:description" content="Zero-cloud-AI agentic settlement — no payment moves until every gate clears." />
   <meta property="og:image" content="/brand/og.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="/brand/og.png" />
@@ -56,7 +56,7 @@
       </nav>
 
       <div class="side-foot">
-        <div class="side-airgap"><i></i><span>Air-gapped · zero cloud AI</span></div>
+        <div class="side-airgap"><i></i><span>Zero cloud AI · on-device</span></div>
         <a class="side-link" href="/landing">
           <svg viewBox="0 0 16 16" class="ico-sm" aria-hidden="true"><path d="M3.5 8h9M9 4.5 12.5 8 9 11.5" /></svg>
           <span>View the landing page</span>
@@ -76,8 +76,10 @@
           <p id="viewDesc">Verify and settle vendor invoices in conversation — grounded in on-device inference.</p>
         </div>
         <div class="top-status">
-          <span class="stat stat-ok stat-vault" id="vaultStat"><i></i><span>Vault · on-device</span></span>
-          <span class="stat stat-air" id="airStat"><svg viewBox="0 0 16 16" class="ico-sm" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 0 1 7 0v2M3.5 7h9v6h-9z"/></svg>Air-gapped</span>
+          <!-- No status dot: nothing polls the orchestrator, so a green "live" indicator
+               would be decoration, not state. This is a static label of where inference runs. -->
+          <span class="stat stat-vault" id="vaultStat"><span>Vault · on-device</span></span>
+          <span class="stat stat-air" id="airStat"><svg viewBox="0 0 16 16" class="ico-sm" aria-hidden="true"><path d="M4.5 7V5a3.5 3.5 0 0 1 7 0v2M3.5 7h9v6h-9z"/></svg>Zero cloud AI</span>
           <span class="top-div"></span>
           <a class="signer" id="signer" target="_blank" rel="noreferrer">
             <span class="signer-k">Edge signer</span>
