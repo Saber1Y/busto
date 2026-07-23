@@ -394,3 +394,92 @@ for a third and fourth sample in Q&A, restart first — it takes seconds.
 Step 11 should be reconsidered from scratch later, on the confirmed mechanism: the leak is inside
 the llamacpp completion plugin's context handling across load/unload within a process, not in the
 SDK session layer and not in anything a userland cache would fix.
+
+---
+
+## Step 3 — Preflight + reset tooling
+
+**Status: DONE.** Both scripts written, run, and observed passing.
+
+Raw output: `step03-preflight-reset.txt`.
+
+### What was added
+
+| File | Purpose |
+|---|---|
+| `scripts/preflight.ts` | Fail loudly *before* the pitch instead of mid-demo |
+| `scripts/demo-reset.ts` | Clean slate between rehearsals |
+| `package.json` | `npm run preflight`, `npm run demo:reset` |
+
+### `npm run preflight` — exit 0
+
+```
+[1] wallet seed
+  PASS  CUSTOS_WALLET_SEED                     present in .env (value never printed)
+[2] chain + funds
+  PASS  signer address                         0x5C6C9e12D49e28670E00AD1C05f24243ad77Be13
+  PASS  Sepolia RPC                            https://ethereum-sepolia-rpc.publicnode.com · chainId 11155111 · block 11336507
+  PASS  USD₮ balance                           4989 USD₮ (4989000000 minor units)
+  PASS  ETH for gas                            0.04277549 ETH · one send costs ~0.00013280 · floor 0.00039841 (3 sends)
+[3] model weights present locally
+  PASS  cache dir                              /Users/mac/.qvac/models
+  PASS  detector_craft.onnx                    79 MiB
+  PASS  recognizer_latin.onnx                  15 MiB
+  PASS  Qwen3VL-2B-Instruct-Q4_K_M.gguf        1056 MiB
+  PASS  mmproj-Qwen3VL-2B-Instruct-Q8_0.gguf   424 MiB
+[4] warm load + unload (real QVAC, logged to the audit trail)
+  PASS  OCR (CRAFT + Latin)                    loaded + unloaded in 1433ms (local)
+  PASS  Vision (Qwen3-VL-2B)                   loaded + unloaded in 2738ms (local)
+
+PREFLIGHT OK — safe to demo.
+```
+
+Design notes:
+- The **seed value is never printed** — only its presence. This output is safe to screen-share.
+- The ETH floor is not a magic number: it is `eth_gasPrice × 65_000 × 2 × 3 sends`, sized off live
+  gas so a rehearsal plus the live demo both fit. It reports what one send actually costs.
+- The chain id is asserted against the pinned `CHAIN.id`, so a wrong RPC is caught rather than
+  silently used.
+- **Model presence is proven twice**: the weight files are listed off disk with sizes, *and* each
+  model is warm-loaded and unloaded through the real audit wrappers. A cold download of a 1 GiB
+  GGUF takes minutes, so a 2.7s load is itself the evidence it came off local disk. The check fails
+  if a load takes >60s, i.e. if it looks download-shaped.
+- The success banner carries the **X1 runbook reminder** (restart between segments), so the finding
+  lives in the tool you actually run rather than only in a report.
+- Warm-loading appends `loadModel`/`unloadModel` rows to the inference log. That is required by
+  Hard Rule 6 and is append-only.
+
+### `npm run demo:reset` — exit 0
+
+```
+  uploads   cleared 5 .png file(s) from data/uploads
+  erp       re-seeded /Users/mac/custos/data/erp.db
+            cleared 0 prior settlement row(s)
+            now: 3 vendors · 4 purchase orders · 0 settlements
+  evidence  untouched (the inference log is append-only ground truth)
+```
+
+("0 prior settlement rows" is honest — a server restart had already re-seeded since the Step 2
+settle. The counter reports whatever it actually cleared.)
+
+**Verified the log is untouched by reset:** row count before `473`, after `473`.
+`data/uploads/` went from 5 files to 0. Sample invoices in `data/sample` are inputs, not state,
+and are deliberately left alone.
+
+### PASS/FAIL
+
+| Check | Result |
+|---|---|
+| typecheck | PASS — exit 0 |
+| `npm run preflight` | PASS — exit 0, all 13 checks pass |
+| `npm run demo:reset` | PASS — exit 0 |
+| reset leaves inference log untouched | PASS — 473 rows before and after |
+| reset clears uploads | PASS — 5 → 0 |
+
+### Not verified programmatically
+
+- **No failure-path run of preflight.** Every check passed on the first try, so I did not observe a
+  `FAIL` line or the non-zero exit in anger. The gas/USD₮ comparisons are the same arithmetic proven
+  in Step 2(a) against the empty wallet, but the preflight-specific failure output is unexercised.
+- **The >60s "download-shaped" guard is unexercised** — the weights are all present, and I was not
+  going to delete one to test it.

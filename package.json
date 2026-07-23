@@ -17,6 +17,8 @@
     "gen:adversarial": "node scripts/gen-adversarial.ts",
     "csec:test": "node scripts/csec-test.ts",
     "c4:demo": "node scripts/c4-settle-demo.ts",
+    "preflight": "node scripts/preflight.ts",
+    "demo:reset": "node scripts/demo-reset.ts",
     "serve": "node packages/edge/src/server.ts",
     "gen:ui": "node scripts/gen-ui-samples.ts",
     "c6:evidence": "node scripts/c6-evidence.ts",
