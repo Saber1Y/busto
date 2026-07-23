@@ -1,0 +1,45 @@
+=== STEP 6 — remove the replay-mode hazard ===
+
+--- what was deleted (git diff --stat) ---
+ packages/edge/ui/dash.css |  4 ---
+ packages/edge/ui/dash.js  | 84 +----------------------------------------------
+ 2 files changed, 1 insertion(+), 87 deletions(-)
+
+--- the fabricated settlement that no longer exists ---
+  -    addProse(s.bubble, "Settled. 1.00 USD₮ moved on Ethereum Sepolia with 2 confirmations.");
+  -    renderReceiptCard(s.bubble, { status: "settled", confirmations: 2, txHash: "0xa3ed0f33fcfa685287185284079884c0ea0c3a260149443bfd945f083f79cd30", explorerUrl: "https://sepolia.etherscan.io/tx/0xa3ed0f33fcfa685287185284079884c0ea0c3a260149443bfd945f083f79cd30" });
+  -  signerAddr.textContent = "0x90F8bf…DA62A8"; signer.href = "#"; balance.textContent = "3.50 USD₮"; inboxCount.textContent = "4";
+
+--- residue check (must be NONE) ---
+  NONE
+
+--- ?demo= is now inert: no reference to a 'demo' query param anywhere in the UI ---
+  packages/edge/ui/app.js:345:  const p = new URLSearchParams(location.search).get("preview");
+  packages/edge/ui/dash.js:440:  const override = new URLSearchParams(location.search).get("sidebar");
+
+=== typecheck ===
+
+> custos@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json
+
+typecheck exit=0
+
+=== app.js preview hook also removed (same fabricated tx hash, legacy /landing) ===
+ packages/edge/ui/app.js | 42 ------------------------------------------
+ 1 file changed, 42 deletions(-)
+
+--- residue across ALL of packages/edge/ui ---
+  NONE — no code path can manufacture settlement evidence
+
+=== POST-DELETION: both surfaces still serve, clean-URL run still works ===
+--- GET / and /landing ---
+  /         http_code=200
+  /landing  http_code=200
+--- old replay URLs now render the normal app (no fabricated run) ---
+  fabricated tx in ?demo=settled response: 0
+  fabricated tx in ?preview=receipt response: 0
+--- clean-URL end-to-end run ---
+[ui-clean] 22543ms status=VERIFIED gate=-
+  reason: -
+[ui-fraud] 25395ms status=BLOCKED gate=G3
+  reason: wallet check failed — provided wallet does not corroborate DB known_wallet (drift 38)

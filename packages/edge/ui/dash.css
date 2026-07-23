@@ -235,10 +235,6 @@ html[data-sidebar="collapsed"] .nav-item.is-active::before { display: none; }
 html[data-sidebar="collapsed"] .side-airgap, html[data-sidebar="collapsed"] .side-link { justify-content: center; }
 
 /* demo replay capture: let the whole thread flow for a full-page screenshot */
-.demo-full .app { height: auto; min-height: 100vh; }
-.demo-full .main { grid-template-rows: var(--topbar-h) auto; }
-.demo-full .workspace { grid-template-rows: auto auto; }
-.demo-full .thread { overflow: visible; }
 
 /* ── RESPONSIVE ───────────────────────────────────────────────────── */
 @media (max-width: 1080px) {

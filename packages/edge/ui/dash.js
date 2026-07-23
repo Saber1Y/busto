@@ -29,22 +29,6 @@ const REASON_LABEL = {
   duplicate: "Checked for duplicate invoices",
 };
 
-const DEMO_GATES_VERIFIED = [
-  { id: "G0", name: "Hidden-instruction check", state: "cleared", detail: "no hidden instructions" },
-  { id: "G1", name: "The reader can't pay", state: "cleared", detail: "the AI only extracts fields" },
-  { id: "G2", name: "Vendor + purchase order", state: "cleared", detail: "PO-TEST matches the amount" },
-  { id: "G3", name: "Payment goes to the verified wallet", state: "cleared", detail: "matches the wallet on file" },
-  { id: "G4", name: "You approve", state: "active", detail: "awaiting your authorization" },
-  { id: "G5", name: "On-chain payment", state: "pending", detail: "pinned network + token, exact amount" },
-];
-const DEMO_GATES_BLOCKED = [
-  { id: "G0", name: "Hidden-instruction check", state: "cleared", detail: "no hidden instructions" },
-  { id: "G1", name: "The reader can't pay", state: "cleared", detail: "the AI only extracts fields" },
-  { id: "G2", name: "Vendor + purchase order", state: "cleared", detail: "PO-TEST matches the amount" },
-  { id: "G3", name: "Payment goes to the verified wallet", state: "blocked", detail: "the document's wallet doesn't match the ERP" },
-  { id: "G4", name: "You approve", state: "pending", detail: "awaiting your authorization" },
-  { id: "G5", name: "On-chain payment", state: "pending", detail: "pinned network + token, exact amount" },
-];
 
 /* helpers */
 const short = (a) => (a && a.length > 14 ? `${a.slice(0, 8)}…${a.slice(-6)}` : a || "");
@@ -450,71 +434,6 @@ function switchView(name) {
 }
 function wireNav() { nav.addEventListener("click", (e) => { const b = e.target.closest(".nav-item"); if (b) switchView(b.dataset.view); }); }
 
-/* ── demo replay (visual QA only): /?demo=verified|blocked|settled ── */
-function runDemoVerified(EX, settled) {
-  appendUser("Verify this invoice", "ui-clean.png");
-  const { bubble } = appendAgent();
-  const box = addReasoning(bubble);
-  setReasonLine(addReasonLine(box, "Reading the invoice on-device…", "run"), "check", { text: "Read the invoice on-device", detailNode: readDetail(EX._model, EX._ocrBlocks, EX._readMs) });
-  addReasonLine(box, `Extracted ${EX.vendorName} · ${EX.invoiceAmount} ${assetLabel(EX.currency)} · due ${EX.dueDate}`, "info");
-  addReasonLine(box, REASON_LABEL.gate0, "check", reasonDetail("no hidden instructions in the document"));
-  addReasonLine(box, REASON_LABEL.vendor, "check", reasonDetail("ACME ROBOTICS LTD is on file and active"));
-  addReasonLine(box, REASON_LABEL.po, "check", reasonDetail("PO-TEST matches 1.00 USD₮"));
-  addReasonLine(box, REASON_LABEL.wallet, "check", reasonDetail("the payout wallet matches the verified wallet on file"));
-  addReasonLine(box, REASON_LABEL.duplicate, "check", reasonDetail("not seen before — no duplicate"));
-  const intent = { to: "0x8ba1f109551bD432803012645Ac136ddd64DBA72", amount: "1000000", token: "0xd077a400968890eacc75cdc901f0356c943e4fdb", chainId: 11155111, invoiceRef: "INV-UI-01", memo: "Custos · PO-TEST" };
-  currentJob = { jobId: "demo", intent, status: "VERIFIED" };
-  renderVerdictCard(bubble, { status: "VERIFIED", gates: DEMO_GATES_VERIFIED }, { sourceLabel: "ui-clean.png", extraction: EX });
-  addProse(bubble, `Every gate cleared. I've prepared a payment of ${EX.invoiceAmount} ${assetLabel(EX.currency)} to ${EX.vendorName}'s verified wallet — the recipient comes from your books, not the document. Review it below and hold to authorize; I can't move the money myself.`);
-  addChips(bubble, ["What happens if I approve?", "Is this vendor known?", "What does Custos check?"], () => {});
-  if (!settled) renderAuthorizeCard(bubble, true);
-  appendUser("What happens if I approve?");
-  addProse(appendAgent().bubble, "If you approve, the invoice will be processed and the specified amount (1 USD₮) will be transferred to the vendor's wallet. The transaction will be verified against the database and confirmed as unique. The payout wallet matches the one recorded in the system.");
-  if (settled) {
-    appendUser("Authorize payment");
-    const s = appendAgent();
-    addProse(s.bubble, "Settled. 1.00 USD₮ moved on Ethereum Sepolia with 2 confirmations.");
-    renderReceiptCard(s.bubble, { status: "settled", confirmations: 2, txHash: "0xa3ed0f33fcfa685287185284079884c0ea0c3a260149443bfd945f083f79cd30", explorerUrl: "https://sepolia.etherscan.io/tx/0xa3ed0f33fcfa685287185284079884c0ea0c3a260149443bfd945f083f79cd30" });
-  }
-}
-function runDemoBlocked(EX) {
-  const EXF = Object.assign({}, EX, { providedWallet: "0x6B175474E89094C44Da98b954EedeAC495271d0F" });
-  appendUser("Verify this invoice", "ui-fraud.png");
-  const { bubble } = appendAgent();
-  const box = addReasoning(bubble);
-  setReasonLine(addReasonLine(box, "Reading the invoice on-device…", "run"), "check", { text: "Read the invoice on-device", detailNode: readDetail(EX._model, 17, 2510) });
-  addReasonLine(box, `Extracted ${EXF.vendorName} · ${EXF.invoiceAmount} ${assetLabel(EXF.currency)} · due ${EXF.dueDate}`, "info");
-  addReasonLine(box, REASON_LABEL.gate0, "check", reasonDetail("no hidden instructions in the document"));
-  addReasonLine(box, REASON_LABEL.vendor, "check", reasonDetail("ACME ROBOTICS LTD is on file and active"));
-  addReasonLine(box, REASON_LABEL.po, "check", reasonDetail("PO-TEST matches 1.00 USD₮"));
-  addReasonLine(box, REASON_LABEL.wallet, "cross", reasonDetail("the payout wallet does not match the wallet on file"));
-  currentJob = { jobId: "demo", intent: null, status: "BLOCKED" };
-  renderVerdictCard(bubble, { status: "BLOCKED", blockedGate: "G3", gates: DEMO_GATES_BLOCKED }, { sourceLabel: "ui-fraud.png", extraction: EXF });
-  addProse(bubble, "I stopped at “Payment goes to the verified wallet”. The payout wallet does not match the wallet on file (drift 38). No money can move — nothing was sent.");
-  addChips(bubble, ["Why was this blocked?", "Is this vendor known?", "What would make this pass?"], () => {});
-  appendUser("Why was this blocked?");
-  addProse(appendAgent().bubble, "The invoice was blocked because the wallet provided did not match the known wallet for the vendor, resulting in a drift of 38. Despite other checks passing, the wallet verification failed, leading to the rejection.");
-}
-// Representative free-text conversation (real captured answers) for screenshots.
-function runDemoChat() {
-  const { bubble } = appendAgent();
-  addProse(bubble, "I'm Custos — your air-gapped accounts-payable agent. Drop a vendor invoice and I'll verify it against your books and settle it on-chain after you approve — or ask me about a vendor, a past payment, or how the gates work.");
-  addChips(bubble, ["What can you do?", "How do the gates work?", "Is Acme a known vendor?"], () => {});
-  const exchange = (q, a) => { appendUser(q); addProse(appendAgent().bubble, a); };
-  exchange("hi", "Hello, I am Custos, your accounts-payable system. I can help verify invoices, check them against the ERP, and ensure every gate passes before any payment is made. Let me know if you need assistance with an invoice or your vendors.");
-  exchange("what can you do?", "I can read vendor invoices on-device, verify them against my internal ERP, run them through six security gates, settle them as USD₮ on Ethereum Sepolia after human approval, and answer questions about vendors, purchase orders, and past settlements.");
-  exchange("is Acme a known vendor?", "Yes, Acme Robotics Ltd is a known vendor.");
-  exchange("have we paid Acme before?", "Acme Robotics Ltd is not in the settlement history, which means Custos has made no payment to this vendor yet. They do have open purchase orders (PO-1042 and PO-1043) that have not been paid.");
-}
-function runDemo(kind) {
-  document.body.classList.add("demo-full");
-  walletConfigured = true;
-  signerAddr.textContent = "0x90F8bf…DA62A8"; signer.href = "#"; balance.textContent = "3.50 USD₮"; inboxCount.textContent = "4";
-  if (kind === "chat") return runDemoChat();
-  const EX = { vendorName: "ACME ROBOTICS LTD", invoiceAmount: "1.00", currency: "USDT", dueDate: "2026-07-15", providedWallet: "0x8ba1f109551bD432803012645Ac136ddd64DBA72", _model: "QWEN3VL_2B_MULTIMODAL_Q4_K", _ocrBlocks: 16, _readMs: 2380 };
-  if (kind === "blocked") runDemoBlocked(EX); else runDemoVerified(EX, kind === "settled");
-}
-
 /* ── shell: collapse (persisted) + mobile drawer ──────────────────── */
 function applySidebar(state) { document.documentElement.dataset.sidebar = state; }
 function wireShell() {
@@ -536,6 +455,5 @@ function wireShell() {
 
 /* ── init ─────────────────────────────────────────────────────────── */
 loadHeader(); wireComposer(); wireNav(); wireShell();
-const demoKind = new URLSearchParams(location.search).get("demo");
-if (demoKind) runDemo(demoKind); else renderIntro();
+renderIntro();
 

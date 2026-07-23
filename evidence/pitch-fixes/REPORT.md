@@ -619,3 +619,177 @@ is now redrafted, but **if that text was ever actually posted to X, the redraft 
 fix.** Only you can check the timeline. If it went out, the clean move is a short follow-up
 correcting it before the pitch — a public correction reads as rigour; being caught reads as the
 opposite.
+
+---
+
+## Step 6 — Remove the replay-mode hazard
+
+**Status: DONE.** Deleted, with more removed than the audit asked for.
+
+Raw output: `step06-remove-replay-mode.txt`.
+
+### What was deleted
+
+| File | Removed |
+|---|---|
+| `dash.js` | `runDemoVerified` / `runDemoBlocked` / `runDemoChat` / `runDemo` (65 lines), the `DEMO_GATES_VERIFIED` + `DEMO_GATES_BLOCKED` fabricated ladders (16 lines), and the `?demo=` dispatch — replaced with a plain `renderIntro()` |
+| `dash.css` | the 4 dead `.demo-full` rules |
+| **`app.js`** | **the entire `?preview=` hook (42 lines)** — see below |
+
+`dash.js` 541 → 459 lines. `app.js` 383 → 341 lines.
+
+### The audit under-scoped this one
+
+The audit pointed at `dash.js:445-508`. Grepping after that deletion surfaced a **second, equally
+dangerous path** on the legacy landing page — `app.js:366` fabricated the *same* receipt with the
+*same* real transaction hash:
+
+```js
+renderReceipt({ status: "settled", confirmations: 2,
+  txHash: "0xa3ed0f33fcfa685287185284079884c0ea0c3a260149443bfd945f083f79cd30",
+  explorerUrl: "https://sepolia.etherscan.io/tx/0xa3ed0f33…" });
+```
+
+That hash is a **genuine past settlement**, which makes it worse, not better: the replay presented
+a real, verifiable, Etherscan-resolvable transaction as though the run in front of you had produced
+it. A reviewer clicking through would have found a legitimate on-chain transfer confirming a run
+that never happened. Both paths are gone.
+
+Also removed with it: hard-coded `balance.textContent = "3.50 USD₮"`, a fake signer address
+`0x90F8bf…DA62A8`, a fake inbox count, and pre-written "reasoning" lines with invented timings.
+
+### Verification
+
+```
+residue across ALL of packages/edge/ui:  NONE
+  (no `demo=`, no `preview=`, no `0xa3ed0f33`, no DEMO_GATES, no runDemo)
+
+GET /         http_code=200
+GET /landing  http_code=200
+fabricated tx in ?demo=settled response:     0
+fabricated tx in ?preview=receipt response:  0
+```
+
+The old URLs are now inert — they render the normal application. Clean-URL run after deletion:
+`ui-clean → VERIFIED (22.5s)`, `ui-fraud → BLOCKED at G3 (25.4s)`. `typecheck` exit 0.
+
+---
+
+# FINAL PASS
+
+Raw output: `final-pass.txt`.
+
+## Full rehearsal — the demo path, driven exactly as it will be tomorrow
+
+```
+[1] clean invoice
+    21964ms → VERIFIED
+[2] hold to authorize → REAL settlement
+    23054ms → SETTLED
+    txHash        : 0x54e58aef71c9f0358938a2d83873d1e0f643637cd2c4f5d489e2665b3232b68b
+    confirmations : 2
+    explorer      : https://sepolia.etherscan.io/tx/0x54e58aef…b68b
+[3] fraud invoice — must block at G3, nothing sent
+    21638ms → BLOCKED at G3
+    reason : wallet check failed — provided wallet does not corroborate DB known_wallet (drift 38)
+
+REHEARSAL PASS
+```
+
+USD₮ `4989000000 → 4988000000` — exactly 1.00 moved, once. **The whole demo path takes ~67 seconds.**
+
+## Everything else
+
+| Check | Result |
+|---|---|
+| `npm run typecheck` | **exit 0** |
+| `npm run demo:reset` | exit 0 |
+| Rehearsal (clean → settle → Etherscan, fraud → G3) | **PASS** |
+| `ui-clean` | VERIFIED (22.0s) |
+| `ui-fraud` | BLOCKED · G3 (21.6s) |
+| `ui-injection` | BLOCKED · G0 (22.9s) |
+| `ui-amount` | BLOCKED · G2 (21.7s) |
+| `npm run csec:test` | **17 passed, 0 failed** |
+| `npm run preflight` | **PASS**, exit 0 |
+
+The four samples were run as 2 + 2 across two server processes, deliberately, because of X1.
+
+## Every step
+
+| Step | Status | Note |
+|---|---|---|
+| 1 · Bind approve endpoint to loopback | **DONE** | Exposure reproduced pre-fix (LAN reached the handler past the seed guard), refused post-fix |
+| 2a · ETH gas preflight | **DONE** | Both branches forced through production code on a real 0-balance wallet |
+| 2b · False SETTLED | **DONE (diverged, approved)** | Records at broadcast, `pending` status added; `settled` unreachable below required confirmations |
+| 2c · Double-pay guard | **DONE** | Two concurrent approves → one settled, other refused in 32ms; on-chain proof exactly 1.00 moved |
+| 2d · Readable failure reasons | **DONE** | Server-side (your correction to the audit), not client-side |
+| 3 · Preflight + demo:reset | **DONE** | 13/13 checks; reset verified not to touch the log |
+| 4 · Honesty sweep | **DONE** | ~24 claims changed across 12 files; falsification grep zero hits |
+| 5 · Delegated evidence row | **DONE (incidentally)** | Captured while verifying `c1:demo` in Step 4 — first `delegated:true` row in the log |
+| 6 · Remove replay mode | **DONE** | Both `?demo=` and the audit-missed `?preview=` |
+| X1 · Context-overflow diagnosis | **DIAGNOSED, no code change** | Root cause confirmed by prediction; `ctx_size` bump reverted |
+| 7–10 · Tier 1 visibility | **SKIPPED** | Your call: land honesty work, rehearse, sleep |
+| 11 · Model cache + warm-up | **CUT** | X1 disproved its premise — the leak is below where a userland `Map` reaches |
+| 12 · Real RAG in the app | **SKIPPED** | Tier 2, gated, not reached |
+| 13 · Tool-calling in the app | **SKIPPED** | Tier 2, gated, not reached |
+
+## What I could NOT verify programmatically — test these yourself
+
+1. **No UI screenshots anywhere.** No headless browser was available and I did not install one. I
+   verified served markup by curl and grep, but I have never *seen* any of these pages. **Look at
+   the dash before you pitch** — especially the top bar, where I removed the fake green dot.
+2. **The `pending` settlement branch never fired.** Sepolia confirmed in ~23s, far inside the 240s
+   window. The **BROADCAST · UNCONFIRMED** pill is unrendered and unverified. `confirmations: 2` is
+   hard-coded at `server.ts:222` with no env knob, so exercising it is a code edit, not a config
+   flip — which you ruled out.
+3. **The RPC-unreachable branch never fired.** WDK fails over to two public fallbacks, so it is
+   unreachable without editing production code.
+4. **Preflight's FAIL paths and its >60s "download-shaped" guard are unexercised.**
+5. **The revert path in `settle.ts`** cannot be triggered on demand; there is deliberately no
+   rollback logic, and the reason text tells the operator to clear the row manually.
+6. **Cross-machine anything.** No test ran on the Intel. Including your Step 1 check — please run
+   `curl -m 5 http://192.168.0.133:4173/api/samples` from the Intel while the M1 serves and confirm
+   `Connection refused`.
+
+## P2P status — say it like this
+
+> The two-node mesh is designed and coded: a provider on the orchestrator, a hard-stop consumer
+> that sets `fallbackToLocal: false`, and a self-hosted blind relay deployed on Fly. The delegated
+> round-trip is proven and now logged — there's a `delegated:true` row in the audit trail with
+> profiler-raw metrics, 316ms to first token at 53 tokens/sec on GPU. That was captured with both
+> roles running as separate processes on one machine, after I fixed a DHT cold-start bug where the
+> SDK fired `connect()` on an empty routing table before bootstrap finished. What is *not* done is
+> cross-machine transport: two peers behind one NAT can't hairpin, so proving it needs the two
+> hosts on different NATs. That's a known Hyperswarm limitation and it's the documented pending
+> step. What you're watching today runs consolidated on one Mac.
+
+## What the audit missed
+
+1. **X1 — sequential verifies die on a context overflow.** The most serious finding of the night.
+   The 3rd–4th verify in one process fails with a ~110s hang. Root cause confirmed: context
+   accumulates ~2780 tokens per verify against an 8192 window and the load/unload cycle does not
+   release it. Mitigation is procedural — restart between segments, now printed in the preflight
+   banner.
+2. **`clearStorage: true` deletes model weights.** The proposed X1 test would have `rm`'d
+   Qwen3-VL-2B and forced a re-download tonight.
+3. **A second replay path in `app.js`.** The audit found `?demo=` in `dash.js` but missed
+   `?preview=` in `app.js`, which fabricated the same receipt using a **real** past transaction
+   hash.
+4. **The audit was wrong about `c1:demo`.** It does not simply "FAIL" — check (a), the delegated
+   round-trip, *passes*. Check (c) asserts a `degradedMode` expectation that the current hard-stop
+   design makes unreachable. The scorecard is stale, not the code. Believing the audit here would
+   have meant deleting a pointer to something that actually works.
+5. **The audit was wrong about `dash.js:340`.** It already read `r.reason`; the real gap was
+   server-side responses that omitted the field.
+6. **Uncommitted evidence.** 35 append-only log rows were sitting in the working tree, so a judge
+   cloning the repo would not have seen the log you demo from. Now committed as `5f5f2b9`.
+7. **`evidence/c6-report.md` had a stale row count** ("102 rows") that the audit did not list —
+   another one-grep falsification. Now dated.
+
+## ⚠ Still needs your answer
+
+`SUBMISSION_CHECKLIST.md:51` contained *"the Intel Mac delegates Qwen3-VL to the M1 over an E2E
+link."* **That never happened** — the Intel has never produced a logged row and the delegated model
+is Llama-3.2-1B, not Qwen3-VL. The repo draft is redrafted. **If that text was ever actually posted
+to X, the redraft is not the whole fix** — check your timeline. A short public correction before the
+pitch reads as rigour; being caught reads as the opposite.
