@@ -1,0 +1,84 @@
+=== git diff (step 1) ===
+diff --git a/packages/edge/src/server.ts b/packages/edge/src/server.ts
+index b705b86..d125488 100644
+--- a/packages/edge/src/server.ts
++++ b/packages/edge/src/server.ts
+@@ -20,6 +20,9 @@ const REPO = resolve(HERE, "../../..");
+ const UI = resolve(HERE, "../ui");
+ const SAMPLES = resolve(REPO, "data/sample");
+ const PORT = Number(process.env.PORT ?? 4173);
++// Loopback only. POST /api/approve signs and broadcasts a real transfer with no auth,
++// so binding 0.0.0.0 would put the key-holder's approve endpoint on the venue WiFi.
++const HOST = process.env.HOST ?? "127.0.0.1";
+ 
+ loadEnvSafe();
+ const db = openErp(resolve(REPO, "data/erp.db"));
+@@ -247,6 +250,6 @@ const server = createServer(async (req, res) => {
+   }
+ });
+ 
+-server.listen(PORT, () => {
+-  console.log(`\n  CUSTOS · Edge console  →  http://localhost:${PORT}\n  (Ctrl+C to stop)\n`);
++server.listen(PORT, HOST, () => {
++  console.log(`\n  CUSTOS · Edge console  →  http://localhost:${PORT}\n  bound to ${HOST} (loopback only — the approve endpoint holds the wallet)\n  (Ctrl+C to stop)\n`);
+ });
+
+=== npm run typecheck ===
+
+> custos@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json
+
+typecheck exit=0
+
+=== BEFORE-EQUIVALENT: HOST=0.0.0.0 (identical to the old bare listen(PORT)) ===
+--- server stdout ---
+
+  CUSTOS · Edge console  →  http://localhost:4173
+  bound to 0.0.0.0 (loopback only — the approve endpoint holds the wallet)
+  (Ctrl+C to stop)
+
+--- lsof: what address is it listening on? ---
+COMMAND   PID USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+node    18638  mac   18u  IPv4 0x7a96bbb107f3e4d5      0t0  TCP *:4173 (LISTEN)
+--- curl http://127.0.0.1:4173/api/samples ---
+http_code=200 exit=0
+--- curl http://192.168.0.133:4173/api/samples  (LAN IP) ---
+[{"id":"ui-clean","label":"Clean invoice","note":"Acme Robotics · 1 USD₮ · matches the PO","expect":"verified"},{"id":"ui-fraud","label":"Swapped payment wallet","note":"Acme invoice, attacker's wallet printed","expect":"blocked · recipient"},{"id":"ui-injection","label":"Hidden instruction","note":"“ignore previous instructions…” in the notes","expect":"blocked · Gate 0"},{"id":"ui-amount","label":"Amount doesn't match a PO","note":"4,242 USD₮ — no matching order","expect":"blocked · ERP"}]
+http_code=200
+curl exit=0
+--- curl -X POST http://192.168.0.133:4173/api/approve  (the dangerous one) ---
+{"error":"unknown or expired job"}
+http_code=404
+curl exit=0
+
+=== AFTER: default HOST (no env override) ===
+--- server stdout ---
+
+  CUSTOS · Edge console  →  http://localhost:4173
+  bound to 127.0.0.1 (loopback only — the approve endpoint holds the wallet)
+  (Ctrl+C to stop)
+
+--- lsof: what address is it listening on? ---
+COMMAND   PID USER   FD   TYPE             DEVICE SIZE/OFF NODE NAME
+node    18675  mac   18u  IPv4 0xe3c5e4ae8be7517c      0t0  TCP 127.0.0.1:4173 (LISTEN)
+--- curl http://127.0.0.1:4173/api/samples  (expect normal 200) ---
+[{"id":"ui-clean","label":"Clean invoice","note":"Acme Robotics · 1 USD₮ · matches the PO","expect":"verified"},{"id":"ui-fraud","label":"Swapped payment wallet","note":"Acme invoice, attacker's wallet printed","expect":"blocked · recipient"},{"id":"ui-injection","label":"Hidden instruction","note":"“ignore previous instructions…” in the notes","expect":"blocked · Gate 0"},{"id":"ui-amount","label":"Amount doesn't match a PO","note":"4,242 USD₮ — no matching order","expect":"blocked · ERP"}]
+http_code=200
+curl exit=0
+--- curl http://192.168.0.133:4173/api/samples  (expect connection refused) ---
+*   Trying 192.168.0.133:4173...
+* connect to 192.168.0.133 port 4173 from 192.168.0.133 port 55897 failed: Connection refused
+* Failed to connect to 192.168.0.133 port 4173 after 1 ms: Couldn't connect to server
+* Closing connection
+curl exit=7
+--- curl -X POST http://192.168.0.133:4173/api/approve  (expect connection refused) ---
+curl exit=7  (7 = ECONNREFUSED)
+--- UI still served on loopback? ---
+GET / http_code=200
+
+=== typecheck (after banner wording fix) ===
+
+> custos@0.0.0 typecheck
+> tsc --noEmit -p tsconfig.json
+
+typecheck exit=0

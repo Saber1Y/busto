@@ -20,6 +20,9 @@ const REPO = resolve(HERE, "../../..");
 const UI = resolve(HERE, "../ui");
 const SAMPLES = resolve(REPO, "data/sample");
 const PORT = Number(process.env.PORT ?? 4173);
+// Loopback only. POST /api/approve signs and broadcasts a real transfer with no auth,
+// so binding 0.0.0.0 would put the key-holder's approve endpoint on the venue WiFi.
+const HOST = process.env.HOST ?? "127.0.0.1";
 
 loadEnvSafe();
 const db = openErp(resolve(REPO, "data/erp.db"));
@@ -247,6 +250,7 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`\n  CUSTOS · Edge console  →  http://localhost:${PORT}\n  (Ctrl+C to stop)\n`);
+server.listen(PORT, HOST, () => {
+  const scope = HOST === "127.0.0.1" || HOST === "localhost" ? "loopback only — the approve endpoint holds the wallet" : "⚠ REACHABLE FROM THE NETWORK — /api/approve signs real transfers";
+  console.log(`\n  CUSTOS · Edge console  →  http://localhost:${PORT}\n  bound to ${HOST} (${scope})\n  (Ctrl+C to stop)\n`);
 });
