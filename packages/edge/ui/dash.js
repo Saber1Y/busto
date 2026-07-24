@@ -468,27 +468,99 @@ async function loadHeader() {
   } catch { balance.textContent = "wallet offline"; }
 }
 
-/* ── nav (Workspace real; rest are stubs until C9-2) ──────────────── */
+/* ── nav — Workspace, Vendors and History are real (read from the air-gapped ERP);
+      Inbox and Settings are honest "planned" screens, not false promises. ─────────── */
 const VIEWS = {
   workspace: { title: "Workspace", desc: "Verify and settle vendor invoices in conversation — grounded in on-device inference." },
-  inbox: { title: "Inbox", desc: "Invoices waiting to be verified.", stub: "Your inbox of incoming vendor invoices will live here — pick one and the agent verifies it in the Workspace." },
-  history: { title: "History", desc: "Every verification and settlement.", stub: "A searchable record of every verification and on-chain settlement, each with its profiler-backed audit trail." },
-  vendors: { title: "Vendors", desc: "Your books: vendors, wallets, open POs.", stub: "Your air-gapped ERP: known vendors, their verified payout wallets, and open purchase orders." },
-  settings: { title: "Settings", desc: "Signer, network, and models.", stub: "Configure the Edge signer, the Sepolia network, and the on-device QVAC models." },
+  inbox: { title: "Inbox", desc: "Invoices waiting to be verified.", render: renderInbox },
+  history: { title: "History", desc: "Every on-chain settlement, from the local ledger.", render: renderHistory },
+  vendors: { title: "Vendors", desc: "Your books: vendors, wallets, open POs.", render: renderVendors },
+  settings: { title: "Settings", desc: "Signer, network, and models.", render: renderSettings },
 };
-function renderStub(name, meta) {
-  const v = $(`view-${name}`); v.textContent = "";
-  v.append(el("div", { class: "stub-card" },
-    el("svg", { class: "ico-lg", viewBox: "0 0 16 16", html: '<path d="M2 3.5h12v9H2zM2 6.5h12" fill="none" stroke="currentColor" stroke-width="1.2"/>' }),
-    el("h2", { text: meta.title }),
-    el("p", { text: meta.stub }),
-    el("span", { class: "stub-soon", text: "Available in C9-3" })));
+
+async function fetchErp() { return (await fetch("/api/erp")).json(); }
+
+function renderVendors(v) {
+  v.append(el("p", { class: "erp-lead", text: "Your air-gapped ERP — the deterministic source of truth. Vendor, purchase order and payout wallet come from here, never from the document." }));
+  fetchErp().then((erp) => {
+    const vt = el("table", { class: "erp-table" },
+      el("thead", {}, el("tr", {}, el("th", { text: "Vendor" }), el("th", { text: "Status" }), el("th", { text: "Verified payout wallet" }))));
+    const vb = el("tbody");
+    for (const row of erp.vendors) vb.append(el("tr", {},
+      el("td", { text: row.name }),
+      el("td", {}, el("span", { class: "pill " + (row.status === "active" ? "ok" : "muted"), text: row.status })),
+      el("td", {}, el("span", { class: "mono", text: row.knownWallet }))));
+    vt.append(vb);
+    const pt = el("table", { class: "erp-table" },
+      el("thead", {}, el("tr", {}, el("th", { text: "PO" }), el("th", { text: "Vendor" }), el("th", { text: "Amount" }), el("th", { text: "Description" }))));
+    const pb = el("tbody");
+    for (const p of erp.openPurchaseOrders) pb.append(el("tr", {},
+      el("td", {}, el("span", { class: "mono", text: p.poNumber })),
+      el("td", { text: p.vendor }),
+      el("td", { class: "num", text: `${p.amount} ${assetLabel(p.currency)}` }),
+      el("td", { text: p.description })));
+    pt.append(pb);
+    v.append(el("h3", { class: "erp-h", text: "Known vendors" }), vt, el("h3", { class: "erp-h", text: "Open purchase orders" }), pt);
+  }).catch(() => v.append(el("p", { class: "erp-empty", text: "Couldn't read the ERP." })));
 }
+
+function renderHistory(v) {
+  v.append(el("p", { class: "erp-lead", text: "Every on-chain settlement Custos has made, read from the local ledger. The full profiler-backed trace of each verification is appended to evidence/inference-log.jsonl on this machine." }));
+  fetchErp().then((erp) => {
+    if (!erp.settlementHistory.length) {
+      v.append(el("div", { class: "erp-empty" },
+        el("div", { text: "No settlements recorded yet." }),
+        el("div", { class: "erp-empty-sub", text: "Verify an invoice in the Workspace and authorize it — it appears here with its transaction hash." })));
+      return;
+    }
+    const t = el("table", { class: "erp-table" },
+      el("thead", {}, el("tr", {}, el("th", { text: "Vendor" }), el("th", { text: "PO" }), el("th", { text: "Amount" }), el("th", { text: "Invoice" }), el("th", { text: "Transaction" }), el("th", { text: "When" }))));
+    const b = el("tbody");
+    for (const s of erp.settlementHistory) {
+      const tx = s.txHash
+        ? el("a", { class: "mono tx-link", href: erp.explorer + s.txHash, target: "_blank", rel: "noreferrer", text: short(s.txHash) })
+        : el("span", { class: "muted", text: "—" });
+      let when = "—"; try { when = new Date(s.at).toLocaleString(); } catch { /* keep dash */ }
+      b.append(el("tr", {},
+        el("td", { text: s.vendor }),
+        el("td", {}, el("span", { class: "mono", text: s.poNumber })),
+        el("td", { class: "num", text: `${s.amount} USD₮` }),
+        el("td", {}, el("span", { class: "mono", text: s.invoiceRef })),
+        el("td", {}, tx),
+        el("td", { text: when })));
+    }
+    t.append(b);
+    v.append(t);
+  }).catch(() => v.append(el("p", { class: "erp-empty", text: "Couldn't read the settlement history." })));
+}
+
+function renderInbox(v) {
+  v.append(el("div", { class: "stub-card" },
+    el("svg", { class: "ico-lg", viewBox: "0 0 16 16", html: '<path d="M2 4h12v8H2zM2 4l6 4 6-4" fill="none" stroke="currentColor" stroke-width="1.2"/>' }),
+    el("h2", { text: "Inbox" }),
+    el("p", { text: "Custos verifies invoices you bring it in the Workspace — drop a PNG/PDF or pick a sample. A live inbox that pulls invoices from a mailbox or ERP feed is planned; it is not implemented yet." }),
+    el("span", { class: "stub-soon", text: "Planned" })));
+}
+
+function renderSettings(v) {
+  v.append(el("div", { class: "stub-card" },
+    el("svg", { class: "ico-lg", viewBox: "0 0 16 16", html: '<circle cx="8" cy="8" r="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2" stroke="currentColor" stroke-width="1.2"/>' }),
+    el("h2", { text: "Settings" }),
+    el("p", { text: "Custos is configured on this machine via .env: the Edge-only Sepolia signer key, the RPC endpoint, and the pinned chain + USD₮ token. The on-device models (Qwen3-VL-2B, OCR, GTE-large, Qwen3-1.7B) load from the local QVAC cache. A settings UI is planned; today configuration is file-based." }),
+    el("span", { class: "stub-soon", text: "Planned" })));
+}
+
 function switchView(name) {
   for (const b of nav.querySelectorAll(".nav-item")) b.classList.toggle("is-active", b.dataset.view === name);
   for (const v of document.querySelectorAll(".view")) v.hidden = v.id !== `view-${name}`;
   const meta = VIEWS[name]; viewTitle.textContent = meta.title; viewDesc.textContent = meta.desc;
-  if (name !== "workspace") renderStub(name, meta);
+  if (name === "workspace") return;
+  const view = $(`view-${name}`);
+  view.textContent = "";
+  // Tables need a scrolling block layout; the stub cards keep the centered grid.
+  const live = name === "vendors" || name === "history";
+  view.classList.toggle("erp-live", live);
+  meta.render(view);
 }
 function wireNav() { nav.addEventListener("click", (e) => { const b = e.target.closest(".nav-item"); if (b) switchView(b.dataset.view); }); }
 

@@ -211,6 +211,21 @@ html[data-sidebar="collapsed"] .side-toggle svg { transform: rotate(180deg); }
 
 /* ── STUB VIEWS ───────────────────────────────────────────────────── */
 .stub { display: grid; place-items: center; }
+/* real ERP screens (Vendors, History) — a scrolling block, not the centered stub grid */
+.view.erp-live { display: block; overflow: auto; padding: var(--sp-5) var(--sp-6); }
+.erp-lead { font-size: var(--fs-sm); color: var(--ink-3); margin: 0 0 var(--sp-4); max-width: 760px; }
+.erp-h { font-size: var(--fs-title); font-weight: var(--fw-bold); margin: var(--sp-5) 0 var(--sp-2); }
+.erp-table { width: 100%; border-collapse: collapse; font-size: var(--fs-caption); margin-bottom: var(--sp-3); }
+.erp-table th { text-align: left; font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: var(--track-label); color: var(--ink-3); font-weight: var(--fw-bold); padding: 6px 10px; border-bottom: 1px solid var(--hair); white-space: nowrap; }
+.erp-table td { padding: 8px 10px; border-bottom: 1px solid var(--hair); color: var(--ink); vertical-align: top; }
+.erp-table td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.erp-table .mono { font-size: 11.5px; overflow-wrap: anywhere; }
+.erp-empty { text-align: center; color: var(--ink-3); padding: var(--sp-8) var(--sp-4); font-size: var(--fs-sm); }
+.erp-empty-sub { font-size: var(--fs-caption); color: var(--ink-4); margin-top: 6px; }
+.pill { display: inline-block; font-size: 10px; font-weight: var(--fw-bold); text-transform: uppercase; letter-spacing: var(--track-label); padding: 2px 8px; border-radius: var(--r-pill); }
+.pill.ok { background: var(--ok-tint); color: var(--ok); }
+.pill.muted { background: var(--surface-3); color: var(--ink-2); }
+.muted { color: var(--ink-3); }
 .stub-card { text-align: center; max-width: 400px; padding: var(--sp-8); }
 .stub-card .ico-lg { width: 30px; height: 30px; color: var(--brass-strong); margin-bottom: var(--sp-3); fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
 .stub-card h2 { font-family: var(--font-serif); font-size: 20px; font-weight: var(--fw-bold); margin: 0 0 6px; }

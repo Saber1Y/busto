@@ -1,0 +1,41 @@
+=== TIER E SUMMARY ===
+typecheck exit 0 · csec 17/17 · 4 samples PASS · rehearsal PASS
+
+--- E1+E2 explain grounding (raw) ---
+verify: VERIFIED  jobId=4fe579e8…
+
+Q: What happens if I approve?
+A: If you approve, the system will settle the exact amount of 1.00 USDT to the wallet address 0x8ba1f109551bD432803012645Ac136ddd64DBA72 for the purchase order PO-TEST. The vendor "Acme Robotics Ltd" is confirmed to be active and the invoice matches the ERP data. The payment will be authorized and settled as per the ERP confirmation.
+   amount check: PASS (states 1.00, no drift value)
+
+Q: Is this vendor known?
+A: The ERP confirms that the vendor "Acme Robotics Ltd" is known and active.
+   source check: PASS (does not credit the invoice/document)
+
+EXPLAIN GROUNDING OK
+
+--- rehearsal (real settle + fraud G3) ---
+=== ONE CLEAN REHEARSAL ===
+REHEARSAL — the demo path, exactly as it will be driven
+
+[1] clean invoice
+    30190ms → VERIFIED
+
+[2] hold to authorize → REAL settlement
+    26396ms → SETTLED
+    reason        : ok
+    txHash        : 0x94cc1c7d779774a43dce7d3404aa65ad4c966f67e2d859ae53da1e82085df1f1
+    confirmations : 2
+    explorer      : https://sepolia.etherscan.io/tx/0x94cc1c7d779774a43dce7d3404aa65ad4c966f67e2d859ae53da1e82085df1f1
+
+[3] fraud invoice — must block at G3, nothing sent
+    37552ms → BLOCKED at G3
+    reason : wallet check failed — provided wallet does not corroborate DB known_wallet (drift 38)
+
+REHEARSAL PASS
+
+--- E3 nav screens ---
+shots/tierE-vendors.png       real ERP: 3 vendors + 4 open POs
+shots/tierE-history-empty.png honest empty state + profiler-log note
+shots/tierE-history-real.png  real settlement w/ Etherscan tx 0x94cc1c...5df1f1
+shots/tierE-settings.png      honest 'Planned' + accurate .env config note

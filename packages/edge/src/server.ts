@@ -365,6 +365,9 @@ const server = createServer(async (req, res) => {
   const url = (req.url ?? "/").split("?")[0];
   try {
     if (req.method === "GET" && url === "/api/samples") return json(res, 200, SAMPLE_LIST);
+    // The air-gapped ERP, read-only, for the Vendors + History screens. Same live snapshot
+    // the assistant grounds on — real vendors/POs and the real on-chain settlement record.
+    if (req.method === "GET" && url === "/api/erp") return json(res, 200, { ...buildErpSnapshot(db), chain: "Ethereum Sepolia", explorer: "https://sepolia.etherscan.io/tx/" });
     if (req.method === "GET" && url === "/api/wallet") {
       if (!process.env.CUSTOS_WALLET_SEED) return json(res, 200, { configured: false });
       const w = await openEdgeWallet();
