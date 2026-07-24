@@ -62,6 +62,9 @@ export async function auditOcr(params: Parameters<typeof ocr>[0], meta: ModelMet
   const { blocks, stats } = ocr(params);
   const b = (await blocks) as Array<{ text: string }>;
   const s = (await stats) as { totalTime?: number } | undefined;
-  logInference({ node: auditNode, op: "ocr", model: meta.model, delegated: false, wallTotalMs: s?.totalTime ?? performance.now() - t0, event: meta.event ?? `blocks=${b.length}` });
+  // Wall-clock only. The SDK's ocr `stats.totalTime` is in SECONDS, not ms, so logging it
+  // as `wallTotalMs` underreported OCR by ~1000x (a ~5s read showed as gen_ms=5). Timing
+  // load/OCR by wall-clock around the call is what this module documents at the top.
+  logInference({ node: auditNode, op: "ocr", model: meta.model, delegated: false, wallTotalMs: performance.now() - t0, event: meta.event ?? `blocks=${b.length}` });
   return { blocks: b, totalTime: s?.totalTime };
 }

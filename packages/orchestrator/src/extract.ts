@@ -52,7 +52,9 @@ export interface ExtractResult {
 export async function extractInvoice(imagePath: string): Promise<ExtractResult> {
   setAuditNode("orchestrator");
 
-  // 1. OCR — an independent, accurate text read of the document.
+  // 1. OCR — an independent, accurate text read of the document. try/finally so a throw
+  //    mid-read still unloads the model — otherwise it stays resident while the server's
+  //    busy flag releases, and the next op runs against a leaked model.
   const ocrModelId = await auditLoadModel({
     modelSrc: OCR_LATIN_RECOGNIZER_1,
     modelConfig: {
@@ -60,9 +62,13 @@ export async function extractInvoice(imagePath: string): Promise<ExtractResult> 
       defaultRotationAngles: [90, 180, 270], contrastRetry: false, lowConfidenceThreshold: 0.5, recognizerBatchSize: 1,
     },
   }, { model: OCR_MODEL });
-  const { blocks } = await auditOcr({ modelId: ocrModelId, image: imagePath, options: { paragraph: false } }, { model: OCR_MODEL });
+  let blocks: Array<{ text: string }>;
+  try {
+    ({ blocks } = await auditOcr({ modelId: ocrModelId, image: imagePath, options: { paragraph: false } }, { model: OCR_MODEL }));
+  } finally {
+    await auditUnloadModel({ modelId: ocrModelId, clearStorage: false }, { model: OCR_MODEL });
+  }
   const ocrText = blocks.map((b) => b.text).join("\n");
-  await auditUnloadModel({ modelId: ocrModelId, clearStorage: false }, { model: OCR_MODEL });
 
   // 2. Gate 0 — normalize + screen before the LLM (full decode battery, C-sec).
   const gate0 = normalizeForLLM(ocrText);
@@ -71,21 +77,27 @@ export async function extractInvoice(imagePath: string): Promise<ExtractResult> 
   }
 
   // 3. Multimodal extraction — image + Gate-0'd OCR text, grammar-constrained to the schema.
+  //    try/finally for the same reason: a context-overflow throw here must not leave the
+  //    vision model resident (that leak is part of how X1 compounds across verifies).
   const visModelId = await auditLoadModel({
     modelSrc: VISION_SRC,
     modelConfig: { ctx_size: 8192, projectionModelSrc: VISION_PROJ },
   }, { model: VISION_MODEL });
-  const res = await auditCompletion({
-    modelId: visModelId,
-    history: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: `OCR text from the invoice (Gate-0 normalized):\n"""\n${gate0.normalized}\n"""\nExtract the invoice fields as JSON.`, attachments: [{ path: imagePath }] },
-    ],
-    stream: true,
-    responseFormat: { type: "json_schema", json_schema: { name: "invoice_extraction", schema: INVOICE_JSON_SCHEMA } },
-  }, { model: VISION_MODEL, event: "invoice-extraction" });
-  const rawModelOutput = res.contentText.trim();
-  await auditUnloadModel({ modelId: visModelId, clearStorage: false }, { model: VISION_MODEL });
+  let rawModelOutput: string;
+  try {
+    const res = await auditCompletion({
+      modelId: visModelId,
+      history: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: `OCR text from the invoice (Gate-0 normalized):\n"""\n${gate0.normalized}\n"""\nExtract the invoice fields as JSON.`, attachments: [{ path: imagePath }] },
+      ],
+      stream: true,
+      responseFormat: { type: "json_schema", json_schema: { name: "invoice_extraction", schema: INVOICE_JSON_SCHEMA } },
+    }, { model: VISION_MODEL, event: "invoice-extraction" });
+    rawModelOutput = res.contentText.trim();
+  } finally {
+    await auditUnloadModel({ modelId: visModelId, clearStorage: false }, { model: VISION_MODEL });
+  }
 
   // 4. Parse + Zod validate (the grammar guarantees shape; validate anyway).
   const extraction = invoiceExtractionSchema.parse(JSON.parse(rawModelOutput));
