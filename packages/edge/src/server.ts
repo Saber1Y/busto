@@ -3,8 +3,9 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve, extname, sep } from "node:path";
-import { loadEnvSafe, logInference, buildPaymentIntent, toMinorUnits, fromMinorUnits, type PaymentIntent } from "../../shared/src/index.ts";
-import { openErp, ensureSchema, seedErp, lookupVendor } from "../../orchestrator/src/erp.ts";
+import { GTE_LARGE_FP16 } from "@qvac/sdk";
+import { loadEnvSafe, logInference, buildPaymentIntent, toMinorUnits, fromMinorUnits, setAuditNode, auditLoadModel, auditEmbed, type PaymentIntent } from "../../shared/src/index.ts";
+import { openErp, ensureSchema, seedErp, lookupVendor, type EmbedFn } from "../../orchestrator/src/erp.ts";
 import { extractInvoice, type ExtractResult } from "../../orchestrator/src/extract.ts";
 import { computeVerdict, type Verdict } from "../../orchestrator/src/verdict.ts";
 import { explainInvoice, type ExplainContext } from "../../orchestrator/src/explain.ts";
@@ -27,7 +28,32 @@ const HOST = process.env.HOST ?? "127.0.0.1";
 loadEnvSafe();
 const db = openErp(resolve(REPO, "data/erp.db"));
 ensureSchema(db);
-await seedErp(db); // exact-match verdict needs no models
+
+// Retrieval runs in the served product, not only in the C3 demo script. GTE-large loads
+// once at boot and stays resident — it seeds the PO vector store and embeds one query per
+// verify, so there is no per-request load tax for a 0.62 GiB model. Retrieval is ADVISORY
+// (verdict.ts): it reports what is *near*, it never widens what can pass.
+const RAG_MODEL = "GTE_LARGE_FP16";
+let ragEmbed: EmbedFn | undefined;
+try {
+  setAuditNode("orchestrator");
+  const gteId = await auditLoadModel({ modelSrc: GTE_LARGE_FP16, modelConfig: { gpuLayers: 99, device: "gpu" } }, { model: RAG_MODEL });
+  const embedWith = (event: string): EmbedFn => async (text) => {
+    setAuditNode("orchestrator");
+    return auditEmbed({ modelId: gteId, text }, { model: RAG_MODEL, event });
+  };
+  await seedErp(db, embedWith("seed-po-embedding"));
+  ragEmbed = embedWith("rag-query");
+  console.log(`  RAG   ${RAG_MODEL} resident · purchase-order retrieval is live (advisory)`);
+} catch (e) {
+  // Never a boot failure: the verdict is exact-match arithmetic and needs no inference.
+  // Say so out loud rather than serving a silently degraded product.
+  const detail = String((e as Error)?.message ?? e);
+  console.error(`  RAG   ${RAG_MODEL} did NOT load — ${detail}`);
+  console.error("  RAG   falling back to exact-match verification only. Verdicts are unchanged; the retrieval panel will be absent.");
+  logInference({ node: "orchestrator", op: "rag-unavailable", model: RAG_MODEL, delegated: false, event: `load failed: ${detail}` });
+  await seedErp(db);
+}
 
 interface Job { explainContext: ExplainContext; status: string; intent?: PaymentIntent; vendorId?: number; poId?: number }
 const jobs = new Map<string, Job>();
@@ -119,7 +145,7 @@ async function handleVerify(req: Req, res: Res): Promise<void> {
       send({ t: "step", id: "G2", state: "active", detail: "checking the ERP" });
     }
 
-    const verdict = await computeVerdict(db, ex.extraction, invoiceRef, undefined, gate0Flagged);
+    const verdict = await computeVerdict(db, ex.extraction, invoiceRef, ragEmbed, gate0Flagged);
     logInference({ node: "edge", op: "verdict", model: "deterministic", delegated: false, event: `${verdict.decision} ${invoiceRef}` });
     const gates = gatesFromVerdict(verdict, gate0Flagged);
 
@@ -137,7 +163,14 @@ async function handleVerify(req: Req, res: Res): Promise<void> {
           r("wallet", c.walletMatch, c.walletMatch ? "the payout wallet matches the verified wallet on file" : "the payout wallet does not match the wallet on file"),
           r("duplicate", c.notDuplicate, c.notDuplicate ? "not seen before — no duplicate" : "this invoice was already settled"),
         ];
-    for (const rs of reasonStream) { send({ t: "reason", ...rs }); if (!rs.ok) break; }
+    // The retrieval trace rides alongside the PO line — that is the check it informs.
+    // It is emitted whether the PO matched or not: on a miss, "nearest by description"
+    // is the most useful thing on the screen.
+    for (const rs of reasonStream) {
+      send({ t: "reason", ...rs });
+      if (rs.step === "po" && verdict.rag) send({ t: "rag", data: verdict.rag });
+      if (!rs.ok) break;
+    }
 
     send({ t: "verdict", data: verdict });
     if (!gate0Flagged) for (const g of gates) if (g.id === "G2" || g.id === "G3") send({ t: "step", id: g.id, state: g.state, detail: g.detail });

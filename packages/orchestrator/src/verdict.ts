@@ -6,11 +6,22 @@ import { lookupVendor, matchPurchaseOrder, verifyWallet, isDuplicateInvoice, typ
 // is impossible unless EVERY check clears. Threat-model C (36–54): vendor/PO/wallet
 // from the DB, exact match, minor-units, EIP-55 — confidence never bypasses this.
 
+/** What the vector search was asked and what it returned. Advisory evidence for the
+ *  operator — it is NOT part of the decision. */
+export interface RagTrace {
+  query: string;
+  candidates: Array<{ poNumber: string; distance: number }>;
+}
+
 export interface Verdict {
   decision: "PASS" | "REJECT";
   reasons: string[];
   matchedPO: string | null;
   knownWallet: string | null;
+  /** null when no embedder was supplied, or when the vendor/amount preconditions meant
+   *  no search ran. A populated trace never widens what can pass — `decision` below is
+   *  computed from `checks` alone. */
+  rag: RagTrace | null;
   checks: {
     gate0Clean: boolean;
     vendorExists: boolean;
@@ -64,8 +75,11 @@ export async function computeVerdict(
 
   // 3. PO match — exact vendor+amount+currency, RAG only suggests (threat #37/#38/#40).
   let matchedPO: string | null = null;
+  let rag: RagTrace | null = null;
   if (vendor.exists && vendor.vendorId !== undefined && amountMinor !== null) {
-    const po = await matchPurchaseOrder(db, vendor.vendorId, amountMinor, extraction.currency, descriptionForRag(extraction), embed);
+    const ragQuery = descriptionForRag(extraction);
+    const po = await matchPurchaseOrder(db, vendor.vendorId, amountMinor, extraction.currency, ragQuery, embed);
+    if (embed) rag = { query: ragQuery, candidates: po.ragCandidates.map((c) => ({ poNumber: c.poNumber, distance: c.distance })) };
     checks.poMatched = po.matched;
     if (po.matched) {
       matchedPO = po.poNumber ?? null;
@@ -97,5 +111,5 @@ export async function computeVerdict(
       ? "PASS"
       : "REJECT";
 
-  return { decision, reasons, matchedPO, knownWallet, checks };
+  return { decision, reasons, matchedPO, knownWallet, rag, checks };
 }

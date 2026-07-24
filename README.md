@@ -200,6 +200,20 @@ Nothing here is faked — and you can check all of it:
 
 ---
 
+## Post-feedback work (July 2026, at QVAC's request)
+
+The hackathon build period closed **June 21, 2026**. Everything below landed **after** that
+date, at the explicit request of Hugo (QVAC/Tether), who reviewed the repo and asked for three
+specific changes ahead of the finalist pitch. It is listed separately, on purpose: the original
+submission is the June-21 build, and every metric in `evidence/inference-log.jsonl` still maps
+to the claim it backs. Full working log: [`evidence/pitch-fixes/REPORT.md`](./evidence/pitch-fixes/REPORT.md).
+
+| Item (Hugo's words) | What changed | Where |
+|---|---|---|
+| "TC and RAG only run in `c3-verdict-demo.ts` — we'd like to see it in the app" | **RAG is now live in the served product.** GTE-large loads at server boot, seeds the PO vector store, and embeds one query per verify; the retrieval trace (query + candidate POs + L2 distance) streams to the console and renders under the purchase-order check, labelled advisory. | `verdict.ts`, `server.ts`, `dash.js` |
+
+_This section grows as the remaining post-feedback tiers land; each is gated and reverted on failure rather than shipped on "should work"._
+
 ## The deeper docs
 
 | Doc | What's in it |

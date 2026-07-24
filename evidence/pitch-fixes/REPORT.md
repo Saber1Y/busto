@@ -793,3 +793,133 @@ link."* **That never happened** — the Intel has never produced a logged row an
 is Llama-3.2-1B, not Qwen3-VL. The repo draft is redrafted. **If that text was ever actually posted
 to X, the redraft is not the whole fix** — check your timeline. A short public correction before the
 pitch reads as rigour; being caught reads as the opposite.
+
+---
+---
+
+# Post-feedback pass — 2026-07-24 (Hugo / QVAC)
+
+A second remediation run, the morning of the finalist pitch, closing the three items Hugo
+raised after reviewing the repo. Same ground rules as the night before: no fabricated
+output, no edits or back-fills to `evidence/inference-log.jsonl`, one tier at a time, hard
+revert on any tier that fails its gate.
+
+Last known-green state is tagged **`pre-pitch-green`** (= `d1462d4`). `git checkout
+pre-pitch-green` returns to the rehearsed build in one command.
+
+---
+
+## Tier A — RAG is live in the served product
+
+**Status: DONE.** Verified by observed output and two browser screenshots.
+
+### Why
+
+Hugo: *"Your TC and RAG are well implemented, but they only run in `c3-verdict-demo.ts`.
+We would've liked to see it visible in the app."*
+
+He was right, and the specific dead path was: [server.ts:27](../../packages/edge/src/server.ts#L27)
+called `seedErp(db)` with no embedder, so the `po_vectors` `vec0` table
+([erp.ts:77](../../packages/orchestrator/src/erp.ts#L77)) was created and left **empty**;
+[server.ts:118](../../packages/edge/src/server.ts#L118) then passed `undefined` for `embed`,
+so the sqlite-vec KNN branch at [erp.ts:135-145](../../packages/orchestrator/src/erp.ts#L135-L145)
+never executed in the product. The retrieval code was real and worked — it just only ran in
+`npm run c3:demo`. Worse, even when it *did* run, `ragCandidates` were folded into a REJECT
+reason string ([verdict.ts:74-75](../../packages/orchestrator/src/verdict.ts#L74-L75)) and
+**discarded entirely on PASS**.
+
+### What changed
+
+| File | Change |
+|---|---|
+| `packages/orchestrator/src/verdict.ts` | New `RagTrace {query, candidates[]}` on the `Verdict`. Populated only when an embedder is supplied. Doc comment states it is advisory and that `decision` is computed from `checks` alone. |
+| `packages/edge/src/server.ts` | Boot block loads `GTE_LARGE_FP16` through `auditLoadModel`, seeds the PO vector store, and keeps the model resident for per-verify queries. `computeVerdict(..., ragEmbed, ...)`. |
+| `packages/edge/src/server.ts` | Emits `send({t:"rag", data})` on the existing chunked-NDJSON transport, positioned immediately after the `po` reason line. |
+| `packages/edge/ui/dash.js` | `handleVerifyEvent` gains a `rag` branch; `ragDetail()` renders query + candidates + the advisory disclaimer. Rendered via `textContent` (the query comes off the document). |
+
+Embeddings go through `auditEmbed` — which had **zero callers** before this tier — so every
+embed now writes a profiler-backed row, as Hard Rule 6 requires. That was scheduled for
+Tier B in the plan; it belongs here because this is the tier that creates the embed calls,
+and leaving them unlogged for one commit would have violated the rule.
+
+**Boot failure is handled, not assumed away.** If GTE cannot load, the server logs the real
+error, logs a `rag-unavailable` audit row, re-seeds without vectors, and serves normally —
+the verdict is exact-match integer arithmetic and needs no inference at all. This path was
+written deliberately but **was not exercised** (see "not verified" below).
+
+### Observed output
+
+Raw: `tierA-rag-live.txt`. Screenshots: `shots/tierA-rag-clean.png`, `shots/tierA-rag-blocked.png`.
+
+Pre-change baseline, same machine, this morning, unmodified `d1462d4`, 4 samples in one process:
+
+```
+[ui-clean]     PASS  (25221ms)
+[ui-fraud]     *** FAIL ***  (105165ms)  ERROR: prompt exceeds the model's context window
+[ui-injection] PASS  (22334ms)
+[ui-amount]    PASS  (21362ms)
+```
+
+That failure is **pre-existing X1**, not Tier A — and it hit on call **2** today, earlier than
+the call 3-4 recorded last night. See the X1 note below.
+
+After Tier A, four samples across two processes (the X1-respecting way the demo is driven):
+
+```
+[ui-clean]     PASS (23588ms)  RAG: "C4 live-settlement test order" -> PO-TEST d=0.3229, PO-1042 d=0.6576
+[ui-fraud]     PASS (23420ms)  BLOCKED G3   RAG: PO-TEST d=0.2804, PO-1042 d=0.6829
+[ui-injection] PASS (23716ms)  BLOCKED G0   RAG: no event on the stream
+[ui-amount]    PASS (21857ms)  BLOCKED G2   RAG: PO-TEST d=0.2804, PO-1042 d=0.6829
+```
+
+`ui-injection` emitting no RAG event is correct, not a bug: the reason stream stops at Gate 0,
+so nothing downstream is claimed. (The embed itself still runs, because `computeVerdict`
+evaluates every check regardless of Gate 0 — visible in the log as a `rag-query` row at
+03:52:34 with no matching stream event. Minor wasted work on an already-rejected document;
+not worth a code change before the pitch.)
+
+### Gate
+
+| Gate condition | Result |
+|---|---|
+| Full 4-sample pass | **PASS** — 4/4 correct verdicts |
+| Server boots reliably 3× in a row | **PASS** — 4/4 boots printed `RAG GTE_LARGE_FP16 resident` |
+| Verify time regresses ≤3s | **PASS** — RAG adds **59–93 ms** per verify (measured, `op=embed event=rag-query`). Wall times 21.9–23.7s vs 21.4–25.2s baseline. |
+| Memory stays comfortable on 32 GB | **PASS** — QVAC worker RSS **1.04 GB** with GTE resident, node server 0.29 GB. ~10 GB available at boot. |
+
+Audit rows produced (append-only, never edited):
+
+```
+loadModel GTE_LARGE_FP16   1820 / 2079 / 1578 ms   (once per boot, before listen())
+embed     seed-po-embedding  22–158 ms  ×4 per boot
+embed     rag-query          59 / 71 / 93 / 64 ms  (one per verify)
+```
+
+### What I could NOT verify programmatically
+
+1. **The GTE load-failure fallback path never executed.** The code is written and typechecks,
+   but I did not force a load failure, so "the server still serves with RAG down" is
+   reasoned, not observed. If you want it proven, rename the model cache entry and boot.
+2. **No automated UI test exists.** The two screenshots are real headless-Chrome captures of
+   the live server driven over CDP (`shot.ts`), so the RAG line is *observed* rendering — but
+   there is no assertion that will catch a future regression.
+3. **Distances are not calibrated.** `d=0.28` vs `d=0.68` is a raw sqlite-vec L2 distance. It
+   is shown as-is. I have no claim about what a "good" distance is, and the UI makes none.
+
+### Manual checks for you (30 seconds)
+
+1. `npm run serve` — the banner must read `RAG GTE_LARGE_FP16 resident · purchase-order retrieval is live (advisory)`.
+2. Open `http://localhost:4173`, click **Clean invoice**. After "Matched a purchase order",
+   a line reads **"Searched your purchase orders by description"** with the query in quotes,
+   `PO-TEST · d=…`, and the advisory sentence.
+3. Click **Amount doesn't match a PO** (fresh server). Same line appears under the **failed**
+   PO check — this is the strongest version of the story: retrieval offers the near miss, and
+   the exact check still refuses.
+4. Confirm the advisory sentence is legible on the projector at your seating distance. It is
+   `--fs-caption` grey; it is the sentence that stops a judge thinking RAG authorizes payment.
+
+### The line to say out loud
+
+RAG suggests; it never authorizes. The vector search proposes candidate purchase orders by
+meaning, and the only thing that can clear Gate 2 is exact integer equality on minor units
+against the ERP. Both are now on screen, and the screen says which is which.

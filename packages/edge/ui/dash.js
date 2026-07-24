@@ -110,6 +110,17 @@ function readDetail(model, blocks, ms) {
   return d;
 }
 const reasonDetail = (text) => el("div", { class: "rl-detail", text });
+// Advisory retrieval (sqlite-vec KNN over GTE-large PO embeddings). The query comes off
+// the document, so it is rendered as text, never markup.
+function ragDetail(rag) {
+  const q = rag.query.length > 96 ? rag.query.slice(0, 96) + "…" : rag.query;
+  const d = el("div", { class: "rl-detail" }, el("div", { text: `“${q}”` }));
+  d.append(rag.candidates.length
+    ? el("div", {}, el("span", { class: "mono", text: rag.candidates.map((c) => `${c.poNumber} · d=${c.distance.toFixed(3)}`).join("   ") }))
+    : el("div", { text: "no purchase order for this vendor came back as near" }));
+  d.append(el("div", { text: "advisory — retrieval only suggests; the match that authorizes is exact equality on minor units" }));
+  return d;
+}
 
 /* structured cards */
 function kvRow(k, v) {
@@ -234,6 +245,8 @@ function handleVerifyEvent(e, ctx) {
     addReasonLine(ctx.box, `Extracted ${e.data.vendorName || "—"} · ${e.data.invoiceAmount || "—"} ${assetLabel(e.data.currency)} · due ${e.data.dueDate || "—"}`, "info");
   } else if (e.t === "reason") {
     addReasonLine(ctx.box, REASON_LABEL[e.step] || e.step, e.ok ? "check" : "cross", reasonDetail(e.detail));
+  } else if (e.t === "rag") {
+    addReasonLine(ctx.box, "Searched your purchase orders by description", "info", ragDetail(e.data));
   } else if (e.t === "intent") {
     ctx.intent = e.data;
   } else if (e.t === "final") {
