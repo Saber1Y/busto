@@ -1,0 +1,11 @@
+=== demo:reset (clear the screenshot's test settlement) ===
+            cleared 1 prior settlement row(s)
+            now: 3 vendors · 4 purchase orders · 0 settlements
+=== typecheck ===
+> tsc --noEmit -p tsconfig.json
+
+typecheck exit=
+=== csec:test (Gate-0 battery, no models) ===
+  ✓ classic-wallet-lookalike.json      => REJECT
+
+✅ C-sec: 17 passed, 0 failed.
