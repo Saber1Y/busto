@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import { toMinorUnits, type InvoiceExtraction } from "../../shared/src/index.ts";
+import { toMinorUnits, type InvoiceExtraction, type ExtractionReview } from "../../shared/src/index.ts";
 import { lookupVendor, matchPurchaseOrder, verifyWallet, isDuplicateInvoice, type EmbedFn } from "./erp.ts";
 
 // Deterministic PASS/REJECT (Gate 1: the LLM proposes; this code decides). A payment
@@ -24,6 +24,7 @@ export interface Verdict {
   rag: RagTrace | null;
   checks: {
     gate0Clean: boolean;
+    crossCheckOk: boolean;
     vendorExists: boolean;
     vendorActive: boolean;
     amountParsed: boolean;
@@ -31,6 +32,9 @@ export interface Verdict {
     walletMatch: boolean;
     notDuplicate: boolean;
   };
+  /** OCR-vs-vision corroboration sub-results (threat #26), for the UI. null when no OCR
+   *  review was supplied (e.g. a synthetic extraction with no document to cross-read). */
+  crossCheck: ExtractionReview["checks"] | null;
 }
 
 function descriptionForRag(x: InvoiceExtraction): string {
@@ -44,10 +48,11 @@ export async function computeVerdict(
   invoiceRef: string,
   embed?: EmbedFn,
   gate0Flagged = false,
+  review?: ExtractionReview,
 ): Promise<Verdict> {
   const reasons: string[] = [];
   const checks: Verdict["checks"] = {
-    gate0Clean: !gate0Flagged, vendorExists: false, vendorActive: false, amountParsed: false,
+    gate0Clean: !gate0Flagged, crossCheckOk: true, vendorExists: false, vendorActive: false, amountParsed: false,
     poMatched: false, walletMatch: false, notDuplicate: false,
   };
   const ok = (r: string): void => void reasons.push(`ok: ${r}`);
@@ -56,6 +61,21 @@ export async function computeVerdict(
   // 0. Gate-0 — obfuscated injection detected upstream → block (Threat-Model §2).
   if (gate0Flagged) reject("Gate-0 flagged an obfuscated/decoded imperative in the document text");
   else ok("Gate-0: no obfuscated imperative detected");
+
+  // 0b. OCR-vs-vision cross-check (threat #26). The two independent reads must AGREE on the
+  //     material fields before the deterministic checks trust the extraction — a 5000→50000
+  //     perturbation between the paths must NOT settle silently. Scoped to AMOUNT (the #26
+  //     target) and VENDOR, both soundly detectable in the OCR text. The WALLET is excluded
+  //     on purpose: OCR mangles long hex (O→0, l→1), so raw-substring corroboration
+  //     false-positives on a CORRECT address, and the wallet already has a dedicated,
+  //     OCR-tolerant gate (Gate 3 / walletMatch vs the DB). Including it would block clean
+  //     invoices on OCR noise, not on real disagreement.
+  const cc = review?.checks ?? null;
+  checks.crossCheckOk = !cc || (cc.amountInOcr && cc.vendorInOcr);
+  if (cc) {
+    if (checks.crossCheckOk) ok("OCR and vision reads corroborate the amount and vendor");
+    else reject(`OCR and vision disagree on the ${!cc.amountInOcr ? "amount" : "vendor"} — the two independent reads don't match (threat #26); needs review, not settling`);
+  }
 
   // 1. Vendor existence + status (Gate 2).
   const vendor = lookupVendor(db, extraction.vendorName);
@@ -106,10 +126,10 @@ export async function computeVerdict(
   else reject(`invoice_ref "${invoiceRef}" already settled (duplicate/replay)`);
 
   const decision: Verdict["decision"] =
-    checks.gate0Clean && checks.vendorExists && checks.vendorActive && checks.amountParsed &&
-    checks.poMatched && checks.walletMatch && checks.notDuplicate
+    checks.gate0Clean && checks.crossCheckOk && checks.vendorExists && checks.vendorActive &&
+    checks.amountParsed && checks.poMatched && checks.walletMatch && checks.notDuplicate
       ? "PASS"
       : "REJECT";
 
-  return { decision, reasons, matchedPO, knownWallet, rag, checks };
+  return { decision, reasons, matchedPO, knownWallet, rag, checks, crossCheck: cc };
 }

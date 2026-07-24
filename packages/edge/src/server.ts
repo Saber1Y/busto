@@ -147,10 +147,12 @@ function buildExplainContext(invoiceRef: string, ex: ExtractResult, verdict: Ver
 }
 
 function gatesFromVerdict(v: Verdict, gate0Flagged: boolean): Array<{ id: string; name: string; state: "cleared" | "blocked" | "pending"; detail: string }> {
-  // "Deterministic truth" (G2) also covers replay: a duplicate invoice is not a clean record,
-  // so the ladder stays consistent with the BLOCKED verdict instead of showing all gates cleared.
-  const g2 = v.checks.vendorExists && v.checks.vendorActive && v.checks.amountParsed && v.checks.poMatched && v.checks.notDuplicate;
-  const g2Detail = g2 ? `${v.matchedPO} matches the amount` : !v.checks.notDuplicate ? "this invoice was already settled" : "no vendor/PO match in the ERP";
+  // "Deterministic truth" (G2) also covers replay AND the OCR-vs-vision cross-check: a
+  // duplicate invoice or two reads that disagree is not a clean record, so the ladder stays
+  // consistent with the BLOCKED verdict instead of showing all gates cleared.
+  const readsAgree = v.checks.crossCheckOk;
+  const g2 = readsAgree && v.checks.vendorExists && v.checks.vendorActive && v.checks.amountParsed && v.checks.poMatched && v.checks.notDuplicate;
+  const g2Detail = !readsAgree ? "the OCR and vision reads disagree — needs review" : g2 ? `${v.matchedPO} matches the amount` : !v.checks.notDuplicate ? "this invoice was already settled" : "no vendor/PO match in the ERP";
   return [
     { id: "G0", name: "Hidden-instruction check", state: gate0Flagged ? "blocked" : "cleared", detail: gate0Flagged ? "a hidden instruction was found in the document" : "no hidden instructions" },
     { id: "G1", name: "The reader can't pay", state: gate0Flagged ? "pending" : "cleared", detail: "the AI only extracts fields" },
@@ -226,7 +228,7 @@ async function handleVerify(req: Req, res: Res): Promise<void> {
       }
     }
 
-    const verdict = await computeVerdict(db, ex.extraction, invoiceRef, ragEmbed, gate0Flagged);
+    const verdict = await computeVerdict(db, ex.extraction, invoiceRef, ragEmbed, gate0Flagged, ex.review);
     logInference({ node: "edge", op: "verdict", model: "deterministic", delegated: false, event: `${verdict.decision} ${invoiceRef}` });
     const gates = gatesFromVerdict(verdict, gate0Flagged);
 
@@ -239,6 +241,7 @@ async function handleVerify(req: Req, res: Res): Promise<void> {
       ? [r("gate0", false, `a hidden instruction was found in the document and ignored — ${ex.gate0.findings[0]?.detail ?? ""}`)]
       : [
           r("gate0", true, "no hidden instructions in the document"),
+          r("crosscheck", c.crossCheckOk, c.crossCheckOk ? "the OCR read and the vision read agree on the amount and vendor" : "the OCR read and the vision read disagree — needs review, not settling"),
           r("vendor", c.vendorExists && c.vendorActive, c.vendorExists ? (c.vendorActive ? `${ex.extraction.vendorName} is on file and active` : `${ex.extraction.vendorName} is on file but not active`) : `“${ex.extraction.vendorName}” is not in your books`),
           r("po", c.poMatched, c.poMatched ? `${verdict.matchedPO} matches ${ex.extraction.invoiceAmount} ${ex.extraction.currency}` : `no open purchase order matches ${ex.extraction.invoiceAmount} ${ex.extraction.currency}`),
           r("wallet", c.walletMatch, c.walletMatch ? "the payout wallet matches the verified wallet on file" : "the payout wallet does not match the wallet on file"),

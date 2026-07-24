@@ -23,6 +23,7 @@ const DOC_SVG = '<svg viewBox="0 0 16 16" width="15" height="15" fill="none" str
 
 const REASON_LABEL = {
   gate0: "Checked for hidden instructions",
+  crosscheck: "Cross-checked the two readings (OCR vs vision)",
   vendor: "Looked up the vendor in your books",
   po: "Matched a purchase order",
   wallet: "Verified the payout wallet",

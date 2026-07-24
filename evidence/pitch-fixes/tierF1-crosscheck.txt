@@ -1,0 +1,32 @@
+=== FIX 1 · clean + fraud (crossCheck sub-results) ===
+
+[ui-clean] PASS  VERIFIED  gate=-
+   crossCheckOk : true
+   sub-checks   : amountInOcr=true vendorInOcr=true walletInOcr=false
+
+[ui-fraud] PASS  BLOCKED  gate=G3
+   crossCheckOk : true
+   sub-checks   : amountInOcr=true vendorInOcr=true walletInOcr=true
+
+ALL 2 CORRECT
+=== FIX 1 · injection + amount ===
+
+[ui-injection] PASS  BLOCKED  gate=G0
+   crossCheckOk : true
+   sub-checks   : amountInOcr=true vendorInOcr=true walletInOcr=false
+
+[ui-amount] PASS  BLOCKED  gate=G2
+   crossCheckOk : true
+   sub-checks   : amountInOcr=true vendorInOcr=true walletInOcr=false
+
+ALL 2 CORRECT
+=== cross-check fires? (pure logic, no models) ===
+PASS  PASS   got PASS    crossCheckOk=true  — reads AGREE (amount+vendor+wallet all corroborate)
+PASS  REJECT got REJECT  crossCheckOk=false  — AMOUNT disagreement (vision≠OCR, threat #26)
+         reason: OCR and vision disagree on the amount — the two independent reads don't match (threat #26); needs review, not settling
+PASS  REJECT got REJECT  crossCheckOk=false  — VENDOR disagreement
+         reason: OCR and vision disagree on the vendor — the two independent reads don't match (threat #26); needs review, not settling
+PASS  PASS   got PASS    crossCheckOk=true  — WALLET-only mismatch (OCR-mangled hex — must NOT block; Gate 3's job)
+PASS  PASS   got PASS    crossCheckOk=true  — no review supplied (synthetic extraction, no OCR)
+
+CROSS-CHECK FIRES CORRECTLY (blocks disagreement, ignores OCR hex noise)
