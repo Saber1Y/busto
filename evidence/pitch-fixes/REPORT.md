@@ -923,3 +923,122 @@ embed     rag-query          59 / 71 / 93 / 64 ms  (one per verify)
 RAG suggests; it never authorizes. The vector search proposes candidate purchase orders by
 meaning, and the only thing that can clear Gate 2 is exact integer equality on minor units
 against the ERP. Both are now on screen, and the screen says which is which.
+
+---
+
+## Tier B — tool-calling live in the app + event rendering + profiler footer
+
+**Status: DONE.** Verified by observed output, two browser screenshots, and 50 audit rows.
+
+### Why
+
+Hugo #1, answered properly: *"Your TC ... only runs in `c3-verdict-demo.ts`. We would've
+liked to see it visible in the app."* `runVerificationAgent` (tools.ts) was real — three Zod
+tool schemas bound to QVAC native tool-calling on QWEN3-1.7B — but its only caller was the
+demo script. `server.ts` never imported `tools.ts`. This tier makes the tool trace part of
+the served verification, and fixes three things the pitch surface was silently dropping.
+
+### What changed
+
+| File | Change |
+|---|---|
+| `packages/shared/src/audit.ts` | `auditCompletion` now also returns `toolCalls` (`ToolCallWithCall[]`), so tool turns can be audited without losing the tool-call surface. |
+| `packages/orchestrator/src/tools.ts` | `runVerificationAgent` uses `auditLoadModel`/`auditCompletion`/`auditUnloadModel` (every tool turn now writes a profiler row); generation capped with `predict: 512` (Hard Rule 8); new `onCall` callback streams each `ToolCallRecord` at the single deterministic capture point; `embed` made optional so tools still run with RAG off. |
+| `packages/edge/src/server.ts` | `handleVerify` invokes `runVerificationAgent` on any Gate-0-clean document, streaming `tools-begin` / `tool` / `tools-end`. Wrapped so a tool-calling failure never blocks the deterministic verdict; zero tool calls is handled as a legitimate outcome. |
+| `packages/edge/src/server.ts` | `explain`/`assist` handlers send `prof` (tokens · tok/s · TTFT · device · profiler-raw) on `{t:"done"}`. |
+| `packages/orchestrator/src/explain.ts`, `assistant.ts` | Return `{text, stats}` instead of a bare string (stats were discarded before). `auditEmbed` was already wired in Tier A. |
+| `packages/edge/ui/dash.js` | New event branches: the tool-calling section (header + per-call name/args/result), the **deterministic-verdict capstone** (`{t:"verdict"}`), the Gate-0 multi-finding detail (`{t:"step"}`), and the **profiler footer** under every assistant answer. |
+| `packages/edge/ui/dash.css` | `.tool-ret`, `.prof-foot`. |
+| `scripts/c8a-explain-demo.ts` | Updated to `a.text` for the new return shape. |
+
+The framing on screen is exactly how the code works: **"Model gathered facts by calling
+your ERP tools — the AI proposes; the deterministic verdict below decides,"** then the real
+`lookup_vendor` / `match_purchase_order` / `verify_wallet` calls with their arguments and
+DB-derived results, then **"Deterministic verdict — PASS — all 7 checks cleared in plain
+code — no model in this decision."** That is Hugo's "the model never decides" made visible.
+
+### Gate — functional
+
+Raw: `tierB-toolcalling-x1.txt`. Screenshots: `shots/tierB-tools-header.png`,
+`shots/tierB-tools-clean.png`.
+
+| Condition | Result |
+|---|---|
+| 4 samples pass | **PASS** — clean VERIFIED, fraud BLOCKED G3, injection BLOCKED G0, amount BLOCKED G2 |
+| Verify < 90s | **PASS** — max observed ~49s (tool-calling roughly doubles a verify: ~23s → ~40-49s) |
+| Tool turns audited | **PASS** — 50 `tool-turn` completion rows, **all** `profiler-raw`; generated tokens 53..512, the `predict=512` cap fires (no runaway) |
+| Profiler footer real | **PASS** — e.g. `49 tok · 66.6 tok/s · TTFT 552ms · gpu · profiler-raw`, straight from `run.stats` |
+
+Note: the model picks 2–3 of the 3 tools per run (its choice, nondeterministic). The trace
+shown in the demo will vary run to run; the deterministic checks below cover every field
+regardless, so this is honest model behaviour, not a bug.
+
+Injection (Gate-0-flagged) deliberately SKIPS tool-calling — a document carrying a hidden
+instruction is never fed to the tool-calling model. Correct by design.
+
+### Gate — X1 re-measurement (the headline for the demo)
+
+**The post-Tier-B ceiling is NOT 1 verify per process. It is 5–7 (variable) with RAG on.**
+You do **not** need to restart between the clean invoice and the fraud invoice.
+
+Method: fire verifies back to back into one server process, cycling the four samples, and
+count survivors before the context-window overflow — RAG on vs RAG off, same build.
+
+| Build | Ceiling |
+|---|---|
+| Pre-Tier-A baseline (`d1462d4`, no resident model, no TC) | overflow at call **2** this morning; call **3–4** last night |
+| Post-Tier-B, **RAG on** (GTE resident, TC) | run 1 overflow at call 6 (**ceiling 5**); run 2 no overflow in 7 (**≥7**) |
+| Post-Tier-B, **RAG off** (`CUSTOS_RAG=off`) | no overflow in 8 (**≥8**) |
+
+**Mechanism (answering the attribution question directly).** The overflow is the vision
+model's backend context accumulating across verifies *within a single long-lived QVAC bare
+worker*. Whether that worker survives between verifies is the whole game:
+
+- **RAG on:** GTE stays resident, so "models active" never drops to zero → the bare worker
+  is **never torn down** (measured: 1 start, 0 teardowns) → context accumulates → finite
+  ceiling ~5–7.
+- **RAG off:** no resident model → model count hits zero after each verify → the worker is
+  **killed and respawned** (measured: 22 teardowns over 8 verifies) → the vision context
+  **resets every verify** → effectively no ceiling.
+
+So: **is the regression attributable to Tier A? Yes, mechanistically** — Tier A's resident
+GTE is exactly what keeps the worker alive and lets the context accumulate. It is not
+"per-completion" or "per-model-load" in isolation; it is per-vision-completion accumulation
+*conditional on the worker staying alive*, and the worker only stays alive because a model is
+resident. (Interestingly the post-Tier-B RAG-on ceiling of 5–7 is *higher* than the pre-Tier-A
+2–4, because the old path warm-reused the vision model — `"...is already loaded"` — and
+accumulated faster; the new path loads it fresh each verify inside the persistent worker.)
+
+**Demo config decision.** The demo runs **RAG on** — Hugo #1 needs retrieval visible, and the
+ceiling of 5–7 is comfortable. Conservative restart rule: **restart `serve` every 4 verifies**
+(one below the minimum observed). The scripted demo is 2 verifies (clean+settle, then fraud),
+so a mid-demo restart is **optional** — though the "fresh process, nothing cached between runs"
+beat is still available if you want it as narration. `CUSTOS_RAG=off` (ceiling ≥8) exists as a
+fallback lever but drops the retrieval panel, so it is not the demo default.
+
+### What I could NOT verify programmatically
+
+1. **The 5–7 ceiling is variable, not a hard number.** Two RAG-on runs gave 5 and ≥7. Token
+   pressure depends on per-call generation lengths, which vary. The conservative "every 4" rule
+   absorbs this; do not treat 5 as guaranteed.
+2. **`CUSTOS_RAG=off` was exercised (ceiling probe) but the Tier-A GTE *load-failure* fallback
+   still was not** — that is a different code path (a thrown load), still only reasoned.
+3. **Screenshots are observed, not asserted.** Real headless-Chrome/CDP captures of the live
+   server; still no regression test that will catch a future UI break.
+
+### Manual checks for you
+
+1. `npm run serve`, open `http://localhost:4173`, run **Clean invoice**. In the reasoning box:
+   "Model gathered facts by calling your ERP tools", then `called lookup_vendor …` etc. with
+   real args + results, then "Deterministic verdict — PASS".
+2. Click a suggestion chip (e.g. "What does Custos check?"). Under the answer: a grey mono
+   footer `N tok · X tok/s · TTFT Yms · gpu · profiler-raw`.
+3. Run **Hidden instruction** — confirm NO tool section appears (Gate-0 short-circuits TC).
+4. If you want the "nothing cached" beat: `Ctrl+C`, `npm run serve` again between segments.
+   Otherwise just keep going — you have 4+ verifies of headroom.
+
+### The line to say out loud
+
+The model's whole job is to *gather facts* — you can watch it call the ERP tools. The decision
+is made underneath it, in plain code, on exact integer equality — "no model in this decision".
+That separation is why a wrong or manipulated model answer still can't move money.

@@ -121,6 +121,27 @@ function ragDetail(rag) {
   d.append(el("div", { text: "advisory — retrieval only suggests; the match that authorizes is exact equality on minor units" }));
   return d;
 }
+// A tool call the model made to gather facts. name + chosen arguments + the deterministic
+// result the ERP returned. All model/DB-derived, so rendered as text (mono), never markup.
+function toolDetail(args, result) {
+  const a = JSON.stringify(args ?? {});
+  const r = JSON.stringify(result ?? {});
+  return el("div", { class: "rl-detail" },
+    el("div", {}, el("span", { class: "mono", text: a.length > 140 ? a.slice(0, 140) + "…" : a })),
+    el("div", { class: "tool-ret" }, "→ ", el("span", { class: "mono", text: r.length > 180 ? r.slice(0, 180) + "…" : r })));
+}
+// Profiler footer under an assistant answer — tokens · tok/s · TTFT · device · profiler-raw,
+// straight from the SDK's run.stats. Returns null when no model ran (canned early return).
+function profFooter(prof) {
+  if (!prof || prof.source !== "profiler-raw") return null;
+  const parts = [];
+  if (prof.tokens != null) parts.push(`${prof.tokens} tok`);
+  if (prof.tps != null) parts.push(`${Number(prof.tps).toFixed(1)} tok/s`);
+  if (prof.ttft != null) parts.push(`TTFT ${Math.round(prof.ttft)}ms`);
+  if (prof.device) parts.push(prof.device);
+  parts.push("profiler-raw");
+  return el("div", { class: "prof-foot", text: parts.join(" · ") });
+}
 
 /* structured cards */
 function kvRow(k, v) {
@@ -247,6 +268,27 @@ function handleVerifyEvent(e, ctx) {
     addReasonLine(ctx.box, REASON_LABEL[e.step] || e.step, e.ok ? "check" : "cross", reasonDetail(e.detail));
   } else if (e.t === "rag") {
     addReasonLine(ctx.box, "Searched your purchase orders by description", "info", ragDetail(e.data));
+  } else if (e.t === "tools-begin") {
+    addReasonLine(ctx.box, "Model gathered facts by calling your ERP tools", "info",
+      reasonDetail("QVAC native tool-calling — the AI proposes; the deterministic verdict below decides"));
+  } else if (e.t === "tool") {
+    addReasonLine(ctx.box, `called ${e.name}`, "info", toolDetail(e.arguments, e.result));
+  } else if (e.t === "tools-end") {
+    if (e.error) addReasonLine(ctx.box, "the fact-gathering step didn't finish — the deterministic verdict still runs", "info");
+    else if (!e.count) addReasonLine(ctx.box, "the model reached the facts without needing a tool call", "info");
+  } else if (e.t === "verdict") {
+    ctx.verdict = e.data;
+    const v = e.data, passed = v.decision === "PASS";
+    const n = Object.values(v.checks).filter(Boolean).length, total = Object.keys(v.checks).length;
+    addReasonLine(ctx.box, `Deterministic verdict — ${passed ? "PASS" : "REJECT"}`, passed ? "check" : "cross",
+      reasonDetail(passed
+        ? `all ${total} checks cleared in plain code — no model in this decision`
+        : `stopped in plain code (${n}/${total} checks) — the model's facts don't authorize payment`));
+  } else if (e.t === "step") {
+    // The one dropped detail worth keeping: Gate 0 blocked with MULTIPLE findings (the
+    // conversational line shows only the first). A single finding is already covered, and
+    // every other step is represented by the reason stream and the gate ladder.
+    if (e.id === "G0" && e.state === "blocked" && e.detail && e.detail.includes("; ")) addReasonLine(ctx.box, "All hidden-instruction findings", "cross", reasonDetail(e.detail));
   } else if (e.t === "intent") {
     ctx.intent = e.data;
   } else if (e.t === "final") {
@@ -285,7 +327,7 @@ async function streamAnswer(pr, url, body) {
         const line = buf.slice(0, nl).trim(); buf = buf.slice(nl + 1); if (!line) continue;
         let ev; try { ev = JSON.parse(line); } catch { continue; }
         if (ev.t === "token") { acc += ev.text; pr.textContent = stripThinking(acc); scrollThread(); }
-        else if (ev.t === "done") { if (ev.full) pr.textContent = ev.full; }
+        else if (ev.t === "done") { if (ev.full) pr.textContent = ev.full; const f = profFooter(ev.prof); if (f) { pr.after(f); scrollThread(); } }
         else if (ev.t === "error") { pr.textContent = "Sorry — " + ev.reason; }
       }
     }

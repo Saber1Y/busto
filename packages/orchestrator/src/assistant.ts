@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 import { QWEN3_1_7B_INST_Q4 } from "@qvac/sdk";
-import { setAuditNode, auditLoadModel, auditUnloadModel, auditCompletion, fromMinorUnits } from "../../shared/src/index.ts";
+import { setAuditNode, auditLoadModel, auditUnloadModel, auditCompletion, fromMinorUnits, type CompletionStats } from "../../shared/src/index.ts";
 import { normalizeForLLM } from "../../../security/gate0.ts";
 
 // General Workspace assistant (C9-2-fix). Answers ANY free-text message grounded in
@@ -23,6 +23,10 @@ export interface ErpSnapshot {
   openPurchaseOrders: Array<{ vendor: string; poNumber: string; amount: string; currency: string; description: string }>;
   settlementHistory: Array<{ vendor: string; poNumber: string; amount: string; invoiceRef: string; txHash: string | null; at: string }>;
 }
+
+/** Prose answer + the profiler stats behind it (undefined for the no-inference
+ *  early return). Lets the UI render the profiler footer from `profiler-raw`. */
+export interface AssistantAnswer { text: string; stats?: CompletionStats }
 
 /** Read-only retrieval of the ERP facts the assistant is allowed to ground on. */
 export function buildErpSnapshot(db: Database.Database): ErpSnapshot {
@@ -80,11 +84,11 @@ function factsBlock(snapshot: ErpSnapshot): string {
   return JSON.stringify({ whatCustosCanDo: CAPABILITIES, theSixGates: THE_SIX_GATES, erp: snapshot }, null, 2);
 }
 
-export async function assistChat(question: string, snapshot: ErpSnapshot, onToken?: (t: string) => void): Promise<string> {
+export async function assistChat(question: string, snapshot: ErpSnapshot, onToken?: (t: string) => void): Promise<AssistantAnswer> {
   // The message is untrusted text — screen it through Gate 0 like any input.
   const gq = normalizeForLLM(question);
   if (gq.flagged) {
-    return "That message contained an instruction-like pattern, so I won't follow it. I can explain how Custos works, your vendors and their open purchase orders, and past settlements — ask me about those, or drop an invoice to verify.";
+    return { text: "That message contained an instruction-like pattern, so I won't follow it. I can explain how Custos works, your vendors and their open purchase orders, and past settlements — ask me about those, or drop an invoice to verify." };
   }
 
   setAuditNode("orchestrator");
@@ -104,7 +108,7 @@ export async function assistChat(question: string, snapshot: ErpSnapshot, onToke
       },
       { model: ASSIST_MODEL, event: "assist", onToken },
     );
-    return cleanProse(stripThinking(res.contentText)) || "I couldn't produce an answer for that.";
+    return { text: cleanProse(stripThinking(res.contentText)) || "I couldn't produce an answer for that.", stats: res.stats };
   } finally {
     await auditUnloadModel({ modelId }, { model: ASSIST_MODEL });
   }

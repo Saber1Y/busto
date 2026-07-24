@@ -1,12 +1,15 @@
 import { z } from "zod";
-import { completion, loadModel, unloadModel, QWEN3_1_7B_INST_Q4 } from "@qvac/sdk";
+import { QWEN3_1_7B_INST_Q4 } from "@qvac/sdk";
 import type Database from "better-sqlite3";
 import { lookupVendor, matchPurchaseOrder, verifyWallet, type EmbedFn } from "./erp.ts";
-import { toMinorUnits, type InvoiceExtraction } from "../../shared/src/index.ts";
+import { toMinorUnits, setAuditNode, auditLoadModel, auditUnloadModel, auditCompletion, type InvoiceExtraction } from "../../shared/src/index.ts";
 
 // QVAC native tool-calling layer. The LLM calls these to GATHER facts; the handlers
 // are deterministic code (threat #18: tool results are DB-derived, never LLM-set). The
 // settlement decision is computed separately in verdict.ts — the LLM never decides.
+
+const TOOL_MODEL = "QWEN3_1_7B_INST_Q4";
+const TOOL_MAX_TOKENS = 512; // Hard Rule 8 — cap every completion turn.
 
 const lookupVendorSchema = z.object({ name: z.string().describe("vendor name exactly as on the invoice") });
 const matchPoSchema = z.object({
@@ -22,7 +25,12 @@ const verifyWalletSchema = z.object({
 
 export interface ToolCallRecord { name: string; arguments: unknown; result: unknown }
 
-export function buildErpTools(db: Database.Database, embed: EmbedFn) {
+/** Fired once per completed tool call, in order, so a caller (the UI) can stream the
+ *  trace live. The record is the same deterministic {name, arguments, result} that is
+ *  returned in the final trace — captured at the single source, never re-derived. */
+export type OnToolCall = (record: ToolCallRecord) => void;
+
+export function buildErpTools(db: Database.Database, embed: EmbedFn | undefined, onCall?: OnToolCall) {
   const calls: ToolCallRecord[] = [];
   const tools = [
     { name: "lookup_vendor", description: "Look up a vendor by name in the ERP. Returns { exists, vendorId, knownWallet, status }.", parameters: lookupVendorSchema },
@@ -45,7 +53,9 @@ export function buildErpTools(db: Database.Database, embed: EmbedFn) {
     } else {
       result = { error: `unknown tool ${name}` };
     }
-    calls.push({ name, arguments: args, result });
+    const record: ToolCallRecord = { name, arguments: args, result };
+    calls.push(record);
+    onCall?.(record);
     return result;
   }
 
@@ -57,17 +67,25 @@ function descriptionFor(x: InvoiceExtraction): string {
 }
 
 /**
- * Demonstrate QVAC native tool-calling: the LLM verifies an invoice by calling the
- * ERP tools. Returns the captured tool-call trace (the verdict is computed in code).
+ * QVAC native tool-calling: the LLM verifies an invoice by calling the ERP tools. The
+ * captured trace is returned (and streamed via `onCall`); the verdict is computed in
+ * code. Every turn goes through the C6 audit wrapper, so each produces a profiler row,
+ * and generation is capped (Hard Rule 8). `embed` is optional — with RAG off, the tools
+ * still run; `match_purchase_order` just returns no near-miss candidates.
  */
 export async function runVerificationAgent(
   db: Database.Database,
   extraction: InvoiceExtraction,
-  embed: EmbedFn,
+  embed?: EmbedFn,
   maxTurns = 5,
+  onCall?: OnToolCall,
 ): Promise<ToolCallRecord[]> {
-  const { tools, execute, calls } = buildErpTools(db, embed);
-  const modelId = await loadModel({ modelSrc: QWEN3_1_7B_INST_Q4, modelConfig: { ctx_size: 4096, tools: true } });
+  const { tools, execute, calls } = buildErpTools(db, embed, onCall);
+  setAuditNode("orchestrator");
+  const modelId = await auditLoadModel(
+    { modelSrc: QWEN3_1_7B_INST_Q4, modelConfig: { ctx_size: 4096, predict: TOOL_MAX_TOKENS, tools: true } },
+    { model: TOOL_MODEL },
+  );
   try {
     const history: Array<{ role: string; content: string }> = [
       {
@@ -86,19 +104,16 @@ export async function runVerificationAgent(
     ];
 
     for (let turn = 0; turn < maxTurns; turn++) {
-      const run = completion({ modelId, history, stream: true, tools });
-      for await (const _ev of run.events) { /* drain */ }
-      const final = await run.final;
-      history.push({ role: "assistant", content: final.contentText });
-      const toolCalls = final.toolCalls ?? [];
-      if (toolCalls.length === 0) break;
-      for (const call of toolCalls) {
+      const res = await auditCompletion({ modelId, history, stream: true, tools }, { model: TOOL_MODEL, event: `tool-turn-${turn}` });
+      history.push({ role: "assistant", content: res.contentText });
+      if (res.toolCalls.length === 0) break;
+      for (const call of res.toolCalls) {
         const result = await execute(call.name, call.arguments);
         history.push({ role: "tool", content: JSON.stringify(result) });
       }
     }
   } finally {
-    await unloadModel({ modelId });
+    await auditUnloadModel({ modelId }, { model: TOOL_MODEL });
   }
   return calls;
 }

@@ -1,4 +1,4 @@
-import { loadModel, unloadModel, completion, embed, ocr, profiler } from "@qvac/sdk";
+import { loadModel, unloadModel, completion, embed, ocr, profiler, type ToolCallWithCall } from "@qvac/sdk";
 import { logInference } from "./log.ts";
 import type { CompletionStats } from "./qvac.ts";
 
@@ -32,7 +32,7 @@ export async function auditUnloadModel(params: Parameters<typeof unloadModel>[0]
   logInference({ node: auditNode, op: "unloadModel", model: meta.model, delegated: meta.delegated ?? false, event: "model unloaded" });
 }
 
-export interface AuditCompletion { contentText: string; stats?: CompletionStats; wallTtftMs: number | null; wallTotalMs: number }
+export interface AuditCompletion { contentText: string; stats?: CompletionStats; toolCalls: ToolCallWithCall[]; wallTtftMs: number | null; wallTotalMs: number }
 export async function auditCompletion(params: Parameters<typeof completion>[0], meta: ModelMeta & { event: string; onToken?: (t: string) => void }): Promise<AuditCompletion> {
   const t0 = performance.now();
   const run = completion(params);
@@ -47,7 +47,7 @@ export async function auditCompletion(params: Parameters<typeof completion>[0], 
   const wallTotalMs = performance.now() - t0;
   const stats = final.stats as CompletionStats | undefined;
   logInference({ node: auditNode, op: "completion", model: meta.model, delegated: meta.delegated ?? false, providerPublicKey: meta.providerPublicKey ?? null, stats, wallTtftMs, wallTotalMs, event: meta.event });
-  return { contentText: final.contentText, stats, wallTtftMs, wallTotalMs };
+  return { contentText: final.contentText, stats, toolCalls: final.toolCalls ?? [], wallTtftMs, wallTotalMs };
 }
 
 export async function auditEmbed(params: { modelId: string; text: string }, meta: ModelMeta & { event: string }): Promise<number[]> {

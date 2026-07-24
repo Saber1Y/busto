@@ -1,0 +1,93 @@
+
+========================================
+=== X1 CEILING · RAG ON · post-Tier-B (fresh process) ===
+  RAG   GTE_LARGE_FP16 resident · purchase-order retrieval is live (advisory)
+X1 CEILING PROBE — one process, back to back, up to 8 verifies
+  call  1 [ui-clean    ]  40308ms  VERIFIED
+  call  2 [ui-fraud    ]  41254ms  BLOCKED
+  call  3 [ui-injection]  22846ms  BLOCKED
+  call  4 [ui-amount   ]  43382ms  BLOCKED
+  call  5 [ui-clean    ]  44410ms  VERIFIED
+  call  6 [ui-fraud    ] 109708ms  ERROR  <-- CONTEXT OVERFLOW
+
+SURVIVED 5 consecutive verifies before overflow/failure. RESTART RULE: restart serve every 5 verifies.
+
+=== X1 CEILING · RAG OFF (CUSTOS_RAG=off) · post-Tier-B (fresh process) ===
+  RAG   disabled (CUSTOS_RAG=off) — exact-match verification only; retrieval panel absent
+X1 CEILING PROBE — one process, back to back, up to 8 verifies
+  call  1 [ui-clean    ]  35715ms  VERIFIED
+  call  2 [ui-fraud    ]  41700ms  BLOCKED
+  call  3 [ui-injection]  25329ms  BLOCKED
+  call  4 [ui-amount   ]  36771ms  BLOCKED
+  call  5 [ui-clean    ]  40356ms  VERIFIED
+  call  6 [ui-fraud    ]  41237ms  BLOCKED
+  call  7 [ui-injection]  25466ms  BLOCKED
+  call  8 [ui-amount   ]  44090ms  BLOCKED
+
+SURVIVED 8 consecutive verifies before overflow/failure. RESTART RULE: restart serve every 8 verifies.
+
+=== X1 CEILING · RAG ON · CONFIRMATION RUN 2 (fresh process) ===
+X1 CEILING PROBE — one process, back to back, up to 7 verifies
+  call  1 [ui-clean    ]  41205ms  VERIFIED
+  call  2 [ui-fraud    ]  44450ms  BLOCKED
+  call  3 [ui-injection]  28559ms  BLOCKED
+  call  4 [ui-amount   ]  43382ms  BLOCKED
+  call  5 [ui-clean    ]  39799ms  VERIFIED
+  call  6 [ui-fraud    ]  47471ms  BLOCKED
+  call  7 [ui-injection]  29616ms  BLOCKED
+
+SURVIVED 7 consecutive verifies before overflow/failure. RESTART RULE: restart serve every 7 verifies.
+
+========================================
+=== TIER B GATE SUMMARY ===
+typecheck: exit 0
+
+FUNCTIONAL GATE (4 samples pass, each verify < 90s):
+  ui-clean     VERIFIED   40-49s  tools=[lookup_vendor, match_purchase_order, verify_wallet] (model picks 2-3)
+  ui-fraud     BLOCKED G3 37-44s  tools called; deterministic wallet re-check blocks
+  ui-injection BLOCKED G0 23-29s  tool-calling SKIPPED (gate0 flagged — malicious doc not fed to the model)
+  ui-amount    BLOCKED G2 37-44s  tools called; no PO match
+  -> all 4 correct, all < 90s. Max observed verify ~49s.
+
+TOOL-CALLING AUDIT (Hugo #1, part 2):
+  50 tool-turn completion rows, ALL metrics_source=profiler-raw
+  generated-token range 53..512 — the predict=512 cap fires (Hard Rule 8 satisfied; no runaway)
+  prompt tokens grow across turns (601 -> 884 -> 1226) as tool results are pushed back — expected
+
+PROFILER FOOTER (assist/explain): rendered "49 tok · 66.6 tok/s · TTFT 552ms · gpu · profiler-raw"
+  (screenshot shots/tierB-tools-clean.png)
+
+SCREENSHOTS (real headless-Chrome over CDP):
+  shots/tierB-tools-header.png  — "Model gathered facts by calling your ERP tools" + real
+                                   lookup_vendor / verify_wallet calls + "Deterministic verdict — PASS"
+  shots/tierB-tools-clean.png   — full verify + profiler footer under the explainer answer
+
+=== X1 RE-MEASUREMENT (the headline) ===
+Method: fire verifies back to back into ONE server process, cycle the 4 samples, count
+survivors before the context-window overflow. RAG on vs RAG off, same post-Tier-B build.
+
+  RAG ON  (GTE resident, embed/verify) run 1: overflow at call 6  -> ceiling 5
+  RAG ON  run 2 (MAX=7):                       no overflow in 7   -> ceiling >=7
+  RAG OFF (CUSTOS_RAG=off):                     no overflow in 8   -> ceiling >=8
+
+WORKER LIFECYCLE (the mechanism):
+  RAG ON  : 1 bare-worker start, 0 teardowns  -> GTE resident keeps "models active" > 0,
+            so the QVAC bare worker never dies; the vision model's backend context
+            accumulates across verifies -> finite ceiling.
+  RAG OFF : 22 bare-worker teardowns          -> with no resident model, model count hits
+            zero after each verify, the worker is killed + respawned, vision context RESETS
+            -> effectively no ceiling.
+
+ATTRIBUTION (answering the direct question):
+  Is the call-3-4 -> call-2 regression attributable to Tier A? YES, mechanistically.
+  Tier A keeps GTE resident, which prevents worker teardown, which lets context accumulate.
+  Confirmed by RAG-off surviving 8+ (worker tears down and resets each verify).
+  Per-completion or per-model-load? Neither exactly: it is per-vision-completion accumulation
+  WITHIN a long-lived worker, and the worker only stays alive because a model is resident.
+  Remove the resident model -> worker dies between verifies -> no accumulation.
+
+IS IT 1 PER PROCESS?  NO. Ceiling with RAG on is 5-7 (variable), not 1.
+  The demo runs RAG on (Hugo #1 needs it visible). You do NOT need to restart between the
+  clean invoice and the fraud invoice.
+  RESTART RULE (conservative, one below the minimum observed): restart `serve` every 4 verifies.
+  The scripted demo is 2 verifies (clean+settle, then fraud) -> a mid-demo restart is OPTIONAL.

@@ -112,6 +112,10 @@ html[data-sidebar="collapsed"] .side-toggle svg { transform: rotate(180deg); }
 .rl[data-done="pending"] .rl-text { color: var(--ink-3); }
 .rl-detail { font-size: var(--fs-caption); color: var(--ink-3); margin-top: 1px; }
 .rl-detail .mono { font-size: 11.5px; }
+.rl-detail .tool-ret { margin-top: 1px; color: var(--ink-2); }
+
+/* profiler footer under an assistant answer — on-device speed, straight from the profiler */
+.prof-foot { font-family: var(--font-mono); font-size: 11px; color: var(--ink-4); letter-spacing: .01em; margin-top: 6px; }
 
 /* structured cards in-thread */
 .card { border: 1px solid var(--hair); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--e-1); overflow: hidden; margin-bottom: var(--sp-3); }

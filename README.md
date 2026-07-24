@@ -210,7 +210,9 @@ to the claim it backs. Full working log: [`evidence/pitch-fixes/REPORT.md`](./ev
 
 | Item (Hugo's words) | What changed | Where |
 |---|---|---|
-| "TC and RAG only run in `c3-verdict-demo.ts` — we'd like to see it in the app" | **RAG is now live in the served product.** GTE-large loads at server boot, seeds the PO vector store, and embeds one query per verify; the retrieval trace (query + candidate POs + L2 distance) streams to the console and renders under the purchase-order check, labelled advisory. | `verdict.ts`, `server.ts`, `dash.js` |
+| "TC and RAG only run in `c3-verdict-demo.ts` — we'd like to see it in the app" (RAG) | **RAG is now live in the served product.** GTE-large loads at server boot, seeds the PO vector store, and embeds one query per verify; the retrieval trace (query + candidate POs + L2 distance) streams to the console and renders under the purchase-order check, labelled advisory. | `verdict.ts`, `server.ts`, `dash.js` |
+| "...we'd like to see it in the app" (tool-calling) | **QVAC native tool-calling is now live in the served verification.** On any Gate-0-clean document the LLM gathers facts by calling the ERP tools (`lookup_vendor`, `match_purchase_order`, `verify_wallet`); each call — name, arguments, deterministic result — streams into the reasoning panel, followed by the deterministic-verdict capstone ("no model in this decision"). Every tool turn is profiler-logged and generation is capped. | `tools.ts`, `audit.ts`, `server.ts`, `dash.js` |
+| On-device speed on target hardware | **Profiler footer** under every assistant answer — `N tok · X tok/s · TTFT Yms · gpu · profiler-raw`, straight from the SDK profiler. | `explain.ts`, `assistant.ts`, `server.ts`, `dash.js` |
 
 _This section grows as the remaining post-feedback tiers land; each is gated and reverted on failure rather than shipped on "should work"._
 

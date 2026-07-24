@@ -49,7 +49,7 @@ const cases: Array<{ q: string; ctx: ExplainContext }> = [
 for (const c of cases) {
   console.log(`\n──────────────────────────────────────────\nQ: ${c.q}   [verdict: ${c.ctx.verdict?.decision ?? "no invoice loaded"}]`);
   const a = await explainInvoice(c.q, c.ctx);
-  console.log(`A: ${a}`);
+  console.log(`A: ${a.text}`);
 }
 
 db.close();

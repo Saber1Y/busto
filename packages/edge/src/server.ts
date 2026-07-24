@@ -10,6 +10,7 @@ import { extractInvoice, type ExtractResult } from "../../orchestrator/src/extra
 import { computeVerdict, type Verdict } from "../../orchestrator/src/verdict.ts";
 import { explainInvoice, type ExplainContext } from "../../orchestrator/src/explain.ts";
 import { assistChat, buildErpSnapshot } from "../../orchestrator/src/assistant.ts";
+import { runVerificationAgent } from "../../orchestrator/src/tools.ts";
 import { openEdgeWallet, CHAIN } from "./wallet.ts";
 import { settleIntent } from "./settle.ts";
 
@@ -34,8 +35,12 @@ ensureSchema(db);
 // verify, so there is no per-request load tax for a 0.62 GiB model. Retrieval is ADVISORY
 // (verdict.ts): it reports what is *near*, it never widens what can pass.
 const RAG_MODEL = "GTE_LARGE_FP16";
+const RAG_ENABLED = process.env.CUSTOS_RAG !== "off"; // demo/measurement lever; verdict is identical either way
 let ragEmbed: EmbedFn | undefined;
-try {
+if (!RAG_ENABLED) {
+  console.log("  RAG   disabled (CUSTOS_RAG=off) — exact-match verification only; retrieval panel absent");
+  await seedErp(db);
+} else try {
   setAuditNode("orchestrator");
   const gteId = await auditLoadModel({ modelSrc: GTE_LARGE_FP16, modelConfig: { gpuLayers: 99, device: "gpu" } }, { model: RAG_MODEL });
   const embedWith = (event: string): EmbedFn => async (text) => {
@@ -66,6 +71,13 @@ const SAMPLE_LIST = [
   { id: "ui-injection", label: "Hidden instruction", note: "“ignore previous instructions…” in the notes", expect: "blocked · Gate 0" },
   { id: "ui-amount", label: "Amount doesn't match a PO", note: "4,242 USD₮ — no matching order", expect: "blocked · ERP" },
 ];
+
+// Profiler footer payload for an assistant answer — straight from `run.stats`
+// (profiler-raw). `undefined` when no model ran (a canned early-return sentence).
+function profOf(stats: import("../../shared/src/index.ts").CompletionStats | undefined): Record<string, unknown> | undefined {
+  if (!stats) return undefined;
+  return { tokens: stats.generatedTokens ?? null, tps: stats.tokensPerSecond ?? null, ttft: stats.timeToFirstToken ?? null, device: stats.backendDevice ?? null, source: "profiler-raw" };
+}
 
 const MIME: Record<string, string> = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon" };
 const json = (res: Res, code: number, body: unknown): void => { res.writeHead(code, { "content-type": "application/json" }); res.end(JSON.stringify(body)); };
@@ -145,6 +157,22 @@ async function handleVerify(req: Req, res: Res): Promise<void> {
       send({ t: "step", id: "G2", state: "active", detail: "checking the ERP" });
     }
 
+    // Hugo #1 — tool-calling visible in the product. On a document that cleared Gate 0,
+    // the LLM gathers facts by calling the ERP tools (QWEN3-1.7B, native tool-calling).
+    // It PROPOSES; it never decides — the deterministic verdict below does. Illustrative:
+    // a failure here never blocks the verdict, and zero tool calls is a legitimate outcome.
+    if (!gate0Flagged) {
+      send({ t: "tools-begin" });
+      let toolCount = 0;
+      try {
+        await runVerificationAgent(db, ex.extraction, ragEmbed, 5, (rec) => { toolCount++; send({ t: "tool", name: rec.name, arguments: rec.arguments, result: rec.result }); });
+        send({ t: "tools-end", count: toolCount });
+      } catch (err) {
+        logInference({ node: "orchestrator", op: "tool-calling", model: "QWEN3_1_7B_INST_Q4", delegated: false, event: `error ${String((err as Error)?.message ?? err).slice(0, 80)}` });
+        send({ t: "tools-end", count: toolCount, error: true });
+      }
+    }
+
     const verdict = await computeVerdict(db, ex.extraction, invoiceRef, ragEmbed, gate0Flagged);
     logInference({ node: "edge", op: "verdict", model: "deterministic", delegated: false, event: `${verdict.decision} ${invoiceRef}` });
     const gates = gatesFromVerdict(verdict, gate0Flagged);
@@ -209,8 +237,8 @@ async function handleAssist(req: Req, res: Res): Promise<void> {
   if (busy) { send({ t: "token", text: "One moment — finishing the current task." }); send({ t: "done" }); res.end(); return; }
   busy = true;
   try {
-    const full = await assistChat(question ?? "", buildErpSnapshot(db), (tok) => send({ t: "token", text: tok }));
-    send({ t: "done", full });
+    const r = await assistChat(question ?? "", buildErpSnapshot(db), (tok) => send({ t: "token", text: tok }));
+    send({ t: "done", full: r.text, prof: profOf(r.stats) });
   } catch (e) {
     send({ t: "error", reason: String((e as Error)?.message ?? e) });
   } finally {
@@ -228,8 +256,8 @@ async function handleExplain(req: Req, res: Res): Promise<void> {
   if (busy) { send({ t: "token", text: "One moment — finishing the current verification." }); send({ t: "done" }); res.end(); return; }
   busy = true;
   try {
-    const full = await explainInvoice(question ?? "", job.explainContext, (tok) => send({ t: "token", text: tok }));
-    send({ t: "done", full });
+    const r = await explainInvoice(question ?? "", job.explainContext, (tok) => send({ t: "token", text: tok }));
+    send({ t: "done", full: r.text, prof: profOf(r.stats) });
   } catch (e) {
     send({ t: "error", reason: String((e as Error)?.message ?? e) });
   } finally {

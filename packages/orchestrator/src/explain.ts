@@ -1,7 +1,12 @@
 import { QWEN3_1_7B_INST_Q4 } from "@qvac/sdk";
-import { setAuditNode, auditLoadModel, auditUnloadModel, auditCompletion, type InvoiceExtraction } from "../../shared/src/index.ts";
+import { setAuditNode, auditLoadModel, auditUnloadModel, auditCompletion, type InvoiceExtraction, type CompletionStats } from "../../shared/src/index.ts";
 import { normalizeForLLM } from "../../../security/gate0.ts";
 import type { Verdict } from "./verdict.ts";
+
+/** A prose answer plus the profiler stats behind it, so the UI can show the footer
+ *  (tokens / tok·s / TTFT / device) straight from `profiler-raw`. `stats` is undefined
+ *  for the no-inference early returns (a canned sentence, no model ran). */
+export interface AssistantAnswer { text: string; stats?: CompletionStats }
 
 // On-device explainer for a non-technical AP clerk (C8a). It EXPLAINS an
 // already-computed verdict in plain language; it never re-verifies, changes a
@@ -51,14 +56,14 @@ function factsBlock(c: ExplainContext): string {
   );
 }
 
-export async function explainInvoice(question: string, context: ExplainContext, onToken?: (t: string) => void): Promise<string> {
+export async function explainInvoice(question: string, context: ExplainContext, onToken?: (t: string) => void): Promise<AssistantAnswer> {
   if (!context || !context.invoiceRef || !context.verdict) {
-    return "Load an invoice first — I can only explain a verification that has already run on the current invoice.";
+    return { text: "Load an invoice first — I can only explain a verification that has already run on the current invoice." };
   }
   // The question is untrusted text — screen it through Gate 0 like any input.
   const gq = normalizeForLLM(question);
   if (gq.flagged) {
-    return "That question contained an instruction-like pattern, so I won't follow it. I only explain the current invoice — ask me why it passed or was blocked, or what happens if you approve.";
+    return { text: "That question contained an instruction-like pattern, so I won't follow it. I only explain the current invoice — ask me why it passed or was blocked, or what happens if you approve." };
   }
 
   setAuditNode("orchestrator");
@@ -78,7 +83,7 @@ export async function explainInvoice(question: string, context: ExplainContext, 
       },
       { model: EXPLAIN_MODEL, event: "explain", onToken },
     );
-    return stripThinking(res.contentText) || "I couldn't produce an explanation for that.";
+    return { text: stripThinking(res.contentText) || "I couldn't produce an explanation for that.", stats: res.stats };
   } finally {
     await auditUnloadModel({ modelId }, { model: EXPLAIN_MODEL });
   }
