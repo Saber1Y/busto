@@ -435,7 +435,7 @@ function renderIntro() {
 function renderPicker(bubble) {
   const dz = el("button", { class: "dropzone", type: "button" },
     el("div", { class: "dz-lead", text: "Drop an invoice to verify" }),
-    el("div", { class: "dz-sub", text: "PNG or PDF — read on this machine, never uploaded" }));
+    el("div", { class: "dz-sub", text: "PNG image — read on this machine, never uploaded" }));
   dz.addEventListener("click", () => file.click());
   ["dragover", "dragenter"].forEach((e) => dz.addEventListener(e, (ev) => { ev.preventDefault(); dz.classList.add("drag"); }));
   ["dragleave", "drop"].forEach((e) => dz.addEventListener(e, () => dz.classList.remove("drag")));
@@ -543,7 +543,7 @@ function renderInbox(v) {
   v.append(el("div", { class: "stub-card" },
     el("svg", { class: "ico-lg", viewBox: "0 0 16 16", html: '<path d="M2 4h12v8H2zM2 4l6 4 6-4" fill="none" stroke="currentColor" stroke-width="1.2"/>' }),
     el("h2", { text: "Inbox" }),
-    el("p", { text: "Custos verifies invoices you bring it in the Workspace — drop a PNG/PDF or pick a sample. A live inbox that pulls invoices from a mailbox or ERP feed is planned; it is not implemented yet." }),
+    el("p", { text: "Custos verifies invoices you bring it in the Workspace — drop a PNG or pick a sample. A live inbox that pulls invoices from a mailbox or ERP feed is planned; it is not implemented yet." }),
     el("span", { class: "stub-soon", text: "Planned" })));
 }
 
