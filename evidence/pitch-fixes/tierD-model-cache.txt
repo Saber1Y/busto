@@ -1,0 +1,96 @@
+======== D1 (kept) ========
+=== D1 · chat latency + cache-hit + chat X1 (8 assist turns, resident Qwen) ===
+  turn  1    2992ms  qwenLoadRows+=1  "Yes, Acme Robotics Ltd is a known vendor."
+  turn  2    1741ms  qwenLoadRows+=0  "I can read vendor invoices on-device, verify"
+  turn  3    2844ms  qwenLoadRows+=0  "Gate 0 — Input decode: obfuscated/hidden ins"
+  turn  4    1735ms  qwenLoadRows+=0  "A purchase order is a document that outlines"
+  turn  5    1228ms  qwenLoadRows+=0  "Yes, Acme Robotics Ltd is a known vendor."
+  turn  6    1732ms  qwenLoadRows+=0  "I can read vendor invoices on-device, verify"
+  turn  7    2956ms  qwenLoadRows+=0  "Gate 0 — Input decode: obfuscated/hidden ins"
+  turn  8    1630ms  qwenLoadRows+=0  "A purchase order is a document that outlines"
+
+chat overflows in 8 turns: 0
+
+=== D1 · verify X1 with chat Qwen ALREADY resident (delegation off) ===
+X1 CEILING PROBE — one process, back to back, up to 7 verifies
+  call  1 [ui-clean    ]  41598ms  VERIFIED
+  call  2 [ui-fraud    ]  43678ms  BLOCKED
+  call  3 [ui-injection]  27258ms  BLOCKED
+  call  4 [ui-amount   ]  45343ms  BLOCKED
+  call  5 [ui-clean    ]  35877ms  VERIFIED
+  call  6 [ui-fraud    ]  38320ms  BLOCKED
+  call  7 [ui-injection]  26263ms  BLOCKED
+
+SURVIVED 7 consecutive verifies before overflow/failure. RESTART RULE: restart serve every 7 verifies.
+
+=== D1 VERDICT ===
+- cache works: turn 1 loads QWEN3-1.7B, turns 2-8 are cache hits (0 load rows) — resident.
+- chat latency: load tax (~2.4s) eliminated after the first turn (turn1 2992ms incl. load;
+  cached turns 1228-2956ms, difference = generation length, not load).
+- chat-path X1: 0 overflows in 8 back-to-back turns — residency does NOT re-introduce
+  accumulation on the chat path (each turn sends a fresh ~1k-token history; kvCache off).
+- verify X1 with chat Qwen resident: >=7 (unchanged from Tier C >=7) — D1 does not touch
+  the verify path's models, so it does not move the vision ceiling.
+- with DELEGATE_REASONING=true the chat turns run on the provider, so the cache is skipped
+  (local-only) and this is a no-op there — by design.
+D1 KEPT. Low risk, as predicted.
+
+======== D2 residency ceiling (reverted) ========
+=== D2 · CUSTOS_CACHE_VISION=true (vision RESIDENT) · ceiling, delegation off ===
+  RAG   GTE_LARGE_FP16 resident · purchase-order retrieval is live (advisory)
+  P2P   reasoning local (DELEGATE_REASONING off) — set it + PROVIDER_PUBKEY to delegate explain/assist/tool-calling to Vault
+  WARM  OCR + vision warmed in 2532ms · kept RESIDENT (CUSTOS_CACHE_VISION) — vision X1 ceiling is lower, see REPORT
+X1 CEILING PROBE — one process, back to back, up to 7 verifies
+  call  1 [ui-clean    ]  36890ms  VERIFIED
+  call  2 [ui-fraud    ]  37238ms  BLOCKED
+  call  3 [ui-injection]  25250ms  BLOCKED
+  call  4 [ui-amount   ]  32262ms  BLOCKED
+  call  5 [ui-clean    ]  33061ms  VERIFIED
+  call  6 [ui-fraud    ]  45431ms  BLOCKED
+  call  7 [ui-injection]  23688ms  BLOCKED
+
+SURVIVED 7 consecutive verifies before overflow/failure. RESTART RULE: restart serve every 7 verifies.
+
+======== D2 warm-up latency (reverted) ========
+=== WARM-UP benefit: CUSTOS_WARMUP=true (load+unload at boot, no residency) ===
+  WARM  OCR + vision warmed in 2527ms · unloaded (cache warmed only)
+--- first verify AFTER warm-up (compare to cold call-1 ~36-41s) ---
+[ui-clean] PASS  (38043ms)  expected VERIFIED, got VERIFIED
+   verdict event : PASS
+ALL 1 SAMPLE(S) PASS (<90s each)
+
+=== D2 VERDICT — REVERTED (measured, lost on both counts) ===
+
+D2 was two changes; neither earned its place. Reverted to the honest load/unload default.
+The extract.ts try/finally correctness fix (separate commit d4a453b) STAYS.
+
+(1) Vision/OCR residency across verifies (CUSTOS_CACHE_VISION=true):
+    - ceiling with vision "resident", delegation off: >=7 (MAX=7, no overflow) — NOT cratered,
+      but ALSO no better than the load/unload default (>=6-7). No ceiling benefit.
+    - HONESTY VIOLATION (the disqualifier): the SDK evicts the "resident" vision under memory
+      pressure (GTE + vision + per-verify Qwen tool-calling don't all fit), then reloads it
+      behind my stale cached modelId WITHOUT going through auditLoadModel. Measured in one run:
+        my audit vision loadModel rows = 2
+        SDK "Loading model" (vision) events = 6
+        vision completions = 8
+      So the inference log would UNDERCOUNT real vision loads 2-vs-6. For a build whose whole
+      differentiator is "every claim matches the log", that alone kills the feature.
+      => reverted. The SDK will not hold 3 models resident, so userland caching of vision is a
+         lie the log can't back.
+
+(2) Warm-up load+unload at listen() (CUSTOS_WARMUP=true, no residency):
+    - first verify after warm-up: 38043ms vs cold call-1 36-41s — NO measurable benefit.
+      The weights are already disk-cached (preflight), and Metal state doesn't survive unload,
+      so pre-touching them at boot buys nothing. => reverted (not worth the boot time).
+
+NET Tier D: D1 kept (chat residency — real latency win, safe, honest). D2 reverted.
+This is Hugo #2 answered by measurement: keep Qwen resident for explain/assist (yes, it helps);
+warm-up/cache vision (no — the vision path is the X1 bottleneck AND the SDK won't honor its
+residency, so it neither helps the ceiling nor logs honestly).
+
+=== ENVIRONMENT NOTE (demo landmine) ===
+After ~3 hours of back-to-back QVAC worker spawns, one vision completion took 99.7s
+(state=completed) vs ~13s normal — thermal/memory throttling on the M1. A fresh verify after
+a ~75s settle was back to 36.5s. RUNBOOK: do not run a long rehearsal immediately before the
+live demo; let the machine cool, and boot fresh. The X1 restart-rule numbers assume a
+non-throttled machine.

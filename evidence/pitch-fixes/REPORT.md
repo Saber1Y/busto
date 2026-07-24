@@ -1169,3 +1169,92 @@ design. Today both roles run as separate processes on one Mac; the axioms — ed
 provider holds no keys, provider unreachable means hard-stop, not degrade — hold across that
 boundary. A true two-machine, two-NAT round trip is the next step, not something I'll claim
 as done.
+
+---
+
+## Tier D — model cache (Hugo #2), split D1 (kept) / D2 (reverted) + 2 correctness fixes
+
+**Status: D1 DONE and kept; D2 measured and REVERTED; two correctness fixes landed.**
+
+Hugo #2: *"Your load/unload discipline makes sense but on every request that feels like a
+usage tax. A small model cache — keep Qwen resident for explain/assist, or warm-up OCR+vision
+— would cut latency without affecting your architecture. Maybe idle-timeout could improve
+results."* Split by risk, because Tier B established the danger is specifically the vision path.
+
+### Correctness fixes (commit `d4a453b`, land regardless)
+
+| Fix | Detail |
+|---|---|
+| `extract.ts` try/finally | A mid-extract throw (e.g. the X1 overflow) skipped `auditUnloadModel`, leaving the vision model resident while the server's busy flag released — the next op then ran against a leaked model. That leak is part of how X1 compounds. Now OCR and vision always unload. |
+| `audit.ts` OCR timing | The SDK's `ocr` `stats.totalTime` is in **seconds**; logging it as `wallTotalMs` underreported OCR ~1000× (a 5.4s read logged as `gen_ms=5`). Now wall-clock — confirmed `gen_ms=5453`. |
+
+### D1 — keep Qwen3-1.7B resident for explain/assist (commit `2b445f9`, **kept**)
+
+A module-level local cache in `delegation.ts`: explain and assist share one resident
+QWEN3-1.7B (identical config), so they stop paying the ~2.4s load on every turn. **Local
+only** — when `DELEGATE_REASONING=true` those turns run on the provider and the cache is
+skipped. Tool-calling is **not** cached (its `tools:true` config differs, and its per-verify
+unload is part of what keeps the vision worker churning).
+
+Measured (raw: `tierD-model-cache.txt`):
+- **Cache works:** turn 1 loads QWEN3-1.7B; turns 2–8 write **no** load row (resident).
+- **Latency:** the ~2.4s per-turn load tax is gone after the first turn.
+- **Chat-path X1:** **0 overflows in 8 back-to-back turns.** Residency does *not* re-introduce
+  the accumulation characterised on vision — each turn sends a fresh ~1k-token history and
+  kvCache is off, so the chat model stays flat. (This is the "measure the chat path
+  specifically" check — it passed.)
+- **Verify X1 with the chat model resident:** ≥7, **unchanged** — D1 doesn't touch the verify
+  path's models, so it doesn't move the vision ceiling.
+
+Idle-timeout eviction (Hugo's "maybe") was **deferred**: an eviction timer racing the
+single-flight busy lock adds real complexity for no demo benefit (process exit frees the
+worker). Noted, not built.
+
+### D2 — warm-up OCR+vision + vision residency (**REVERTED**, measured)
+
+Both halves were implemented behind flags, measured, and reverted. Neither earned its place.
+
+**(1) Vision residency across verifies (`CUSTOS_CACHE_VISION`).**
+- Ceiling with vision "resident", delegation off: **≥7** — *not* cratered, but also **no
+  better** than the load/unload default (≥6–7). No ceiling benefit.
+- **The disqualifier is honesty, not the ceiling.** The SDK evicts the "resident" vision
+  under memory pressure (GTE + vision + the per-verify Qwen tool-calling won't all fit), then
+  **reloads it behind my stale cached modelId without going through `auditLoadModel`**. One
+  run: my audit log recorded **2** vision loads; the SDK actually did **6** (8 completions).
+  Shipping this would make `inference-log.jsonl` **undercount real model loads** — the exact
+  kind of claim-vs-log mismatch this whole pass exists to prevent. So it goes.
+
+**(2) Warm-up load+unload at boot (`CUSTOS_WARMUP`).**
+- First verify after warm-up: **38.0s** vs cold call-1 36–41s — **no measurable benefit.**
+  The weights are already disk-cached (preflight) and Metal state doesn't survive an unload,
+  so pre-touching them at boot buys nothing. Reverted.
+
+**Net:** D2 is the "implemented Hugo's idea, measured it, it lost" outcome. The vision path is
+the X1 bottleneck; the SDK won't honor its residency; and warm-up doesn't move the needle. The
+load/unload discipline stays because it's both correct and the only honestly-loggable option.
+
+### Gate
+
+| Condition | Result |
+|---|---|
+| Correctness fixes land | **PASS** — try/finally + OCR wall-clock (`gen_ms=5453`) |
+| D1 chat latency cut | **PASS** — load tax eliminated after turn 1 |
+| D1 chat-path X1 safe | **PASS** — 0 overflows in 8 turns |
+| D1 verify X1 unchanged | **PASS** — ≥7 with chat model resident |
+| D2 decision rule (revert if ceiling < 4) | Ceiling was ≥7, but reverted anyway on the **logging-honesty** violation + zero benefit |
+| Build green after revert | **PASS** — fresh `ui-clean` VERIFIED in 36.5s |
+
+### Environment note (a real demo landmine)
+
+After ~3 hours of back-to-back QVAC worker spawns during this measurement marathon, **one
+vision completion took 99.7s** (it *completed* — not an error) vs ~13s normal: thermal/memory
+throttling on the M1. A fresh verify after a ~75s settle was back to 36.5s. **Do not run a
+long rehearsal immediately before the live demo** — let the machine cool and boot fresh. Every
+X1 restart-rule number assumes a non-throttled machine.
+
+### What I could NOT verify programmatically
+
+1. **The D2 ceiling numbers are single runs** (≥7 resident, ≥7 default) and X1 is noisy; the
+   revert rests on the honesty violation, which is deterministic and reproducible, not on the
+   ceiling delta.
+2. **Idle-timeout was not built**, so its effect is unmeasured (deferred by choice).

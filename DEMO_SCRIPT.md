@@ -17,6 +17,32 @@ Record terminals + the Edge console on screen. Have these ready: `npm run serve`
 
 Backup: `npm run csec:test` (17/17) for the full Gate-0 battery.
 
+## Pre-demo runbook (read before you present)
+
+Operational notes for the post-feedback features (RAG panel, tool-calling, delegation, chat
+cache). See `evidence/pitch-fixes/REPORT.md` for the measurements behind each.
+
+- **Boot fresh, don't rehearse hot.** The M1 thermally throttles after extended back-to-back
+  inference — a vision read that's ~13s cold can balloon to ~100s when the machine is cooked.
+  Let it cool and restart `serve` before the live run. Every timing/ceiling number below
+  assumes a non-throttled machine.
+- **X1 restart rule: restart `serve` every ~4 verifies** (measured ceiling 5–7, variable).
+  The scripted demo is 2 verifies, so no mid-demo restart is needed. The "fresh process,
+  nothing cached between runs" line is available as narration if you want it.
+- **Default config is the safe demo:** RAG on (retrieval panel + tool-calling visible),
+  `DELEGATE_REASONING` off (everything local). Flip nothing unless you're doing the P2P beat.
+- **If you do the delegated beat (`DELEGATE_REASONING=true`):** start `npm run provider`
+  **immediately before** you boot the delegated `serve` — a provider left idle for several
+  minutes goes stale on the DHT (`PEER_NOT_FOUND`) and the boot heartbeat can't warm a cold
+  announcement. If the banner says "provider … reachable", you're good; if it says
+  "UNREACHABLE", restart the provider and re-boot. The verdict never delegates, so even a
+  failed provider only skips the tool trace — the verification still runs and blocks correctly.
+- **Delegated proof to point at:** the tool header reads "reasoning delegated to Vault · <key>",
+  the profiler footer shows "⇄ delegated to Vault", and `inference-log.jsonl` carries
+  `delegated:true` with the provider key. Honest framing: delegation is availability + load
+  distribution + privacy — *not* a local-speed win, because vision can't delegate at this SDK
+  version (say this if a judge probes performance).
+
 `npm run c1:demo` runs the P2P delegation as two processes **on one host**. Its scorecard
 currently reports `❌ C1 LOCAL INCOMPLETE`: check (a), the true delegated round-trip, **passes**
 (`delegated=true`, profiler-raw row in the audit log), while check (c) still asserts the
