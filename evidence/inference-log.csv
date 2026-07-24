@@ -949,3 +949,377 @@ ts,node,op,model,delegated,provider_public_key,load_ms,ttft_ms,gen_ms,prompt_tok
 2026-07-24T04:45:07.624Z,orchestrator,unloadModel,QWEN3_1_7B_INST_Q4,false,,,,,,,,,,model unloaded,darwin/arm64,none
 2026-07-24T04:45:07.704Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,79,,,,,,rag-query,darwin/arm64,none
 2026-07-24T04:45:07.707Z,edge,verdict,deterministic,false,,,,,,,,,,PASS INV-UI-MRYGHB8M,darwin/arm64,none
+2026-07-24T05:12:21.826Z,orchestrator,loadModel,GTE_LARGE_FP16,false,,2051,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:12:21.871Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,37,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:12:21.923Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,26,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:12:21.951Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,28,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:12:21.975Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,23,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:12:23.127Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,971,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:12:28.647Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,6,,,,,,blocks=16,darwin/arm64,none
+2026-07-24T05:12:28.736Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:12:30.786Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,2047,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:12:47.154Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,10678.246,16368,2779,384,71.37,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:12:47.185Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:12:49.632Z,orchestrator,loadModel,QWEN3_1_7B_INST_Q4,false,,2446,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:12:53.795Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,false,,,579.08,4164,630,327,93.378,0,gpu,tool-turn-0,darwin/arm64,profiler-raw
+2026-07-24T05:13:00.359Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,false,,,905.056,6564,1008,512,93.272,0,gpu,tool-turn-1,darwin/arm64,profiler-raw
+2026-07-24T05:13:00.467Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,108,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:13:02.897Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,false,,,1479.833,2428,1543,76,85.908,0,gpu,tool-turn-2,darwin/arm64,profiler-raw
+2026-07-24T05:13:02.927Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,30,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:13:08.994Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,false,,,1579.442,6065,1647,368,84.436,0,gpu,tool-turn-3,darwin/arm64,profiler-raw
+2026-07-24T05:13:09.018Z,orchestrator,unloadModel,QWEN3_1_7B_INST_Q4,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:13:09.091Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,72,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:13:09.093Z,edge,verdict,deterministic,false,,,,,,,,,,PASS INV-UI-MRYHH9JG,darwin/arm64,none
+2026-07-24T05:14:47.999Z,orchestrator,loadModel,GTE_LARGE_FP16,false,,1427,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:14:48.034Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,31,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:14:48.074Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,27,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:14:48.109Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,34,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:14:48.145Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,35,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:14:57.870Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,763,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:15:04.911Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,7,,,,,,blocks=16,darwin/arm64,none
+2026-07-24T05:15:05.041Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:15:07.875Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,2831,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:15:21.154Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,10756.073,13279,2779,157,70.729,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:15:21.185Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:15:23.025Z,edge,tool-calling,QWEN3_1_7B_INST_Q4,false,,,,,,,,,,error Failed to load model: Failed to connect to delegated provider: RPC connection fa,darwin/arm64,none
+2026-07-24T05:15:23.106Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,79,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:15:23.108Z,edge,verdict,deterministic,false,,,,,,,,,,PASS INV-UI-MRYHKL3N,darwin/arm64,none
+2026-07-24T05:17:17.613Z,orchestrator,loadModel,GTE_LARGE_FP16,false,,1596,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:17:17.652Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,34,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:17:17.692Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,26,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:17:17.722Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,29,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:17:17.749Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,27,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:19:27.995Z,orchestrator,loadModel,GTE_LARGE_FP16,false,,1638,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:19:28.037Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,35,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:19:28.077Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,27,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:19:28.107Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,30,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:19:28.136Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,28,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:22:18.293Z,edge,completion,LLAMA_3_2_1B_INST_Q4_0,true,d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737,1510,106.699,239,42,7,134.347,0,gpu,delegated-completion,darwin/arm64,profiler-raw
+2026-07-24T05:22:20.708Z,orchestrator,completion,LLAMA_3_2_1B_INST_Q4_0,false,,,88.165,209,42,7,124.299,0,gpu,local-baseline,darwin/arm64,profiler-raw
+2026-07-24T05:22:37.606Z,edge,heartbeat,LLAMA_3_2_1B_INST_Q4_0,false,d04ab232742bb4ab3a1368bd4615e4e6d0224ab71a016baf8520a332c9778737,,,,,,,,,provider-offline,darwin/arm64,none
+2026-07-24T05:23:49.087Z,orchestrator,loadModel,GTE_LARGE_FP16,false,,2704,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:23:49.145Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,45,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:23:49.212Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,36,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:23:49.247Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,35,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:23:49.282Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,34,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:24:16.530Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,1368,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:24:23.835Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,7,,,,,,blocks=16,darwin/arm64,none
+2026-07-24T05:24:23.952Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:24:27.924Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,3969,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:24:41.701Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,11253.264,13776,2779,157,70.541,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:24:41.731Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:24:43.303Z,edge,loadModel,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,1571,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:24:50.249Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,893.092,6940,599,410,69.997,0,gpu,tool-turn-0,darwin/arm64,profiler-raw
+2026-07-24T05:24:50.338Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,89,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:24:54.707Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,921.181,4366,976,276,83.183,0,gpu,tool-turn-1,darwin/arm64,profiler-raw
+2026-07-24T05:24:54.736Z,orchestrator,unloadModel,QWEN3_1_7B_INST_Q4,true,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:24:54.781Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,44,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:24:54.783Z,edge,verdict,deterministic,false,,,,,,,,,,PASS INV-UI-MRYHWJP7,darwin/arm64,none
+2026-07-24T05:24:56.166Z,edge,loadModel,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,1361,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:24:57.389Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,988.162,1215,1073,15,88.27,0,gpu,assist,darwin/arm64,profiler-raw
+2026-07-24T05:24:57.415Z,edge,unloadModel,QWEN3_1_7B_INST_Q4,true,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:27:50.733Z,orchestrator,loadModel,GTE_LARGE_FP16,false,,2193,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:27:50.778Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,38,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:27:50.825Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,31,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:27:50.856Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,31,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:27:50.882Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,25,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:28:21.078Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,1066,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:28:29.253Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,8,,,,,,blocks=16,darwin/arm64,none
+2026-07-24T05:28:29.367Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:28:32.305Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,2934,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:28:47.101Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,12111.012,14796,2779,149,62.596,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:28:47.136Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:28:49.629Z,edge,loadModel,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,2491,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:28:55.436Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,601.166,5794,599,392,78.017,0,gpu,tool-turn-0,darwin/arm64,profiler-raw
+2026-07-24T05:28:55.510Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,74,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:29:03.238Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,930.715,7726,954,512,77.091,0,gpu,tool-turn-1,darwin/arm64,profiler-raw
+2026-07-24T05:29:03.270Z,edge,unloadModel,QWEN3_1_7B_INST_Q4,true,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:29:03.317Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,46,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:29:03.320Z,edge,verdict,deterministic,false,,,,,,,,,,PASS INV-UI-MRYI1SMK,darwin/arm64,none
+2026-07-24T05:29:04.177Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,853,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:29:11.615Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,7,,,,,,blocks=17,darwin/arm64,none
+2026-07-24T05:29:11.741Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:29:15.853Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,4110,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:29:30.515Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,11358.124,14662,2784,203,69.745,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:29:30.555Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:29:32.769Z,edge,loadModel,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,2213,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:29:39.343Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,572.488,6571,602,455,78.318,0,gpu,tool-turn-0,darwin/arm64,profiler-raw
+2026-07-24T05:29:39.412Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,68,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:29:44.573Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,919.804,5160,1021,304,73.372,0,gpu,tool-turn-1,darwin/arm64,profiler-raw
+2026-07-24T05:29:44.603Z,edge,unloadModel,QWEN3_1_7B_INST_Q4,true,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:29:44.665Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,62,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:29:44.668Z,edge,verdict,deterministic,false,,,,,,,,,,REJECT INV-UI-MRYI2Q1O,darwin/arm64,none
+2026-07-24T05:29:45.760Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,1089,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:29:52.355Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,7,,,,,,blocks=19,darwin/arm64,none
+2026-07-24T05:29:52.473Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:29:52.476Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,"attack A:plaintext,F:leet",darwin/arm64,none
+2026-07-24T05:29:56.633Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,4157,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:31:48.619Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,988,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:31:55.169Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,7,,,,,,blocks=15,darwin/arm64,none
+2026-07-24T05:31:55.271Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:31:57.897Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,2624,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:32:13.367Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,12652.906,15469,2786,155,62.51,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:32:13.406Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:32:15.791Z,edge,loadModel,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,2385,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:32:20.874Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,601.047,5075,603,365,83.996,0,gpu,tool-turn-0,darwin/arm64,profiler-raw
+2026-07-24T05:32:23.416Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,1009.067,2541,1022,118,82.909,0,gpu,tool-turn-1,darwin/arm64,profiler-raw
+2026-07-24T05:32:23.484Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,68,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:32:27.442Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,1143.878,3956,1170,218,80.184,0,gpu,tool-turn-2,darwin/arm64,profiler-raw
+2026-07-24T05:32:27.473Z,edge,unloadModel,QWEN3_1_7B_INST_Q4,true,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:32:27.528Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,55,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:32:27.531Z,edge,verdict,deterministic,false,,,,,,,,,,REJECT INV-UI-MRYI68TR,darwin/arm64,none
+2026-07-24T05:33:30.802Z,orchestrator,loadModel,GTE_LARGE_FP16,false,,1639,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:33:30.847Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,40,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:33:30.888Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,28,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:33:30.914Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,25,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:33:30.934Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,20,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:33:38.394Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,800,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:33:44.118Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,6,,,,,,blocks=19,darwin/arm64,none
+2026-07-24T05:33:44.228Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:33:44.232Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,"attack A:plaintext,F:leet",darwin/arm64,none
+2026-07-24T05:33:46.369Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,2137,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:34:00.835Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,11935.81,14466,2801,153,68.409,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:34:00.866Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:34:00.867Z,edge,gate0-reject,gate0,false,,,,,,,,,,"ui A:plaintext,F:leet",darwin/arm64,none
+2026-07-24T05:34:00.938Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,71,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:34:00.941Z,edge,verdict,deterministic,false,,,,,,,,,,REJECT INV-UI-MRYI8LO9,darwin/arm64,none
+2026-07-24T05:34:01.623Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,678,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:34:06.791Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,5,,,,,,blocks=16,darwin/arm64,none
+2026-07-24T05:34:06.901Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:34:08.793Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,1890,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:34:23.641Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,11410.187,14848,2779,206,67.346,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:34:23.672Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:34:25.250Z,edge,loadModel,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,1578,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:34:29.627Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,602.194,4369,601,314,86.414,0,gpu,tool-turn-0,darwin/arm64,profiler-raw
+2026-07-24T05:34:32.062Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,992.168,2435,969,116,83.8,0,gpu,tool-turn-1,darwin/arm64,profiler-raw
+2026-07-24T05:34:32.120Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,58,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:34:36.782Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,1127.736,4659,1134,282,81.464,0,gpu,tool-turn-2,darwin/arm64,profiler-raw
+2026-07-24T05:34:36.807Z,edge,unloadModel,QWEN3_1_7B_INST_Q4,true,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:34:36.847Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,39,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:34:36.849Z,edge,verdict,deterministic,false,,,,,,,,,,PASS INV-UI-MRYI93OX,darwin/arm64,none
+2026-07-24T05:35:43.165Z,orchestrator,loadModel,GTE_LARGE_FP16,false,,1816,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:35:43.214Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,43,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:35:43.254Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,27,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:35:43.282Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,27,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:35:43.301Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,18,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:35:58.964Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,850,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:36:06.254Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,7,,,,,,blocks=16,darwin/arm64,none
+2026-07-24T05:36:06.379Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:36:10.316Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,3933,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:36:23.653Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,10805.611,13337,2779,158,68.626,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:36:23.682Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:36:25.509Z,edge,loadModel,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,1826,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:36:32.225Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,593.704,6710,599,512,86.196,0,gpu,tool-turn-0,darwin/arm64,profiler-raw
+2026-07-24T05:36:32.248Z,edge,unloadModel,QWEN3_1_7B_INST_Q4,true,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:36:32.324Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,74,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:36:32.327Z,edge,verdict,deterministic,false,,,,,,,,,,PASS INV-UI-MRYIBM3M,darwin/arm64,none
+2026-07-24T05:38:03.607Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,882,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:38:11.798Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,8,,,,,,blocks=17,darwin/arm64,none
+2026-07-24T05:38:11.923Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:38:17.627Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,5698,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:38:32.277Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,11391.368,14649,2784,204,70.198,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:38:32.313Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:38:36.637Z,edge,tool-calling,QWEN3_1_7B_INST_Q4,false,,,,,,,,,,error Failed to load model: Failed to connect to delegated provider: RPC connection fa,darwin/arm64,none
+2026-07-24T05:38:36.710Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,72,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:38:36.712Z,edge,verdict,deterministic,false,,,,,,,,,,REJECT INV-UI-MRYIEA91,darwin/arm64,none
+2026-07-24T05:39:45.588Z,orchestrator,loadModel,GTE_LARGE_FP16,false,,1479,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:39:45.633Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,40,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:39:45.666Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,19,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:39:45.686Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,20,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:39:45.704Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,17,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:39:53.461Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,860,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:39:58.608Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,5,,,,,,blocks=16,darwin/arm64,none
+2026-07-24T05:39:58.713Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:40:01.034Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,2318,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:40:14.784Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,11189.752,13749,2779,157,68.584,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:40:14.816Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:40:16.336Z,edge,loadModel,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,1518,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:40:20.819Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,593.297,4478,599,326,86.87,0,gpu,tool-turn-0,darwin/arm64,profiler-raw
+2026-07-24T05:40:25.160Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,989.228,4341,976,233,71.079,0,gpu,tool-turn-1,darwin/arm64,profiler-raw
+2026-07-24T05:40:25.222Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,61,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:40:29.377Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,1164.163,4152,1263,260,90.093,0,gpu,tool-turn-2,darwin/arm64,profiler-raw
+2026-07-24T05:40:29.401Z,edge,unloadModel,QWEN3_1_7B_INST_Q4,true,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:40:29.449Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,47,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:40:29.452Z,edge,verdict,deterministic,false,,,,,,,,,,PASS INV-UI-MRYIGN15,darwin/arm64,none
+2026-07-24T05:40:30.162Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,707,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:40:36.331Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,6,,,,,,blocks=17,darwin/arm64,none
+2026-07-24T05:40:36.441Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:40:39.232Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,2789,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:40:52.406Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,10664.004,13173,2784,156,73.461,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:40:52.447Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:40:53.842Z,edge,loadModel,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,1395,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:40:58.623Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,552.011,4774,600,302,72.733,0,gpu,tool-turn-0,darwin/arm64,profiler-raw
+2026-07-24T05:41:03.889Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,854.732,5266,953,335,78.457,0,gpu,tool-turn-1,darwin/arm64,profiler-raw
+2026-07-24T05:41:03.944Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,55,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:41:09.690Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,1231.336,5744,1342,333,75.868,0,gpu,tool-turn-2,darwin/arm64,profiler-raw
+2026-07-24T05:41:13.894Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,1690.381,4203,1689,168,68.807,0,gpu,tool-turn-3,darwin/arm64,profiler-raw
+2026-07-24T05:41:13.921Z,edge,unloadModel,QWEN3_1_7B_INST_Q4,true,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:41:13.969Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,47,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:41:13.971Z,edge,verdict,deterministic,false,,,,,,,,,,REJECT INV-UI-MRYIHFGW,darwin/arm64,none
+2026-07-24T05:41:14.729Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,755,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:41:20.911Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,6,,,,,,blocks=19,darwin/arm64,none
+2026-07-24T05:41:21.024Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:41:21.027Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,"attack A:plaintext,F:leet",darwin/arm64,none
+2026-07-24T05:41:24.310Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,3283,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:41:39.511Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,11387.981,15200,2801,229,66.751,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:41:39.575Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:41:39.575Z,edge,gate0-reject,gate0,false,,,,,,,,,,"ui A:plaintext,F:leet",darwin/arm64,none
+2026-07-24T05:41:39.674Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,98,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:41:39.693Z,edge,verdict,deterministic,false,,,,,,,,,,REJECT INV-UI-MRYIIDTI,darwin/arm64,none
+2026-07-24T05:41:40.429Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,727,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:41:44.927Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,4,,,,,,blocks=15,darwin/arm64,none
+2026-07-24T05:41:45.007Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:41:47.029Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,2015,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:42:01.292Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,11178.701,14263,2786,200,70.147,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:42:01.326Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:42:02.841Z,edge,loadModel,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,1515,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:42:08.031Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,611.716,5186,615,348,78.842,0,gpu,tool-turn-0,darwin/arm64,profiler-raw
+2026-07-24T05:42:10.872Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,1119.364,2840,1099,130,81.106,0,gpu,tool-turn-1,darwin/arm64,profiler-raw
+2026-07-24T05:42:10.941Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,69,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:42:15.096Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,1191.647,4153,1248,232,81.384,0,gpu,tool-turn-2,darwin/arm64,profiler-raw
+2026-07-24T05:42:15.122Z,edge,unloadModel,QWEN3_1_7B_INST_Q4,true,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:42:15.181Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,59,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:42:15.183Z,edge,verdict,deterministic,false,,,,,,,,,,REJECT INV-UI-MRYIIXO6,darwin/arm64,none
+2026-07-24T05:42:15.898Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,712,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:42:20.822Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,5,,,,,,blocks=16,darwin/arm64,none
+2026-07-24T05:42:20.916Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:42:23.236Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,2319,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:42:36.790Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,10923.984,13555,2779,158,67.985,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:42:36.824Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:42:38.213Z,edge,loadModel,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,1389,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:42:45.143Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,593.282,6921,599,483,77.771,0,gpu,tool-turn-0,darwin/arm64,profiler-raw
+2026-07-24T05:42:45.199Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,55,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:42:52.194Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,990.491,6993,1049,512,86.558,0,gpu,tool-turn-1,darwin/arm64,profiler-raw
+2026-07-24T05:42:52.219Z,edge,unloadModel,QWEN3_1_7B_INST_Q4,true,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:42:52.259Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,40,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:42:52.261Z,edge,verdict,deterministic,false,,,,,,,,,,PASS INV-UI-MRYIJP1U,darwin/arm64,none
+2026-07-24T05:42:52.999Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,736,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:42:58.430Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,5,,,,,,blocks=17,darwin/arm64,none
+2026-07-24T05:42:58.550Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:43:02.253Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,3701,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:43:15.492Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,10707.815,13238,2784,163,74.003,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:43:15.530Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:43:16.980Z,edge,loadModel,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,1449,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:43:22.808Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,560.48,5821,600,394,76.612,0,gpu,tool-turn-0,darwin/arm64,profiler-raw
+2026-07-24T05:43:27.705Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,1003.715,4897,1045,265,70.011,0,gpu,tool-turn-1,darwin/arm64,profiler-raw
+2026-07-24T05:43:27.780Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,74,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:43:35.962Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,1348.467,8180,1364,479,71.37,0,gpu,tool-turn-2,darwin/arm64,profiler-raw
+2026-07-24T05:43:40.514Z,edge,completion,QWEN3_1_7B_INST_Q4,true,3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95,,1882.505,4550,1857,201,77.53,0,gpu,tool-turn-3,darwin/arm64,profiler-raw
+2026-07-24T05:43:40.539Z,edge,unloadModel,QWEN3_1_7B_INST_Q4,true,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:43:40.583Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,44,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:43:40.585Z,edge,verdict,deterministic,false,,,,,,,,,,REJECT INV-UI-MRYIKHNS,darwin/arm64,none
+2026-07-24T05:43:41.312Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,724,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:43:47.573Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,6,,,,,,blocks=19,darwin/arm64,none
+2026-07-24T05:43:47.693Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:43:47.697Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,"attack A:plaintext,F:leet",darwin/arm64,none
+2026-07-24T05:43:50.895Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,3198,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:46:00.444Z,orchestrator,loadModel,GTE_LARGE_FP16,false,,1716,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:46:00.483Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,33,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:46:00.529Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,31,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:46:00.567Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,37,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:46:00.593Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,26,,,,,,seed-po-embedding,darwin/arm64,none
+2026-07-24T05:46:01.741Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,684,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:46:07.279Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,6,,,,,,blocks=16,darwin/arm64,none
+2026-07-24T05:46:07.399Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:46:09.386Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,1982,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:46:23.247Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,10657.77,13861,2779,208,71.373,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:46:23.276Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:46:25.668Z,orchestrator,loadModel,QWEN3_1_7B_INST_Q4,false,,2391,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:46:29.510Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,false,,,549.092,3841,607,313,98.37,0,gpu,tool-turn-0,darwin/arm64,profiler-raw
+2026-07-24T05:46:31.731Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,false,,,904.321,2220,974,122,96.625,0,gpu,tool-turn-1,darwin/arm64,profiler-raw
+2026-07-24T05:46:31.784Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,52,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:46:36.739Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,false,,,1037.738,4952,1140,341,90.279,0,gpu,tool-turn-2,darwin/arm64,profiler-raw
+2026-07-24T05:46:36.760Z,orchestrator,unloadModel,QWEN3_1_7B_INST_Q4,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:46:36.817Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,56,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:46:36.819Z,edge,verdict,deterministic,false,,,,,,,,,,PASS INV-UI-MRYIOJC0,darwin/arm64,none
+2026-07-24T05:46:37.567Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,744,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:46:42.262Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,5,,,,,,blocks=17,darwin/arm64,none
+2026-07-24T05:46:42.348Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:46:45.022Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,2672,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:46:58.057Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,10636.571,13035,2784,157,73.718,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:46:58.089Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:47:00.478Z,orchestrator,loadModel,QWEN3_1_7B_INST_Q4,false,,2388,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:47:06.349Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,false,,,608.374,5871,600,466,90.559,0,gpu,tool-turn-0,darwin/arm64,profiler-raw
+2026-07-24T05:47:06.408Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,59,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:47:10.774Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,false,,,990.841,4364,1028,282,86.247,0,gpu,tool-turn-1,darwin/arm64,profiler-raw
+2026-07-24T05:47:10.797Z,orchestrator,unloadModel,QWEN3_1_7B_INST_Q4,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:47:10.863Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,65,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:47:10.865Z,edge,verdict,deterministic,false,,,,,,,,,,REJECT INV-UI-MRYIPAXI,darwin/arm64,none
+2026-07-24T05:47:11.547Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,678,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:47:17.050Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,5,,,,,,blocks=19,darwin/arm64,none
+2026-07-24T05:47:17.159Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:47:17.161Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,"attack A:plaintext,F:leet",darwin/arm64,none
+2026-07-24T05:47:19.715Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,2554,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:47:32.652Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,10595.364,12936,2801,153,73.627,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:47:32.681Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:47:32.682Z,edge,gate0-reject,gate0,false,,,,,,,,,,"ui A:plaintext,F:leet",darwin/arm64,none
+2026-07-24T05:47:32.744Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,61,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:47:32.746Z,edge,verdict,deterministic,false,,,,,,,,,,REJECT INV-UI-MRYIQ179,darwin/arm64,none
+2026-07-24T05:47:33.476Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,727,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:47:37.623Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,4,,,,,,blocks=15,darwin/arm64,none
+2026-07-24T05:47:37.721Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:47:40.957Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,3235,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:47:54.190Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,10768.659,13232,2786,154,70.923,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:47:54.220Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:47:56.291Z,orchestrator,loadModel,QWEN3_1_7B_INST_Q4,false,,2071,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:47:59.044Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,false,,,562.581,2752,603,195,91.687,0,gpu,tool-turn-0,darwin/arm64,profiler-raw
+2026-07-24T05:48:00.561Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,false,,,772.047,1517,849,57,87.42,0,gpu,tool-turn-1,darwin/arm64,profiler-raw
+2026-07-24T05:48:00.616Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,54,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:48:05.711Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,false,,,904.599,5093,940,334,82.09,0,gpu,tool-turn-2,darwin/arm64,profiler-raw
+2026-07-24T05:48:10.600Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,false,,,1187.775,4888,1280,305,85.197,0,gpu,tool-turn-3,darwin/arm64,profiler-raw
+2026-07-24T05:48:10.619Z,orchestrator,unloadModel,QWEN3_1_7B_INST_Q4,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:48:10.668Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,49,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:48:10.670Z,edge,verdict,deterministic,false,,,,,,,,,,REJECT INV-UI-MRYIQI31,darwin/arm64,none
+2026-07-24T05:48:11.418Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,745,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:48:16.217Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,5,,,,,,blocks=16,darwin/arm64,none
+2026-07-24T05:48:16.324Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:48:19.411Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,3086,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:48:32.850Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,10919.143,13439,2779,155,68.695,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:48:32.881Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:48:35.356Z,orchestrator,loadModel,QWEN3_1_7B_INST_Q4,false,,2475,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:48:39.422Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,false,,,579.311,4065,599,267,79.8,0,gpu,tool-turn-0,darwin/arm64,profiler-raw
+2026-07-24T05:48:44.374Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,false,,,857.823,4952,917,340,84.274,0,gpu,tool-turn-1,darwin/arm64,profiler-raw
+2026-07-24T05:48:44.427Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,52,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:48:47.376Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,false,,,1248.683,2947,1311,128,78.1,0,gpu,tool-turn-2,darwin/arm64,profiler-raw
+2026-07-24T05:48:47.397Z,orchestrator,unloadModel,QWEN3_1_7B_INST_Q4,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:48:47.459Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,62,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:48:47.461Z,edge,verdict,deterministic,false,,,,,,,,,,PASS INV-UI-MRYIRBCH,darwin/arm64,none
+2026-07-24T05:48:48.246Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,782,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:48:53.040Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,5,,,,,,blocks=17,darwin/arm64,none
+2026-07-24T05:48:53.140Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:48:56.086Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,2945,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:49:09.323Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,10791.887,13236,2784,163,74.358,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:49:09.354Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:49:11.693Z,orchestrator,loadModel,QWEN3_1_7B_INST_Q4,false,,2339,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:49:15.135Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,false,,,553.683,3441,600,270,97.395,0,gpu,tool-turn-0,darwin/arm64,profiler-raw
+2026-07-24T05:49:17.255Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,false,,,847.901,2120,924,115,96.873,0,gpu,tool-turn-1,darwin/arm64,profiler-raw
+2026-07-24T05:49:17.304Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,48,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:49:22.555Z,orchestrator,completion,QWEN3_1_7B_INST_Q4,false,,,1013.96,5249,1093,390,94.772,0,gpu,tool-turn-2,darwin/arm64,profiler-raw
+2026-07-24T05:49:22.577Z,orchestrator,unloadModel,QWEN3_1_7B_INST_Q4,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:49:22.632Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,54,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:49:22.634Z,edge,verdict,deterministic,false,,,,,,,,,,REJECT INV-UI-MRYIS3QF,darwin/arm64,none
+2026-07-24T05:49:23.372Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,735,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:49:28.231Z,orchestrator,ocr,OCR_LATIN_RECOGNIZER_1,false,,,,5,,,,,,blocks=19,darwin/arm64,none
+2026-07-24T05:49:28.318Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:49:28.320Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,"attack A:plaintext,F:leet",darwin/arm64,none
+2026-07-24T05:49:31.750Z,orchestrator,loadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,3430,,,,,,,,model loaded,darwin/arm64,none
+2026-07-24T05:49:44.685Z,orchestrator,completion,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,10596.938,12934,2801,155,74.446,0,gpu,invoice-extraction,darwin/arm64,profiler-raw
+2026-07-24T05:49:44.712Z,orchestrator,unloadModel,QWEN3VL_2B_MULTIMODAL_Q4_K,false,,,,,,,,,,model unloaded,darwin/arm64,none
+2026-07-24T05:49:44.713Z,edge,gate0-reject,gate0,false,,,,,,,,,,"ui A:plaintext,F:leet",darwin/arm64,none
+2026-07-24T05:49:44.767Z,orchestrator,embed,GTE_LARGE_FP16,false,,,,54,,,,,,rag-query,darwin/arm64,none
+2026-07-24T05:49:44.770Z,edge,verdict,deterministic,false,,,,,,,,,,REJECT INV-UI-MRYISUVH,darwin/arm64,none
+2026-07-24T05:52:31.938Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,"grade-a-plaintext.txt A:plaintext,F:leet",darwin/arm64,none
+2026-07-24T05:52:31.940Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-b-morse.txt B:morse,darwin/arm64,none
+2026-07-24T05:52:31.942Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-c-base64.txt C:base64,darwin/arm64,none
+2026-07-24T05:52:31.943Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-c2-base32.txt C:base32,darwin/arm64,none
+2026-07-24T05:52:31.943Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-d-hex.txt D:hex,darwin/arm64,none
+2026-07-24T05:52:31.944Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-e-rot13.txt E:rot13,darwin/arm64,none
+2026-07-24T05:52:31.944Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-f-leet.txt F:leet,darwin/arm64,none
+2026-07-24T05:52:31.946Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-g-homoglyph.txt G:homoglyph,darwin/arm64,none
+2026-07-24T05:52:31.946Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,"grade-h-zerowidth.txt H:control-chars,A:plaintext",darwin/arm64,none
+2026-07-24T05:52:31.947Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,"grade-i-image-ocr.txt A:plaintext,F:leet",darwin/arm64,none
+2026-07-24T05:52:31.947Z,orchestrator,gate0-reject,gate0,false,,,,,,,,,,grade-j-nested.txt J:nested:morse,darwin/arm64,none
+2026-07-24T05:52:31.955Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-7001 classic-homoglyph-vendor.json,darwin/arm64,none
+2026-07-24T05:52:31.955Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-7002 classic-split-amount.json,darwin/arm64,none
+2026-07-24T05:52:31.955Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-1042 classic-duplicate-replay.json,darwin/arm64,none
+2026-07-24T05:52:31.956Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-7004 classic-wallet-lookalike.json,darwin/arm64,none

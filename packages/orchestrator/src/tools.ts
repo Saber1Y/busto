@@ -2,7 +2,8 @@ import { z } from "zod";
 import { QWEN3_1_7B_INST_Q4 } from "@qvac/sdk";
 import type Database from "better-sqlite3";
 import { lookupVendor, matchPurchaseOrder, verifyWallet, type EmbedFn } from "./erp.ts";
-import { toMinorUnits, setAuditNode, auditLoadModel, auditUnloadModel, auditCompletion, type InvoiceExtraction } from "../../shared/src/index.ts";
+import { toMinorUnits, setAuditNode, auditUnloadModel, auditCompletion, type InvoiceExtraction } from "../../shared/src/index.ts";
+import { loadReasoningModel } from "./delegation.ts";
 
 // QVAC native tool-calling layer. The LLM calls these to GATHER facts; the handlers
 // are deterministic code (threat #18: tool results are DB-derived, never LLM-set). The
@@ -66,26 +67,39 @@ function descriptionFor(x: InvoiceExtraction): string {
   return x.lineItems.map((li) => li.description).filter(Boolean).join("; ") || x.vendorName;
 }
 
+export interface VerificationAgentOpts {
+  maxTurns?: number;
+  onCall?: OnToolCall;
+  /** Fired once, after the model loads, with the confirmed delegation status — so the UI
+   *  can honestly say whether the fact-gathering ran locally or on the provider. */
+  onMeta?: (meta: { delegated: boolean; providerPublicKey: string | null }) => void;
+}
+
 /**
  * QVAC native tool-calling: the LLM verifies an invoice by calling the ERP tools. The
  * captured trace is returned (and streamed via `onCall`); the verdict is computed in
  * code. Every turn goes through the C6 audit wrapper, so each produces a profiler row,
  * and generation is capped (Hard Rule 8). `embed` is optional — with RAG off, the tools
  * still run; `match_purchase_order` just returns no near-miss candidates.
+ *
+ * The model turns are PURE TEXT (completionStream), so they delegate to the provider when
+ * DELEGATE_REASONING is on. The tool RESULTS are computed locally against the DB inside
+ * `execute` — a delegated model can only choose which tools to call, never fabricate what
+ * they return — and the verdict is computed separately, never here.
  */
 export async function runVerificationAgent(
   db: Database.Database,
   extraction: InvoiceExtraction,
   embed?: EmbedFn,
-  maxTurns = 5,
-  onCall?: OnToolCall,
+  opts: VerificationAgentOpts = {},
 ): Promise<ToolCallRecord[]> {
+  const { maxTurns = 5, onCall, onMeta } = opts;
   const { tools, execute, calls } = buildErpTools(db, embed, onCall);
-  setAuditNode("orchestrator");
-  const modelId = await auditLoadModel(
+  const rm = await loadReasoningModel(
     { modelSrc: QWEN3_1_7B_INST_Q4, modelConfig: { ctx_size: 4096, predict: TOOL_MAX_TOKENS, tools: true } },
-    { model: TOOL_MODEL },
+    TOOL_MODEL,
   );
+  onMeta?.({ delegated: rm.delegated, providerPublicKey: rm.providerPublicKey });
   try {
     const history: Array<{ role: string; content: string }> = [
       {
@@ -104,7 +118,14 @@ export async function runVerificationAgent(
     ];
 
     for (let turn = 0; turn < maxTurns; turn++) {
-      const res = await auditCompletion({ modelId, history, stream: true, tools }, { model: TOOL_MODEL, event: `tool-turn-${turn}` });
+      // Re-assert the audit node each turn: a tool result's local RAG embed calls
+      // setAuditNode("orchestrator") between turns, which would otherwise mislabel the
+      // next delegated turn's row. The delegated flag is always right; keep node right too.
+      setAuditNode(rm.delegated ? "edge" : "orchestrator");
+      const res = await auditCompletion(
+        { modelId: rm.modelId, history, stream: true, tools },
+        { model: TOOL_MODEL, event: `tool-turn-${turn}`, delegated: rm.delegated, providerPublicKey: rm.providerPublicKey },
+      );
       history.push({ role: "assistant", content: res.contentText });
       if (res.toolCalls.length === 0) break;
       for (const call of res.toolCalls) {
@@ -113,7 +134,7 @@ export async function runVerificationAgent(
       }
     }
   } finally {
-    await auditUnloadModel({ modelId }, { model: TOOL_MODEL });
+    await auditUnloadModel({ modelId: rm.modelId }, { model: TOOL_MODEL, delegated: rm.delegated });
   }
   return calls;
 }

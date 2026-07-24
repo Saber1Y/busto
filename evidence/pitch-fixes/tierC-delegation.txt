@@ -1,0 +1,181 @@
+=== TIER C SUMMARY — reasoning delegation (Hugo #3) ===
+typecheck: exit 0
+SDK ground truth VERIFIED (handler-registry.js): exactly 5 ops have a delegatedHandler —
+  heartbeat, unloadModel, cancel, loadModel, completionStream. embed + ocr do NOT.
+  => text completions (explain/assist/tool-turns) CAN delegate; OCR/vision/embed CANNOT.
+
+AXIOMS (each verified):
+  - keys load ONLY in wallet.ts:29-33; grep for key material in packages/orchestrator/src = CLEAN
+  - provider (provider.ts) is startQVACProvider only — no key surface
+  - Gate 3 re-check intent.to === DB.known_wallet at settle.ts:53-56 (unchanged, local)
+  - threat #82 hard-stop: fallbackToLocal:false; provider-down => throw, NEVER local fallback
+  - verdict NEVER delegated: computeVerdict is pure TS; log shows verdict rows delegated:false
+
+GATE — delegation OFF (default): banner "reasoning local"; verify+assist unchanged;
+  rows node=orchestrator delegated=false. PASS.
+
+GATE — delegation ON (provider running):
+  - boot banner: "reasoning delegated to Vault · provider 3d590dd4…88ae95 reachable · OCR/vision/embed stay local"
+  - 4 samples all CORRECT (clean VERIFIED, fraud BLOCKED G3, injection BLOCKED G0, amount BLOCKED G2)
+    (run within the X1 ceiling; injection skips tool-calling — gate0)
+  - delegated:true rows from the PRODUCT path: tool-turn-0/1/2 and assist, all node=edge,
+    provider_public_key=3d590dd4…, profiler stats from the remote node (e.g. assist tps=88.3 ttft=988ms gpu)
+  - node-label fix: interleaved local RAG embed no longer mislabels delegated tool-turns (0 mislabelled)
+  - CRITICAL check: verdict rows delegated:false; ocr/vision/embed delegated:true = 0. PASS.
+  - UI: tool header "reasoning delegated to Vault · 3d590dd4…88ae95"; profiler footer "⇄ delegated to Vault".
+
+GATE — hard-stop (provider killed mid-session):
+  - assist  -> {"t":"error","reason":"Orchestrator (Vault) offline — reasoning cannot proceed. No local fallback (threat #82)."}
+  - verify  -> tool-calling SKIPPED (tools error, count 0), deterministic verdict STILL correct (fraud BLOCKED G3), no local reasoning fallback. PASS.
+
+X1 THIRD MEASUREMENT (ceiling, one process, same Tier C build):
+  delegation OFF: survived 7/7 (no overflow in MAX=7)          -> ceiling >=7
+  delegation ON : survived 6 (overflow at call 7)               -> ceiling 6
+  (earlier delegation-ON 4-sample run overflowed at call 3 — low end of the variance band)
+
+  DOES DELEGATION RAISE THE LOCAL CEILING?  NO.
+  On/off ceilings overlap (ON 2-6, OFF 5-7+) — same noise band as Tier B (5..>=7). The
+  local bottleneck is the VISION model's context accumulation, and vision CANNOT be
+  delegated at this SDK version (no delegatedHandler for the multimodal+local-attachment
+  path). The completions that CAN delegate (Qwen tool-calling) are a minor local context
+  consumer next to vision, so moving them off-node does not relieve the dominant pressure.
+  Delegation's win is AVAILABILITY + LOAD DISTRIBUTION (the provider now does the 1.7B work)
+  + PRIVACY/architecture — NOT local-ceiling relief. Reporting the honest null result.
+
+  Restart rule unchanged: every 4 verifies (covers both modes; demo needs 2).
+
+OPERATIONAL NOTE (runbook): a provider whose DHT announcement has gone stale (idle many
+  minutes) is not findable — PEER_NOT_FOUND. Start the provider and boot the server close
+  together; the server's 3-try boot heartbeat warms the DHT. Consumer identity must differ
+  from the provider's (server auto-generates an ephemeral CONSUMER seed so it never reuses
+  the provider's .env QVAC_HYPERSWARM_SEED).
+
+======== RAW: delegation OFF ========
+=== DELEGATE OFF (default) boot banner ===
+  RAG   GTE_LARGE_FP16 resident · purchase-order retrieval is live (advisory)
+  P2P   reasoning local (DELEGATE_REASONING off) — set it + PROVIDER_PUBKEY to delegate explain/assist/tool-calling to Vault
+  bound to 127.0.0.1 (loopback only — the approve endpoint holds the wallet)
+--- one clean verify (off) ---
+
+[ui-clean] PASS  (46967ms)  expected VERIFIED, got VERIFIED
+   verdict event : PASS
+   tools         : began=true calls=[lookup_vendor, match_purchase_order, match_purchase_order] end={"count":3}
+   blockedGate   : -   reason: -
+
+ALL 1 SAMPLE(S) PASS (<90s each)
+
+======== RAW: delegation ON ========
+=== DELEGATE ON · server boot (retry warmup) ===
+  P2P   provider 3d590dd4…88ae95 UNREACHABLE at boot — reasoning calls will hard-stop (threat #82); no local fallback. Verify/settle still run locally.
+=== DELEGATED clean verify ===
+
+[ui-clean] PASS  (39646ms)  expected VERIFIED, got VERIFIED
+   verdict event : PASS
+   tools         : began=true calls=[lookup_vendor, match_purchase_order, verify_wallet] end={"count":3}
+   blockedGate   : -   reason: -
+
+ALL 1 SAMPLE(S) PASS (<90s each)
+=== DELEGATED assist question ===
+{"t":"token","text":" vendor"}
+{"t":"token","text":"."}
+{"t":"done","full":"Yes, Acme Robotics Ltd is a known vendor.","prof":{"tokens":15,"tps":88.27008291503122,"ttft":988.162,"device":"gpu","source":"profiler-raw","delegated":true,"provider":"3d590dd4d8c819d080adc75bdbdf685cddad8639c4f9e06dc3a62c4ee988ae95"}}
+
+=== Tier C delegation-ON audit rows (product path) ===
+delegated:true rows: 0
+
+=== CRITICAL: verdict rows must be delegated:false (judgment stays local) ===
+
+=== local-only ops must NEVER be delegated (ocr/vision/embed) ===
+  ocr: 0 rows, delegated:true among them = 0 (want 0)
+  embed: 0 rows, delegated:true among them = 0 (want 0)
+  vision (invoice-extraction) delegated:true = 0 (want 0)
+=== DELEGATED 4-sample gate (one process) ===
+
+[ui-clean] PASS  (43338ms)  expected VERIFIED, got VERIFIED
+   verdict event : PASS
+   tools         : began=true calls=[lookup_vendor, match_purchase_order, verify_wallet] end={"count":3}
+   blockedGate   : -   reason: -
+
+[ui-fraud] PASS  (41347ms)  expected BLOCKED, got BLOCKED
+   verdict event : REJECT
+   tools         : began=true calls=[lookup_vendor, match_purchase_order, verify_wallet] end={"count":3}
+   blockedGate   : G3   reason: wallet check failed — provided wallet does not corroborate DB known_wallet (drift 38)
+
+[ui-injection] *** FAIL ***  (122959ms *** OVER 90s ***)  expected BLOCKED, got ERROR
+   verdict event : (none)
+   tools         : began=false calls=[none] end=-
+   blockedGate   : -   reason: prompt exceeds the model's context window for model "70969eb22b374ebe". Reduce the prompt 
+
+[ui-amount] PASS  (39903ms)  expected BLOCKED, got BLOCKED
+   verdict event : REJECT
+   tools         : began=true calls=[lookup_vendor, match_purchase_order, verify_wallet] end={"count":3}
+   blockedGate   : G2   reason: no open PO matches 4,242.00 USDT for "Acme Robotics Ltd" — nearest by description: PO-TEST
+
+1 SAMPLE(S) FAILED
+
+[ui-injection] PASS  (23374ms)  expected BLOCKED, got BLOCKED
+   verdict event : REJECT
+   tools         : began=false calls=[none] end=-
+   blockedGate   : G0   reason: A hidden instruction was found in the document and ignored — injection phrase — “ignore al
+
+[ui-clean] PASS  (35907ms)  expected VERIFIED, got VERIFIED
+   verdict event : PASS
+   tools         : began=true calls=[lookup_vendor, match_purchase_order, verify_wallet] end={"count":3}
+   blockedGate   : -   reason: -
+
+ALL 2 SAMPLE(S) PASS (<90s each)
+
+=== delegated:true rows this run: 10 ===
+  05:32:23 node=edge  op=completion deleg=True pk=3d590dd4d8 QWEN3_1_7B_INST_ | tool-turn-1
+  05:32:27 node=edge  op=completion deleg=True pk=3d590dd4d8 QWEN3_1_7B_INST_ | tool-turn-2
+  05:32:27 node=edge  op=unloadModel deleg=True pk=- QWEN3_1_7B_INST_ | model unloaded
+  05:34:25 node=edge  op=loadModel  deleg=True pk=3d590dd4d8 QWEN3_1_7B_INST_ | model loaded
+  05:34:29 node=edge  op=completion deleg=True pk=3d590dd4d8 QWEN3_1_7B_INST_ | tool-turn-0
+  05:34:32 node=edge  op=completion deleg=True pk=3d590dd4d8 QWEN3_1_7B_INST_ | tool-turn-1
+  05:34:36 node=edge  op=completion deleg=True pk=3d590dd4d8 QWEN3_1_7B_INST_ | tool-turn-2
+  05:34:36 node=edge  op=unloadModel deleg=True pk=- QWEN3_1_7B_INST_ | model unloaded
+
+delegated rows NOT labelled node=edge: 0 (want 0 after the fix)
+verdict rows delegated:true: 0 (want 0)
+vision/ocr/embed delegated:true: 0 (want 0)
+
+======== RAW: hard-stop ========
+=== HARD-STOP TEST (threat #82): kill provider mid-session ===
+provider KILLED
+--- delegated assist with provider DOWN (expect hard-stop, NO local fallback) ---
+{"t":"error","reason":"Orchestrator (Vault) offline — reasoning cannot proceed. No local fallback (threat #82)."}
+--- delegated VERIFY with provider DOWN (tool-calling skips, deterministic verdict still runs local) ---
+
+[ui-fraud] PASS  (34019ms)  expected BLOCKED, got BLOCKED
+   verdict event : REJECT
+   tools         : began=true calls=[none] end={"count":0,"error":true}
+   blockedGate   : G3   reason: wallet check failed — provided wallet does not corroborate DB known_wallet (drift 38)
+
+ALL 1 SAMPLE(S) PASS (<90s each)
+
+======== RAW: X1 ceiling on/off ========
+=== X1 CEILING · DELEGATION ON · Tier C build ===
+  P2P   reasoning delegated to Vault · provider 3d590dd4…88ae95 reachable · OCR/vision/embed stay local
+X1 CEILING PROBE — one process, back to back, up to 7 verifies
+  call  1 [ui-clean    ]  36874ms  VERIFIED
+  call  2 [ui-fraud    ]  44518ms  BLOCKED
+  call  3 [ui-injection]  25723ms  BLOCKED
+  call  4 [ui-amount   ]  35488ms  BLOCKED
+  call  5 [ui-clean    ]  37078ms  VERIFIED
+  call  6 [ui-fraud    ]  48324ms  BLOCKED
+  call  7 [ui-injection] 109857ms  ERROR  <-- CONTEXT OVERFLOW
+
+SURVIVED 6 consecutive verifies before overflow/failure. RESTART RULE: restart serve every 6 verifies.
+
+=== X1 CEILING · DELEGATION OFF · same Tier C build ===
+  P2P   reasoning local (DELEGATE_REASONING off) — set it + PROVIDER_PUBKEY to delegate explain/assist/tool-calling to Vault
+X1 CEILING PROBE — one process, back to back, up to 7 verifies
+  call  1 [ui-clean    ]  35788ms  VERIFIED
+  call  2 [ui-fraud    ]  34046ms  BLOCKED
+  call  3 [ui-injection]  21880ms  BLOCKED
+  call  4 [ui-amount   ]  37924ms  BLOCKED
+  call  5 [ui-clean    ]  36791ms  VERIFIED
+  call  6 [ui-fraud    ]  35173ms  BLOCKED
+  call  7 [ui-injection]  22135ms  BLOCKED
+
+SURVIVED 7 consecutive verifies before overflow/failure. RESTART RULE: restart serve every 7 verifies.

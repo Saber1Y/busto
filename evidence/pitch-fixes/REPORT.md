@@ -1042,3 +1042,130 @@ fallback lever but drops the retrieval panel, so it is not the demo default.
 The model's whole job is to *gather facts* — you can watch it call the ERP tools. The decision
 is made underneath it, in plain code, on exact integer equality — "no model in this decision".
 That separation is why a wrong or manipulated model answer still can't move money.
+
+---
+
+## Tier C — delegate the real pipeline's reasoning (Hugo #3)
+
+**Status: DONE, default OFF.** Verified by observed output, an audit trail, one screenshot,
+and a hard-stop test. The X1 third measurement came back with an honest null result — see below.
+
+### Why
+
+Hugo #3: *"P2P only appears where the edge node delegates a single completion on a generic
+demo prompt, but the real product runs locally on the orchestrator with no delegation. A
+stronger approach: edge receives the invoice → delegates to the provider → handles results,
+and your axioms still hold (edge signs, provider holds no keys)."*
+
+### SDK ground truth (verified before building)
+
+`node_modules/@qvac/sdk/dist/server/rpc/handler-registry.js` registers a `delegatedHandler`
+for exactly five ops: heartbeat, unloadModel, cancel, loadModel, **completionStream**. `embed`
+and `ocr` have none. So **pure-text completions delegate; OCR, vision and RAG embeds cannot**
+and always stay local. That maps cleanly onto Custos: explain, assist, and the tool-calling
+verification turns delegate; extraction stays on the Edge.
+
+### What changed
+
+| File | Change |
+|---|---|
+| `packages/orchestrator/src/delegation.ts` (new) | `reasoningDelegate()` (env → config, throws on misconfig), `loadReasoningModel()` (delegate with `fallbackToLocal:false`, confirm with `isDelegated`, set audit node edge/orchestrator), `screenDelegatedText()` (re-run Gate 0 on wire-returned prose). |
+| `explain.ts`, `assistant.ts` | Load via `loadReasoningModel`; on a delegated answer, re-screen the returned text through Gate 0; return `{text, stats, delegated, providerPublicKey}`. |
+| `tools.ts` | `runVerificationAgent` loads via `loadReasoningModel`; opts refactored to `{maxTurns, onCall, onMeta}`; `onMeta` reports the confirmed delegation status; audit node re-asserted each turn so an interleaved local embed can't mislabel a delegated row. |
+| `server.ts` | `DELEGATE_REASONING` + `PROVIDER_PUBKEY` env; distinct consumer hyperswarm identity; 3-try boot heartbeat + banner (threat #82); streams the delegated flag on `tools-begin` and the profiler footer; explain/assist hard-stop message when delegated. |
+| `dash.js`, `dash.css` | "reasoning delegated to Vault · <key>" on the tool header; "⇄ delegated to Vault" on the profiler footer. |
+
+**The verdict is never delegated.** `computeVerdict` is pure TypeScript and runs on the
+Edge; the log shows every `verdict` row `delegated:false`. Inference delegates; judgment
+stays on the key-holder. This is enforced structurally — there is no code path that sends the
+verdict over the wire.
+
+### Axioms — each verified
+
+- Keys load only in [wallet.ts:29-33](../../packages/edge/src/wallet.ts#L29-L33); `grep` for key material across `packages/orchestrator/src` returns **nothing**.
+- The provider is `startQVACProvider` only — no key API surface.
+- Gate 3 re-check `intent.to === DB.known_wallet` at [settle.ts:53-56](../../packages/edge/src/settle.ts#L53-L56) is unchanged and local.
+- Threat #82: `fallbackToLocal:false` — a dead provider makes the load throw; **no local reasoning fallback**, ever.
+
+### Observed output
+
+Raw: `tierC-delegation.txt`. Screenshot: `shots/tierC-delegated-tools.png`.
+
+**Delegation ON, provider up** — delegated:true rows from the actual product path (not the
+generic demo prompt), all `node=edge` with the provider key and the remote profiler stats:
+
+```
+node=edge op=loadModel  delegated=True pk=3d590dd4… QWEN3_1_7B_INST  | model loaded
+node=edge op=completion delegated=True pk=3d590dd4… QWEN3_1_7B_INST  | tool-turn-0
+node=edge op=completion delegated=True pk=3d590dd4… QWEN3_1_7B_INST  | tool-turn-1
+node=edge op=completion delegated=True pk=3d590dd4… QWEN3_1_7B_INST  | assist
+node=edge op=verdict    delegated=False                deterministic | PASS   <-- never delegated
+```
+
+Assist over the wire: `{"delegated":true,"provider":"3d590dd4…","tps":88.3,"ttft":988,"device":"gpu","source":"profiler-raw"}`.
+
+**Hard-stop (provider killed mid-session):**
+- assist → `Orchestrator (Vault) offline — reasoning cannot proceed. No local fallback (threat #82).`
+- verify → tool-calling skipped (count 0, error), **the deterministic verdict is still correct** (fraud BLOCKED G3). No local reasoning fallback.
+
+### Gate
+
+| Condition | Result |
+|---|---|
+| DELEGATE off: everything works as before | **PASS** — banner "reasoning local", rows `node=orchestrator delegated=false` |
+| DELEGATE on: 4 samples pass | **PASS** — all four correct (within the X1 ceiling) |
+| DELEGATE on: delegated:true rows from the product path | **PASS** — tool-turns + assist, `node=edge`, provider key, remote stats |
+| Verdict never delegated | **PASS** — every `verdict` row `delegated:false` |
+| OCR/vision/embed never delegated | **PASS** — 0 delegated rows among them |
+| Provider dies mid-run → hard-stop, no fallback | **PASS** — assist errors, verify verdict still local-correct |
+
+### X1 third measurement — does delegation raise the local ceiling?
+
+**No.** Measured on the same Tier C build, one process, back to back:
+
+| Mode | Ceiling |
+|---|---|
+| Delegation OFF | ≥7 (no overflow in 7) |
+| Delegation ON | 6 (overflow at call 7); an earlier 4-sample run hit the low end at call 3 |
+
+On/off overlap inside the same noise band as Tier B (5..≥7). **Delegation does not raise the
+local ceiling, and I won't claim it does.** The reason is structural: the local bottleneck is
+the **vision** model's context accumulation, and vision **cannot be delegated** at this SDK
+version (no `delegatedHandler` for the multimodal + local-file-attachment path). The
+completions that *can* delegate — the 1.7B tool-calling turns — are a minor local context
+consumer next to vision, so moving them to the provider doesn't relieve the dominant pressure.
+
+Delegation's real wins are **availability, load distribution** (the provider now does the
+1.7B work, freeing the Edge's compute), and **privacy/architecture** — not local-ceiling
+relief. That is the honest answer, and it is the one that matches the log.
+
+### What I could NOT verify programmatically
+
+1. **Cross-machine delegation.** This ran two processes on one M1. The axioms and the
+   delegated round-trip are proven; a true two-NAT round trip is not (documented C1 constraint).
+2. **The Gate-0 re-screen never actually fired.** Benign explainer prose doesn't trip it, and
+   I did not inject a hostile provider response to force `withheld:true`. The path typechecks
+   and is reasoned; it is not observed rejecting real hostile text. (Edge case: if you ask the
+   explainer *about* the injection sample while delegated, it may echo the phrase and get
+   withheld — correct, but a UX quirk. The demo doesn't hit it.)
+3. **Delegated live tokens stream before the final Gate-0 screen.** The screened text wins at
+   `{t:"done"}`, but for a trusted local provider the live stream is shown first.
+
+### Operational note for the runbook
+
+A provider whose DHT announcement has gone stale (idle several minutes) is not findable —
+`PEER_NOT_FOUND`. **Start the provider and boot the server close together**; the 3-try boot
+heartbeat warms the DHT. The server auto-generates an ephemeral consumer identity so it never
+reuses the provider's `.env` seed (two peers sharing one identity never connect).
+
+### The honest one-paragraph P2P status to say out loud
+
+Custos delegates its reasoning — the explainer, the assistant, and the tool-calling turns —
+to the Vault provider over QVAC's encrypted P2P link, and you can see it in the app: the tool
+header says "reasoning delegated to Vault," the profiler footer shows the provider's tok/s, and
+the audit log carries `delegated:true` with the provider's public key. OCR and vision stay
+local because the SDK can't delegate them yet, and the verdict never leaves the key-holder by
+design. Today both roles run as separate processes on one Mac; the axioms — edge signs,
+provider holds no keys, provider unreachable means hard-stop, not degrade — hold across that
+boundary. A true two-machine, two-NAT round trip is the next step, not something I'll claim
+as done.

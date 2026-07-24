@@ -116,6 +116,7 @@ html[data-sidebar="collapsed"] .side-toggle svg { transform: rotate(180deg); }
 
 /* profiler footer under an assistant answer — on-device speed, straight from the profiler */
 .prof-foot { font-family: var(--font-mono); font-size: 11px; color: var(--ink-4); letter-spacing: .01em; margin-top: 6px; }
+.prof-foot.prof-deleg { color: var(--brand-strong); }
 
 /* structured cards in-thread */
 .card { border: 1px solid var(--hair); border-radius: var(--r-lg); background: var(--surface); box-shadow: var(--e-1); overflow: hidden; margin-bottom: var(--sp-3); }

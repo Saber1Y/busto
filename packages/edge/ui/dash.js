@@ -140,7 +140,9 @@ function profFooter(prof) {
   if (prof.ttft != null) parts.push(`TTFT ${Math.round(prof.ttft)}ms`);
   if (prof.device) parts.push(prof.device);
   parts.push("profiler-raw");
-  return el("div", { class: "prof-foot", text: parts.join(" · ") });
+  // When delegated, these numbers are the provider's profiler — say so on screen.
+  const text = prof.delegated ? `⇄ delegated to Vault · ${parts.join(" · ")}` : parts.join(" · ");
+  return el("div", { class: "prof-foot" + (prof.delegated ? " prof-deleg" : ""), text });
 }
 
 /* structured cards */
@@ -269,12 +271,13 @@ function handleVerifyEvent(e, ctx) {
   } else if (e.t === "rag") {
     addReasonLine(ctx.box, "Searched your purchase orders by description", "info", ragDetail(e.data));
   } else if (e.t === "tools-begin") {
+    const where = e.delegated ? `reasoning delegated to Vault${e.provider ? " · " + short(e.provider) : ""}` : "on this machine";
     addReasonLine(ctx.box, "Model gathered facts by calling your ERP tools", "info",
-      reasonDetail("QVAC native tool-calling — the AI proposes; the deterministic verdict below decides"));
+      reasonDetail(`QVAC native tool-calling (${where}) — the AI proposes; the deterministic verdict below decides`));
   } else if (e.t === "tool") {
     addReasonLine(ctx.box, `called ${e.name}`, "info", toolDetail(e.arguments, e.result));
   } else if (e.t === "tools-end") {
-    if (e.error) addReasonLine(ctx.box, "the fact-gathering step didn't finish — the deterministic verdict still runs", "info");
+    if (e.error) addReasonLine(ctx.box, e.offline ? "Vault offline — fact-gathering skipped; the deterministic verdict still runs on this machine" : "the fact-gathering step didn't finish — the deterministic verdict still runs", "info");
     else if (!e.count) addReasonLine(ctx.box, "the model reached the facts without needing a tool call", "info");
   } else if (e.t === "verdict") {
     ctx.verdict = e.data;

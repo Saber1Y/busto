@@ -57,7 +57,7 @@ for (const c of cases) {
 }
 
 console.log("\n=== QVAC native tool-calling (Qwen3-1.7B) on the clean invoice ===");
-const trace = await runVerificationAgent(db, CLEAN, embed);
+const trace = await runVerificationAgent(db, CLEAN, embed, { maxTurns: 5 });
 if (trace.length === 0) console.log("  (model emitted no tool calls)");
 for (const t of trace) {
   console.log(`  → ${t.name}(${JSON.stringify(t.arguments)}) = ${JSON.stringify(t.result).slice(0, 180)}`);

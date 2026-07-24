@@ -1,7 +1,8 @@
 import type Database from "better-sqlite3";
 import { QWEN3_1_7B_INST_Q4 } from "@qvac/sdk";
-import { setAuditNode, auditLoadModel, auditUnloadModel, auditCompletion, fromMinorUnits, type CompletionStats } from "../../shared/src/index.ts";
+import { auditUnloadModel, auditCompletion, fromMinorUnits, type CompletionStats } from "../../shared/src/index.ts";
 import { normalizeForLLM } from "../../../security/gate0.ts";
+import { loadReasoningModel, screenDelegatedText } from "./delegation.ts";
 
 // General Workspace assistant (C9-2-fix). Answers ANY free-text message grounded in
 // (a) what Custos IS + the six gates, and (b) a live snapshot of the air-gapped ERP
@@ -25,8 +26,9 @@ export interface ErpSnapshot {
 }
 
 /** Prose answer + the profiler stats behind it (undefined for the no-inference
- *  early return). Lets the UI render the profiler footer from `profiler-raw`. */
-export interface AssistantAnswer { text: string; stats?: CompletionStats }
+ *  early return). Lets the UI render the profiler footer from `profiler-raw`.
+ *  `delegated` marks an answer whose completion ran on the provider (Vault). */
+export interface AssistantAnswer { text: string; stats?: CompletionStats; delegated?: boolean; providerPublicKey?: string | null }
 
 /** Read-only retrieval of the ERP facts the assistant is allowed to ground on. */
 export function buildErpSnapshot(db: Database.Database): ErpSnapshot {
@@ -91,25 +93,26 @@ export async function assistChat(question: string, snapshot: ErpSnapshot, onToke
     return { text: "That message contained an instruction-like pattern, so I won't follow it. I can explain how Custos works, your vendors and their open purchase orders, and past settlements — ask me about those, or drop an invoice to verify." };
   }
 
-  setAuditNode("orchestrator");
-  const modelId = await auditLoadModel(
+  const rm = await loadReasoningModel(
     { modelSrc: QWEN3_1_7B_INST_Q4, modelConfig: { ctx_size: 4096, predict: MAX_TOKENS, temp: 0.3 } },
-    { model: ASSIST_MODEL },
+    ASSIST_MODEL,
   );
   try {
     const res = await auditCompletion(
       {
-        modelId,
+        modelId: rm.modelId,
         history: [
           { role: "system", content: `${GROUNDING}\n\nFACTS for this workspace:\n${factsBlock(snapshot)}` },
           { role: "user", content: `${gq.normalized} /no_think` },
         ],
         stream: true,
       },
-      { model: ASSIST_MODEL, event: "assist", onToken },
+      { model: ASSIST_MODEL, event: "assist", delegated: rm.delegated, providerPublicKey: rm.providerPublicKey, onToken },
     );
-    return { text: cleanProse(stripThinking(res.contentText)) || "I couldn't produce an answer for that.", stats: res.stats };
+    const clean = cleanProse(stripThinking(res.contentText)) || "I couldn't produce an answer for that.";
+    const text = rm.delegated ? screenDelegatedText(clean).text : clean;
+    return { text, stats: res.stats, delegated: rm.delegated, providerPublicKey: rm.providerPublicKey };
   } finally {
-    await auditUnloadModel({ modelId }, { model: ASSIST_MODEL });
+    await auditUnloadModel({ modelId: rm.modelId }, { model: ASSIST_MODEL, delegated: rm.delegated });
   }
 }

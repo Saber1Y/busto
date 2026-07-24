@@ -3,8 +3,8 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve, extname, sep } from "node:path";
-import { GTE_LARGE_FP16 } from "@qvac/sdk";
-import { loadEnvSafe, logInference, buildPaymentIntent, toMinorUnits, fromMinorUnits, setAuditNode, auditLoadModel, auditEmbed, type PaymentIntent } from "../../shared/src/index.ts";
+import { GTE_LARGE_FP16, heartbeat } from "@qvac/sdk";
+import { loadEnvSafe, logInference, buildPaymentIntent, toMinorUnits, fromMinorUnits, setAuditNode, auditLoadModel, auditEmbed, isHex64, generateHyperswarmSeed, type PaymentIntent } from "../../shared/src/index.ts";
 import { openErp, ensureSchema, seedErp, lookupVendor, type EmbedFn } from "../../orchestrator/src/erp.ts";
 import { extractInvoice, type ExtractResult } from "../../orchestrator/src/extract.ts";
 import { computeVerdict, type Verdict } from "../../orchestrator/src/verdict.ts";
@@ -27,6 +27,15 @@ const PORT = Number(process.env.PORT ?? 4173);
 const HOST = process.env.HOST ?? "127.0.0.1";
 
 loadEnvSafe();
+
+// When delegating, the Edge consumer must NOT reuse the provider's hyperswarm identity —
+// the .env QVAC_HYPERSWARM_SEED IS the provider's seed, and two peers sharing one identity
+// never form a connection. Give the consumer a distinct identity (CONSUMER_SEED if set,
+// else ephemeral) before any SDK/P2P call. Mirrors consumer.ts.
+if (process.env.DELEGATE_REASONING === "true") {
+  process.env.QVAC_HYPERSWARM_SEED = isHex64(process.env.CONSUMER_SEED) ? process.env.CONSUMER_SEED : generateHyperswarmSeed();
+}
+
 const db = openErp(resolve(REPO, "data/erp.db"));
 ensureSchema(db);
 
@@ -60,6 +69,40 @@ if (!RAG_ENABLED) {
   await seedErp(db);
 }
 
+// Hugo #3 — reasoning delegation. OFF by default: the served product runs everything
+// locally, exactly as before. ON (DELEGATE_REASONING=true + PROVIDER_PUBKEY) routes the
+// PURE-TEXT reasoning — explain, assist, tool-calling turns — to the Vault provider over
+// QVAC P2P. OCR, vision and RAG embeds ALWAYS stay local (SDK: only completionStream is
+// delegatable). The verdict is never delegated — judgment stays on the key-holder. A boot
+// heartbeat only reports reachability; the real hard-stop (threat #82, no local fallback)
+// is enforced per-call by fallbackToLocal:false in loadReasoningModel.
+const DELEGATE_REASONING = process.env.DELEGATE_REASONING === "true";
+const PROVIDER_PUBKEY = process.env.PROVIDER_PUBKEY;
+if (DELEGATE_REASONING) {
+  if (!isHex64(PROVIDER_PUBKEY)) {
+    console.error("  P2P   DELEGATE_REASONING=true but PROVIDER_PUBKEY is not a 64-hex key — reasoning calls will hard-stop until it is set.");
+  } else {
+    // Warm the swarm DHT at boot. Cold `dht.ready()` outlasts the SDK's 5s pre-connect
+    // cap, so the first heartbeat lands on an empty routing table and fails; retries land
+    // on a bootstrapped DHT and connect (~7s). Mirrors consumer.ts. This warms THIS
+    // process's DHT cache so the per-call delegated loadModel connects immediately.
+    const short = `${PROVIDER_PUBKEY.slice(0, 8)}…${PROVIDER_PUBKEY.slice(-6)}`;
+    let reachable = false;
+    for (let attempt = 1; attempt <= 3 && !reachable; attempt++) {
+      try {
+        await heartbeat({ delegate: { providerPublicKey: PROVIDER_PUBKEY, timeout: 45_000 } });
+        reachable = true;
+      } catch {
+        if (attempt < 3) await new Promise((r) => setTimeout(r, 2_000));
+      }
+    }
+    if (reachable) console.log(`  P2P   reasoning delegated to Vault · provider ${short} reachable · OCR/vision/embed stay local`);
+    else console.error(`  P2P   provider ${short} UNREACHABLE at boot — reasoning calls will hard-stop (threat #82); no local fallback. Verify/settle still run locally.`);
+  }
+} else {
+  console.log("  P2P   reasoning local (DELEGATE_REASONING off) — set it + PROVIDER_PUBKEY to delegate explain/assist/tool-calling to Vault");
+}
+
 interface Job { explainContext: ExplainContext; status: string; intent?: PaymentIntent; vendorId?: number; poId?: number }
 const jobs = new Map<string, Job>();
 let busy = false; // one QVAC op (verify or explain) at a time
@@ -73,10 +116,12 @@ const SAMPLE_LIST = [
 ];
 
 // Profiler footer payload for an assistant answer — straight from `run.stats`
-// (profiler-raw). `undefined` when no model ran (a canned early-return sentence).
-function profOf(stats: import("../../shared/src/index.ts").CompletionStats | undefined): Record<string, unknown> | undefined {
-  if (!stats) return undefined;
-  return { tokens: stats.generatedTokens ?? null, tps: stats.tokensPerSecond ?? null, ttft: stats.timeToFirstToken ?? null, device: stats.backendDevice ?? null, source: "profiler-raw" };
+// (profiler-raw). When delegated, the stats are the PROVIDER's profiler numbers and the
+// footer says so. `undefined` when no model ran (a canned early-return sentence).
+function profOf(a: { stats?: import("../../shared/src/index.ts").CompletionStats; delegated?: boolean; providerPublicKey?: string | null }): Record<string, unknown> | undefined {
+  if (!a.stats) return undefined;
+  const s = a.stats;
+  return { tokens: s.generatedTokens ?? null, tps: s.tokensPerSecond ?? null, ttft: s.timeToFirstToken ?? null, device: s.backendDevice ?? null, source: "profiler-raw", delegated: !!a.delegated, provider: a.providerPublicKey ?? null };
 }
 
 const MIME: Record<string, string> = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon" };
@@ -162,14 +207,22 @@ async function handleVerify(req: Req, res: Res): Promise<void> {
     // It PROPOSES; it never decides — the deterministic verdict below does. Illustrative:
     // a failure here never blocks the verdict, and zero tool calls is a legitimate outcome.
     if (!gate0Flagged) {
-      send({ t: "tools-begin" });
       let toolCount = 0;
       try {
-        await runVerificationAgent(db, ex.extraction, ragEmbed, 5, (rec) => { toolCount++; send({ t: "tool", name: rec.name, arguments: rec.arguments, result: rec.result }); });
+        await runVerificationAgent(db, ex.extraction, ragEmbed, {
+          maxTurns: 5,
+          onMeta: (m) => send({ t: "tools-begin", delegated: m.delegated, provider: m.providerPublicKey }),
+          onCall: (rec) => { toolCount++; send({ t: "tool", name: rec.name, arguments: rec.arguments, result: rec.result }); },
+        });
         send({ t: "tools-end", count: toolCount });
       } catch (err) {
-        logInference({ node: "orchestrator", op: "tool-calling", model: "QWEN3_1_7B_INST_Q4", delegated: false, event: `error ${String((err as Error)?.message ?? err).slice(0, 80)}` });
-        send({ t: "tools-end", count: toolCount, error: true });
+        // Delegated + provider gone → the load threw (fallbackToLocal:false). We do NOT
+        // run tool-calling locally (threat #82); we skip it. The verdict is deterministic
+        // and local, so the verification still completes correctly without the trace.
+        const offline = DELEGATE_REASONING;
+        logInference({ node: offline ? "edge" : "orchestrator", op: "tool-calling", model: "QWEN3_1_7B_INST_Q4", delegated: false, event: `error ${String((err as Error)?.message ?? err).slice(0, 80)}` });
+        if (toolCount === 0) send({ t: "tools-begin", delegated: DELEGATE_REASONING, provider: null });
+        send({ t: "tools-end", count: toolCount, error: true, offline });
       }
     }
 
@@ -238,9 +291,12 @@ async function handleAssist(req: Req, res: Res): Promise<void> {
   busy = true;
   try {
     const r = await assistChat(question ?? "", buildErpSnapshot(db), (tok) => send({ t: "token", text: tok }));
-    send({ t: "done", full: r.text, prof: profOf(r.stats) });
+    send({ t: "done", full: r.text, prof: profOf(r) });
   } catch (e) {
-    send({ t: "error", reason: String((e as Error)?.message ?? e) });
+    // In delegate mode a failure here means the provider is unreachable. Per threat #82 we
+    // never fall back to local inference — we hard-stop and say so.
+    const reason = DELEGATE_REASONING ? "Orchestrator (Vault) offline — reasoning cannot proceed. No local fallback (threat #82)." : String((e as Error)?.message ?? e);
+    send({ t: "error", reason });
   } finally {
     busy = false;
     res.end();
@@ -257,9 +313,12 @@ async function handleExplain(req: Req, res: Res): Promise<void> {
   busy = true;
   try {
     const r = await explainInvoice(question ?? "", job.explainContext, (tok) => send({ t: "token", text: tok }));
-    send({ t: "done", full: r.text, prof: profOf(r.stats) });
+    send({ t: "done", full: r.text, prof: profOf(r) });
   } catch (e) {
-    send({ t: "error", reason: String((e as Error)?.message ?? e) });
+    // In delegate mode a failure here means the provider is unreachable. Per threat #82 we
+    // never fall back to local inference — we hard-stop and say so.
+    const reason = DELEGATE_REASONING ? "Orchestrator (Vault) offline — reasoning cannot proceed. No local fallback (threat #82)." : String((e as Error)?.message ?? e);
+    send({ t: "error", reason });
   } finally {
     busy = false;
     res.end();

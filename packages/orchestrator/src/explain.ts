@@ -1,12 +1,14 @@
 import { QWEN3_1_7B_INST_Q4 } from "@qvac/sdk";
-import { setAuditNode, auditLoadModel, auditUnloadModel, auditCompletion, type InvoiceExtraction, type CompletionStats } from "../../shared/src/index.ts";
+import { auditUnloadModel, auditCompletion, type InvoiceExtraction, type CompletionStats } from "../../shared/src/index.ts";
 import { normalizeForLLM } from "../../../security/gate0.ts";
+import { loadReasoningModel, screenDelegatedText } from "./delegation.ts";
 import type { Verdict } from "./verdict.ts";
 
 /** A prose answer plus the profiler stats behind it, so the UI can show the footer
  *  (tokens / tok·s / TTFT / device) straight from `profiler-raw`. `stats` is undefined
- *  for the no-inference early returns (a canned sentence, no model ran). */
-export interface AssistantAnswer { text: string; stats?: CompletionStats }
+ *  for the no-inference early returns (a canned sentence, no model ran). `delegated`
+ *  marks an answer whose completion ran on the provider (reasoning delegated to Vault). */
+export interface AssistantAnswer { text: string; stats?: CompletionStats; delegated?: boolean; providerPublicKey?: string | null }
 
 // On-device explainer for a non-technical AP clerk (C8a). It EXPLAINS an
 // already-computed verdict in plain language; it never re-verifies, changes a
@@ -66,25 +68,27 @@ export async function explainInvoice(question: string, context: ExplainContext, 
     return { text: "That question contained an instruction-like pattern, so I won't follow it. I only explain the current invoice — ask me why it passed or was blocked, or what happens if you approve." };
   }
 
-  setAuditNode("orchestrator");
-  const modelId = await auditLoadModel(
+  const rm = await loadReasoningModel(
     { modelSrc: QWEN3_1_7B_INST_Q4, modelConfig: { ctx_size: 4096, predict: MAX_TOKENS, temp: 0.3 } },
-    { model: EXPLAIN_MODEL },
+    EXPLAIN_MODEL,
   );
   try {
     const res = await auditCompletion(
       {
-        modelId,
+        modelId: rm.modelId,
         history: [
           { role: "system", content: `${GROUNDING}\n\nFACTS for the current invoice:\n${factsBlock(context)}` },
           { role: "user", content: `${gq.normalized} /no_think` },
         ],
         stream: true,
       },
-      { model: EXPLAIN_MODEL, event: "explain", onToken },
+      { model: EXPLAIN_MODEL, event: "explain", delegated: rm.delegated, providerPublicKey: rm.providerPublicKey, onToken },
     );
-    return { text: stripThinking(res.contentText) || "I couldn't produce an explanation for that.", stats: res.stats };
+    const clean = stripThinking(res.contentText) || "I couldn't produce an explanation for that.";
+    // Re-run Gate 0 locally on any text that crossed the wire (delegated only).
+    const text = rm.delegated ? screenDelegatedText(clean).text : clean;
+    return { text, stats: res.stats, delegated: rm.delegated, providerPublicKey: rm.providerPublicKey };
   } finally {
-    await auditUnloadModel({ modelId }, { model: EXPLAIN_MODEL });
+    await auditUnloadModel({ modelId: rm.modelId }, { model: EXPLAIN_MODEL, delegated: rm.delegated });
   }
 }
