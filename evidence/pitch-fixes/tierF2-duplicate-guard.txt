@@ -1,0 +1,54 @@
+=== STEP A: demo:reset ===
+            now: 3 vendors · 4 purchase orders · 0 settlements
+Ready. Start the console with `npm run serve`.
+=== STEP B+C: boot, settle clean, re-verify (expect dup) ===
+[1] first verify   : VERIFIED ref=? (expect VERIFIED)
+[2] settle         : SETTLED tx=0xb4acaf8429f36b57b7ae760add84251d312d2a6b561507847abba6d9d78105f9
+[3] re-verify same : BLOCKED duplicate=true gate=G2 ref=INV-19D9FFC65824
+        reason: This invoice was already settled (INV-19D9FFC65824). Custos will not pay the same document twice.
+
+*** DUP GUARD FAILED ***
+=== STEP D: restart serve — settlement must survive (seedErp idempotent) ===
+  settlements in DB after restart-kill: 1
+    ('INV-19D9FFC65824', '0xb4acaf8429f3')
+VERIFY  status=BLOCKED ref=INV-19D9FFC65824 duplicate=true gate=G2
+        reason: This invoice was already settled (INV-19D9FFC65824). Custos will not pay the same document twice.
+=== STEP E: demo:reset → clean settles fresh again ===
+            cleared 1 prior settlement row(s)
+            now: 3 vendors · 4 purchase orders · 0 settlements
+--- preflight clean-sample check (should now say 'not settled') ---
+VERIFY  status=VERIFIED ref=INV-19D9FFC65824 duplicate=false gate=-
+=== FIX 2d: preflight clean-sample-settled warning ===
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/private/tmp/claude-501/-Users-mac-custos/ed2f4f0f-0ace-4f1f-9576-7610d4169b19/scratchpad/packages/orchestrator/src/erp.ts' imported from /private/tmp/claude-501/-Users-mac-custos/ed2f4f0f-0ace-4f1f-9576-7610d4169b19/scratchpad/f2d.ts
+Did you mean to import "../../../../../../Users/mac/custos/packages/orchestrator/src/erp.ts"?
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:865:10)
+    at defaultResolve (node:internal/modules/esm/resolve:991:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:719:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:736:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:765:52)
+    at #resolve (node:internal/modules/esm/loader:701:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:621:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:160:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:245:17) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///private/tmp/claude-501/-Users-mac-custos/ed2f4f0f-0ace-4f1f-9576-7610d4169b19/scratchpad/packages/orchestrator/src/erp.ts'
+}
+
+Node.js v24.14.1
+--- now run demo:reset to clean up the test settlement ---
+            cleared 0 prior settlement row(s)
+            now: 3 vendors · 4 purchase orders · 0 settlements
+=== FIX 2d test ===
+clean-sample ref (preflight computes this exactly like server.ts): INV-19D9FFC65824
+BEFORE — isDuplicate: false (false on a clean/reset DB)
+AFTER  — isDuplicate: true → preflight [5] would FAIL loudly: 'ALREADY SETTLED — run demo:reset'
+
+PREFLIGHT WARNING FIRES (run demo:reset to clear the test row)
+--- cleanup: demo:reset ---
+            cleared 1 prior settlement row(s)
+            now: 3 vendors · 4 purchase orders · 0 settlements

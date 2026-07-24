@@ -77,10 +77,23 @@ export function ensureSchema(db: Database.Database): void {
   db.exec(`CREATE VIRTUAL TABLE IF NOT EXISTS po_vectors USING vec0(embedding float[${EMBED_DIM}]);`);
 }
 
-/** Wipe and re-seed deterministically. With `embed`, also populates the PO vector
- *  store (RAG); without it, exact-match verification still works (no models needed). */
-export async function seedErp(db: Database.Database, embed?: EmbedFn): Promise<void> {
+/** Full wipe INCLUDING settlement history — the explicit `npm run demo:reset` path only.
+ *  Boot-time seeding never calls this, so a settled invoice survives a server restart. */
+export function resetErp(db: Database.Database): void {
   db.exec("DELETE FROM settlements; DELETE FROM purchase_orders; DELETE FROM vendors; DELETE FROM po_vectors;");
+}
+
+/** Seed the ERP deterministically, but ONLY when it is empty — so vendors/POs/vectors AND
+ *  the settlement history persist across restarts (the replay guard depends on that). A
+ *  populated ERP is left untouched; `resetErp` (demo:reset) is the explicit way to clear it.
+ *  With `embed`, also populates the PO vector store (RAG); without it, exact-match works. */
+export async function seedErp(db: Database.Database, embed?: EmbedFn): Promise<void> {
+  const alreadySeeded = (db.prepare("SELECT COUNT(*) AS n FROM vendors").get() as { n: number }).n > 0;
+  if (alreadySeeded) return; // preserve the ERP + settlements across boots; demo:reset clears
+
+  // Fresh ERP (brand new, or just after resetErp): tables are empty. Defensive clean of the
+  // ERP tables — NEVER settlements — in case a prior seed half-completed.
+  db.exec("DELETE FROM purchase_orders; DELETE FROM vendors; DELETE FROM po_vectors;");
 
   const insV = db.prepare("INSERT INTO vendors(name, name_canonical, known_wallet, status) VALUES (?,?,?,?)");
   const vendorId = new Map<string, number>();

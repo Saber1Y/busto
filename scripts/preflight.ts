@@ -12,16 +12,20 @@
 // required by Hard Rule 6 (every QVAC call is logged) and is append-only. Nothing here
 // ever rewrites the log.
 import { homedir } from "node:os";
-import { resolve } from "node:path";
-import { readdirSync, statSync, existsSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { readdirSync, statSync, existsSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import {
   OCR_LATIN_RECOGNIZER_1,
   QWEN3VL_2B_MULTIMODAL_Q4_K,
   MMPROJ_QWEN3VL_2B_MULTIMODAL_Q4_K,
 } from "@qvac/sdk";
 import { loadEnvSafe, setAuditNode, enableQvacAudit, auditLoadModel, auditUnloadModel, fromMinorUnits } from "../packages/shared/src/index.ts";
+import { openErp, ensureSchema, isDuplicateInvoice } from "../packages/orchestrator/src/erp.ts";
 import { openEdgeWallet, CHAIN } from "../packages/edge/src/wallet.ts";
 
+const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const MODELS_DIR = process.env.QVAC_MODELS_DIR ?? resolve(homedir(), ".qvac/models");
 const MIN_USDT_MINOR = 1_000_000n; // 1.00 USD₮ — one demo settlement
 const ERC20_TRANSFER_GAS = 65_000n;
@@ -143,6 +147,26 @@ await warm("Vision (Qwen3-VL-2B)", {
   modelSrc: QWEN3VL_2B_MULTIMODAL_Q4_K,
   modelConfig: { ctx_size: 8192, projectionModelSrc: MMPROJ_QWEN3VL_2B_MULTIMODAL_Q4_K },
 }, "QWEN3VL_2B_MULTIMODAL_Q4_K");
+
+// ── 5. clean demo sample is settle-able (not already in the ledger) ──────────
+console.log("\n[5] clean demo sample not already settled");
+try {
+  const cleanPng = resolve(REPO, "data/sample/ui-clean.png");
+  if (!existsSync(cleanPng)) {
+    fail("clean sample", `${cleanPng} is missing`);
+  } else {
+    // Mirror server.ts: the ref is the hash of the document bytes.
+    const ref = `INV-${createHash("sha256").update(readFileSync(cleanPng)).digest("hex").slice(0, 12).toUpperCase()}`;
+    const db = openErp(resolve(REPO, "data/erp.db"));
+    ensureSchema(db);
+    const settled = isDuplicateInvoice(db, ref);
+    db.close();
+    if (settled) fail("clean sample", `ALREADY SETTLED as ${ref} — the LIVE DEMO will BLOCK it as a duplicate. Run: npm run demo:reset`);
+    else pass("clean sample", `${ref} not in the ledger — will settle fresh`);
+  }
+} catch (e) {
+  fail("clean sample check", String((e as Error)?.message ?? e));
+}
 
 // ── verdict ──────────────────────────────────────────────────────────────────
 console.log(failures === 0

@@ -309,6 +309,10 @@ function finalizeVerify(fin, ctx) {
     addProse(ctx.bubble, `Every gate cleared. I've prepared a payment of ${amt} to ${vendor}'s verified wallet — the recipient comes from your books, not the document. Review it below and hold to authorize; I can't move the money myself.`);
     addChips(ctx.bubble, ["What happens if I approve?", "Is this vendor known?", "What does Custos check?"], askInThread);
     if (walletConfigured) renderAuthorizeCard(ctx.bubble); else renderDemoNote(ctx.bubble);
+  } else if (fin.duplicate) {
+    const pr = addProse(ctx.bubble, `Already settled. ${cap(fin.reason)} No money moved — this is the replay guard, and it survives restarts.`);
+    if (fin.priorTx) pr.append(el("span", { text: " " }), el("a", { class: "tx-link", href: "https://sepolia.etherscan.io/tx/" + fin.priorTx, target: "_blank", rel: "noreferrer", text: "View the original payment" }));
+    addChips(ctx.bubble, ["Why was this blocked?", "What does Custos check?"], askInThread);
   } else {
     const gname = (fin.gates.find((g) => g.id === fin.blockedGate) || {}).name || "a gate";
     addProse(ctx.bubble, `I stopped at “${gname}”. ${cap(fin.reason)} No money can move — nothing was sent.`);

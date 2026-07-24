@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve, extname, sep } from "node:path";
 import { GTE_LARGE_FP16, heartbeat } from "@qvac/sdk";
@@ -172,18 +172,26 @@ async function handleVerify(req: Req, res: Res): Promise<void> {
     const body = await readBody(req);
     const ctype = req.headers["content-type"] ?? "";
     let imagePath: string;
+    let imageBytes: Buffer;
     let sourceLabel: string;
     if (ctype.includes("application/json")) {
       const { sample } = JSON.parse(body.toString() || "{}") as { sample?: string };
       imagePath = resolve(SAMPLES, `${sample}.png`);
+      imageBytes = await readFile(imagePath);
       sourceLabel = SAMPLE_LIST.find((s) => s.id === sample)?.label ?? sample ?? "sample";
     } else {
       await mkdir(resolve(REPO, "data/uploads"), { recursive: true });
+      imageBytes = body;
       imagePath = resolve(REPO, `data/uploads/${randomUUID()}.png`);
-      await writeFile(imagePath, body);
+      await writeFile(imagePath, imageBytes);
       sourceLabel = "uploaded invoice";
     }
-    const invoiceRef = `INV-UI-${Date.now().toString(36).toUpperCase()}`;
+    // Deterministic invoice ref = hash of the document BYTES, so the SAME file always
+    // produces the SAME ref and a re-upload is caught by the duplicate/replay guard. Hashing
+    // the bytes only (not the vendor/amount) is deliberate: the vision read is
+    // nondeterministic, so folding it in would break the "same document → same ref" property
+    // the guard depends on. Canonical multi-field identity is the full fix, out of scope here.
+    const invoiceRef = `INV-${createHash("sha256").update(imageBytes).digest("hex").slice(0, 12).toUpperCase()}`;
 
     send({ t: "step", id: "intake", state: "cleared", detail: sourceLabel });
     send({ t: "step", id: "G0", state: "active", detail: "checking for hidden instructions" });
@@ -272,11 +280,19 @@ async function handleVerify(req: Req, res: Res): Promise<void> {
 
     if (verdict.decision === "PASS" && job.intent) {
       send({ t: "intent", data: job.intent });
-      send({ t: "final", data: { status: "VERIFIED", jobId, gates, intent: job.intent } });
+      send({ t: "final", data: { status: "VERIFIED", jobId, gates, intent: job.intent, invoiceRef } });
     } else {
       const blockedGate = gate0Flagged ? "G0" : gates.find((g) => g.state === "blocked")?.id ?? "G2";
-      const reason = gate0Flagged ? `A hidden instruction was found in the document and ignored — ${ex.gate0.findings[0]?.detail ?? ""}` : verdict.reasons.find((r) => r.startsWith("REJECT"))?.replace(/^REJECT:\s*/, "") ?? "verification failed";
-      send({ t: "final", data: { status: "BLOCKED", jobId, blockedGate, reason, gates } });
+      // A replay is its own failure mode, not a vendor/PO miss — surface it distinctly so a
+      // re-upload reads as "already settled", with the prior transaction, not a generic block.
+      const isDuplicate = !gate0Flagged && !verdict.checks.notDuplicate && verdict.checks.vendorExists && verdict.checks.poMatched;
+      const prior = isDuplicate ? (db.prepare("SELECT tx_hash, ts FROM settlements WHERE invoice_ref = ?").get(invoiceRef) as { tx_hash: string | null; ts: string } | undefined) : undefined;
+      const reason = gate0Flagged
+        ? `A hidden instruction was found in the document and ignored — ${ex.gate0.findings[0]?.detail ?? ""}`
+        : isDuplicate
+          ? `This invoice was already settled (${invoiceRef}). Custos will not pay the same document twice.`
+          : verdict.reasons.find((r) => r.startsWith("REJECT"))?.replace(/^REJECT:\s*/, "") ?? "verification failed";
+      send({ t: "final", data: { status: "BLOCKED", jobId, blockedGate, reason, gates, duplicate: isDuplicate, invoiceRef, priorTx: prior?.tx_hash ?? null } });
     }
   } catch (err) {
     send({ t: "final", data: { status: "ERROR", reason: String((err as Error)?.message ?? err) } });
