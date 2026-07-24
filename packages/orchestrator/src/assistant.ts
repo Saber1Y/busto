@@ -2,7 +2,7 @@ import type Database from "better-sqlite3";
 import { QWEN3_1_7B_INST_Q4 } from "@qvac/sdk";
 import { auditUnloadModel, auditCompletion, fromMinorUnits, type CompletionStats } from "../../shared/src/index.ts";
 import { normalizeForLLM } from "../../../security/gate0.ts";
-import { loadReasoningModel, screenDelegatedText } from "./delegation.ts";
+import { loadReasoningModel, releaseReasoningModel, screenDelegatedText, CHAT_CACHE_KEY } from "./delegation.ts";
 
 // General Workspace assistant (C9-2-fix). Answers ANY free-text message grounded in
 // (a) what Custos IS + the six gates, and (b) a live snapshot of the air-gapped ERP
@@ -96,6 +96,7 @@ export async function assistChat(question: string, snapshot: ErpSnapshot, onToke
   const rm = await loadReasoningModel(
     { modelSrc: QWEN3_1_7B_INST_Q4, modelConfig: { ctx_size: 4096, predict: MAX_TOKENS, temp: 0.3 } },
     ASSIST_MODEL,
+    { cacheKey: CHAT_CACHE_KEY },
   );
   try {
     const res = await auditCompletion(
@@ -113,6 +114,6 @@ export async function assistChat(question: string, snapshot: ErpSnapshot, onToke
     const text = rm.delegated ? screenDelegatedText(clean).text : clean;
     return { text, stats: res.stats, delegated: rm.delegated, providerPublicKey: rm.providerPublicKey };
   } finally {
-    await auditUnloadModel({ modelId: rm.modelId }, { model: ASSIST_MODEL, delegated: rm.delegated });
+    await releaseReasoningModel(rm, () => auditUnloadModel({ modelId: rm.modelId }, { model: ASSIST_MODEL, delegated: rm.delegated }));
   }
 }

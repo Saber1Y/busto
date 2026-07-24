@@ -26,7 +26,21 @@ export function reasoningDelegate(): DelegateConfig | null {
   return { providerPublicKey, timeout: Number(process.env.DELEGATE_TIMEOUT_MS ?? 60_000) };
 }
 
-export interface ReasoningModel { modelId: string; delegated: boolean; providerPublicKey: string | null }
+export interface ReasoningModel { modelId: string; delegated: boolean; providerPublicKey: string | null; cached: boolean }
+
+// D1 (Hugo #2) — keep the local chat model resident so explain/assist don't pay the
+// ~2.4s Qwen load on every turn. Module-level, safe under the server's single-flight busy
+// lock. LOCAL instances only: a delegated model is tied to the provider connection (and its
+// load tax is on the provider, not the Edge), so there is nothing local to cache. Chat is a
+// minor local context consumer next to vision, and residency here does not touch the verify
+// path's models — so it does not move the vision X1 ceiling (measured).
+const residentLocal = new Map<string, string>(); // cacheKey -> modelId
+
+/** Shared cache key for the local chat model. explain and assist load QWEN3-1.7B with an
+ *  IDENTICAL modelConfig (ctx_size 4096, predict 400, temp 0.3), so they can share one
+ *  resident instance. Tool-calling uses tools:true — a different config — so it is NOT
+ *  cached (and its per-verify unload is part of what keeps the vision ceiling healthy). */
+export const CHAT_CACHE_KEY = "chat-local";
 
 /**
  * Load a reasoning model, delegated to the provider when DELEGATE_REASONING is on. With
@@ -36,17 +50,34 @@ export interface ReasoningModel { modelId: string; delegated: boolean; providerP
  * assumed one. Audit node is "edge" for delegated calls (the Edge initiated them, the
  * provider executed them), "orchestrator" for local — matching consumer.ts.
  */
-export async function loadReasoningModel(loadOpts: Parameters<typeof loadModel>[0], modelName: string): Promise<ReasoningModel> {
+export async function loadReasoningModel(
+  loadOpts: Parameters<typeof loadModel>[0],
+  modelName: string,
+  opts: { cacheKey?: string } = {},
+): Promise<ReasoningModel> {
   const del = reasoningDelegate();
   setAuditNode(del ? "edge" : "orchestrator");
-  const opts = del
+  // Cache only LOCAL instances. A delegated cache hit would return a modelId whose provider
+  // connection may have dropped, and the load saving is on the provider anyway.
+  if (!del && opts.cacheKey) {
+    const hit = residentLocal.get(opts.cacheKey);
+    if (hit) return { modelId: hit, delegated: false, providerPublicKey: null, cached: true };
+  }
+  const mergedOpts = del
     ? { ...loadOpts, delegate: { providerPublicKey: del.providerPublicKey, timeout: del.timeout, fallbackToLocal: false } }
     : loadOpts;
-  const modelId = await auditLoadModel(opts, { model: modelName, delegated: !!del, providerPublicKey: del?.providerPublicKey ?? null });
+  const modelId = await auditLoadModel(mergedOpts, { model: modelName, delegated: !!del, providerPublicKey: del?.providerPublicKey ?? null });
   // Authoritative: a delegated load that didn't throw ran on the provider, but confirm it
   // rather than assume, so `delegated:true` in the log is always the observed truth.
   const delegated = del ? await isDelegated(modelId) : false;
-  return { modelId, delegated, providerPublicKey: del?.providerPublicKey ?? null };
+  if (!del && opts.cacheKey) { residentLocal.set(opts.cacheKey, modelId); return { modelId, delegated: false, providerPublicKey: null, cached: true }; }
+  return { modelId, delegated, providerPublicKey: del?.providerPublicKey ?? null, cached: false };
+}
+
+/** Unload a reasoning model unless it is resident (cached) — then keep it warm. */
+export async function releaseReasoningModel(rm: ReasoningModel, unload: () => Promise<void>): Promise<void> {
+  if (rm.cached) return;
+  await unload();
 }
 
 /**

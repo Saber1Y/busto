@@ -1,7 +1,7 @@
 import { QWEN3_1_7B_INST_Q4 } from "@qvac/sdk";
 import { auditUnloadModel, auditCompletion, type InvoiceExtraction, type CompletionStats } from "../../shared/src/index.ts";
 import { normalizeForLLM } from "../../../security/gate0.ts";
-import { loadReasoningModel, screenDelegatedText } from "./delegation.ts";
+import { loadReasoningModel, releaseReasoningModel, screenDelegatedText, CHAT_CACHE_KEY } from "./delegation.ts";
 import type { Verdict } from "./verdict.ts";
 
 /** A prose answer plus the profiler stats behind it, so the UI can show the footer
@@ -71,6 +71,7 @@ export async function explainInvoice(question: string, context: ExplainContext, 
   const rm = await loadReasoningModel(
     { modelSrc: QWEN3_1_7B_INST_Q4, modelConfig: { ctx_size: 4096, predict: MAX_TOKENS, temp: 0.3 } },
     EXPLAIN_MODEL,
+    { cacheKey: CHAT_CACHE_KEY },
   );
   try {
     const res = await auditCompletion(
@@ -89,6 +90,6 @@ export async function explainInvoice(question: string, context: ExplainContext, 
     const text = rm.delegated ? screenDelegatedText(clean).text : clean;
     return { text, stats: res.stats, delegated: rm.delegated, providerPublicKey: rm.providerPublicKey };
   } finally {
-    await auditUnloadModel({ modelId: rm.modelId }, { model: EXPLAIN_MODEL, delegated: rm.delegated });
+    await releaseReasoningModel(rm, () => auditUnloadModel({ modelId: rm.modelId }, { model: EXPLAIN_MODEL, delegated: rm.delegated }));
   }
 }

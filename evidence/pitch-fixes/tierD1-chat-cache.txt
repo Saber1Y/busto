@@ -1,0 +1,35 @@
+=== D1 · chat latency + cache-hit + chat X1 (8 assist turns, resident Qwen) ===
+  turn  1    2992ms  qwenLoadRows+=1  "Yes, Acme Robotics Ltd is a known vendor."
+  turn  2    1741ms  qwenLoadRows+=0  "I can read vendor invoices on-device, verify"
+  turn  3    2844ms  qwenLoadRows+=0  "Gate 0 — Input decode: obfuscated/hidden ins"
+  turn  4    1735ms  qwenLoadRows+=0  "A purchase order is a document that outlines"
+  turn  5    1228ms  qwenLoadRows+=0  "Yes, Acme Robotics Ltd is a known vendor."
+  turn  6    1732ms  qwenLoadRows+=0  "I can read vendor invoices on-device, verify"
+  turn  7    2956ms  qwenLoadRows+=0  "Gate 0 — Input decode: obfuscated/hidden ins"
+  turn  8    1630ms  qwenLoadRows+=0  "A purchase order is a document that outlines"
+
+chat overflows in 8 turns: 0
+
+=== D1 · verify X1 with chat Qwen ALREADY resident (delegation off) ===
+X1 CEILING PROBE — one process, back to back, up to 7 verifies
+  call  1 [ui-clean    ]  41598ms  VERIFIED
+  call  2 [ui-fraud    ]  43678ms  BLOCKED
+  call  3 [ui-injection]  27258ms  BLOCKED
+  call  4 [ui-amount   ]  45343ms  BLOCKED
+  call  5 [ui-clean    ]  35877ms  VERIFIED
+  call  6 [ui-fraud    ]  38320ms  BLOCKED
+  call  7 [ui-injection]  26263ms  BLOCKED
+
+SURVIVED 7 consecutive verifies before overflow/failure. RESTART RULE: restart serve every 7 verifies.
+
+=== D1 VERDICT ===
+- cache works: turn 1 loads QWEN3-1.7B, turns 2-8 are cache hits (0 load rows) — resident.
+- chat latency: load tax (~2.4s) eliminated after the first turn (turn1 2992ms incl. load;
+  cached turns 1228-2956ms, difference = generation length, not load).
+- chat-path X1: 0 overflows in 8 back-to-back turns — residency does NOT re-introduce
+  accumulation on the chat path (each turn sends a fresh ~1k-token history; kvCache off).
+- verify X1 with chat Qwen resident: >=7 (unchanged from Tier C >=7) — D1 does not touch
+  the verify path's models, so it does not move the vision ceiling.
+- with DELEGATE_REASONING=true the chat turns run on the provider, so the cache is skipped
+  (local-only) and this is a no-op there — by design.
+D1 KEPT. Low risk, as predicted.
