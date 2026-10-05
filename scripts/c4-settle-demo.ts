@@ -1,4 +1,4 @@
-// Busto · C4 demo — REAL test USD₮ settlement on Sepolia, behind every gate.
+// Busto · C4 demo — REAL test USD₮ settlement on BOT Chain Testnet, behind every gate.
 // Clean verified invoice → on-chain tx hash. Poisoned invoice → blocked, no send.
 // Set BUSTO_APPROVE=I-APPROVE to authorize the live send (Gate 4).
 import { fileURLToPath } from "node:url";
@@ -7,7 +7,7 @@ import { mkdirSync, rmSync } from "node:fs";
 import { loadEnvSafe, logInference, buildPaymentIntent, toMinorUnits, type InvoiceExtraction } from "../packages/shared/src/index.ts";
 import { openErp, ensureSchema, seedErp, lookupVendor } from "../packages/orchestrator/src/erp.ts";
 import { computeVerdict } from "../packages/orchestrator/src/verdict.ts";
-import { openEdgeWallet, CHAIN } from "../packages/edge/src/wallet.ts";
+import { openEdgeWallet, CHAIN_ID, USDT_ADDRESS, USDT_DECIMALS } from "../packages/edge/src/wallet.ts";
 import { settleIntent } from "../packages/edge/src/settle.ts";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -25,10 +25,10 @@ await seedErp(db); // no embed — exact-match verdict needs no models
 
 // signer + funds (keys on Edge only)
 const wallet = await openEdgeWallet();
-const ethBal = await wallet.account.getBalance();
-const usdtBal = await wallet.account.getTokenBalance(CHAIN.usdt);
+const ethBal = await wallet.publicClient.getBalance({ address: wallet.address });
+const usdtBal = await wallet.publicClient.readContract({ abi: [{ type: "function", stateMutability: "view", name: "balanceOf", inputs: [{ name: "a", type: "address" }], outputs: [{ type: "uint256" }] }], address: USDT_ADDRESS, functionName: "balanceOf", args: [wallet.address] });
 console.log(`Edge signer: ${wallet.address}`);
-console.log(`  ETH ${(Number(ethBal) / 1e18).toFixed(4)} · USD₮ ${(Number(usdtBal) / 1e6).toFixed(2)} · token ${CHAIN.usdt}`);
+console.log(`  BOT ${(Number(ethBal) / 1e18).toFixed(4)} · USD₮ ${(Number(usdtBal) / 1e6).toFixed(2)} · token ${USDT_ADDRESS}`);
 console.log(`  approval: ${APPROVE ? "GRANTED (BUSTO_APPROVE=I-APPROVE)" : "NOT granted — Gate 4 will block the send"}\n`);
 wallet.dispose();
 
@@ -49,8 +49,8 @@ logInference({ node: "orchestrator", op: "verdict", model: "deterministic", dele
 if (verdict.decision === "PASS" && verdict.knownWallet) {
   const intent = buildPaymentIntent({
     knownWallet: verdict.knownWallet, // recipient from the DB, NOT the document
-    amountMinor: toMinorUnits(clean.invoiceAmount, CHAIN.usdtDecimals)!,
-    token: CHAIN.usdt, chainId: CHAIN.id, invoiceRef: INVOICE_REF, memo: "Busto settlement PO-TEST",
+    amountMinor: toMinorUnits(clean.invoiceAmount, USDT_DECIMALS)!,
+    token: USDT_ADDRESS, chainId: CHAIN_ID, invoiceRef: INVOICE_REF, memo: "Busto settlement PO-TEST",
   });
   console.log(`    intent: to=${intent.to} amount=${intent.amount} (1 USD₮) token=${intent.token} chain=${intent.chainId}`);
   console.log(APPROVE ? "    sending (this is a REAL on-chain transfer)..." : "    (no approval — Gate 4 will block)");
@@ -78,7 +78,7 @@ console.log(`    settle not attempted (verdict != PASS): no funds moved.`);
 
 // Gate 3 directly: a forged intent that slipped past with to=attacker is still blocked.
 console.log("\n    Gate-3 spot-check — forged intent with attacker recipient:");
-const forged = buildPaymentIntent({ knownWallet: "0x000000000000000000000000000000000000dEaD", amountMinor: 1000000n, token: CHAIN.usdt, chainId: CHAIN.id, invoiceRef: "INV-C4-FORGE", memo: "x" });
+const forged = buildPaymentIntent({ knownWallet: "0x000000000000000000000000000000000000dEaD", amountMinor: 1000000n, token: USDT_ADDRESS, chainId: CHAIN_ID, invoiceRef: "INV-C4-FORGE", memo: "x" });
 const fr = await settleIntent(db, { intent: forged, vendorId: acme.vendorId!, poId, approve: APPROVE, confirmations: 2 });
 console.log(`    => ${fr.status.toUpperCase()}: ${fr.reason}`);
 

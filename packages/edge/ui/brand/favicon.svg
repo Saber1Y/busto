@@ -1,9 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Custos">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Busto">
   <rect width="64" height="64" rx="14" fill="#faf8f3"/>
   <g transform="translate(7,7) scale(0.781)">
+    <!-- octagonal vault seal -->
     <polygon points="22,8 42,8 56,22 56,42 42,56 22,56 8,42 8,22" fill="#0e5247"/>
     <polygon points="22,8 42,8 56,22 56,42 42,56 22,56 8,42 8,22" fill="none" stroke="#9a7b3f" stroke-width="2.4"/>
-    <path d="M40.6 19.7 A15 15 0 1 0 40.6 44.3" fill="none" stroke="#faf8f3" stroke-width="7" stroke-linecap="round"/>
+    <!-- guardian B — the closed ledger spine, opening to the keystone -->
+    <path d="M23.5 18 H38 a13 13 0 0 1 0 28 H23.5" fill="none" stroke="#faf8f3" stroke-width="7" stroke-linecap="round"/>
+    <path d="M23.5 18 V46" fill="none" stroke="#faf8f3" stroke-width="7" stroke-linecap="round"/>
+    <path d="M24 32 H35" fill="none" stroke="#faf8f3" stroke-width="6" stroke-linecap="round"/>
+    <!-- keystone — the guarded asset, held at the seal's mouth -->
     <rect x="41" y="28" width="8" height="8" rx="1.2" transform="rotate(45 45 32)" fill="#9a7b3f"/>
   </g>
 </svg>

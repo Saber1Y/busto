@@ -178,7 +178,7 @@ function renderAuthorizeCard(bubble, demo) {
   const kv = el("div", { class: "kv" },
     kvRow("Recipient (verified)", el("span", { class: "mono", text: intent.to })),
     kvRow("Amount", `${fmtUnits(intent.amount, 6)} USD₮`),
-    kvRow("Network", `Ethereum Sepolia · ${intent.chainId}`));
+    kvRow("Network", `BOT Chain Testnet · ${intent.chainId}`));
   const fill = el("span", { class: "hold-fill" });
   const btn = el("button", { class: "hold", type: "button" }, fill, el("span", { class: "hold-label", text: "HOLD TO AUTHORIZE PAYMENT" }));
   const auth = el("div", { class: "authorize" }, btn,
@@ -193,7 +193,7 @@ function renderDemoNote(bubble) {
   bubble.append(el("div", { class: "card" },
     el("div", { class: "card-head" }, el("span", { class: "card-title", text: "Authorize payment" }), el("span", { class: "card-sub", text: "Gate 4 · demo mode" })),
     el("div", { class: "authorize" },
-      el("p", { class: "auth-note", html: "Demo mode — no wallet configured. Set <strong>BUSTO_WALLET_SEED</strong> in <strong>.env</strong> to a funded Sepolia wallet and restart to settle for real. The verification above is fully live." }))));
+      el("p", { class: "auth-note", html: "Demo mode — no wallet configured. Set <strong>BUSTO_WALLET_SEED</strong> in <strong>.env</strong> to a funded BOT Chain testnet wallet and restart to settle for real. The verification above is fully live." }))));
   scrollThread();
 }
 function renderReceiptCard(bubble, r) {
@@ -208,7 +208,7 @@ function renderReceiptCard(bubble, r) {
   bubble.append(el("div", { class: "card settled" },
     el("div", { class: "card-head" },
       el("span", { class: "verdict-pill " + (pending ? "bad" : "ok") }, el("i"), pending ? "BROADCAST · UNCONFIRMED" : "SETTLED"),
-      el("span", { class: "card-sub", text: `${r.confirmations} confirmation${r.confirmations === 1 ? "" : "s"} · Ethereum Sepolia` })),
+      el("span", { class: "card-sub", text: `${r.confirmations} confirmation${r.confirmations === 1 ? "" : "s"} · BOT Chain Testnet` })),
     kv));
   scrollThread();
 }
@@ -311,7 +311,7 @@ function finalizeVerify(fin, ctx) {
     if (walletConfigured) renderAuthorizeCard(ctx.bubble); else renderDemoNote(ctx.bubble);
   } else if (fin.duplicate) {
     const pr = addProse(ctx.bubble, `Already settled. ${cap(fin.reason)} No money moved — this is the replay guard, and it survives restarts.`);
-    if (fin.priorTx) pr.append(el("span", { text: " " }), el("a", { class: "tx-link", href: "https://sepolia.etherscan.io/tx/" + fin.priorTx, target: "_blank", rel: "noreferrer", text: "View the original payment" }));
+    if (fin.priorTx) pr.append(el("span", { text: " " }), el("a", { class: "tx-link", href: "https://scan.bohr.life/tx/" + fin.priorTx, target: "_blank", rel: "noreferrer", text: "View the original payment" }));
     addChips(ctx.bubble, ["Why was this blocked?", "What does Busto check?"], askInThread);
   } else {
     const gname = (fin.gates.find((g) => g.id === fin.blockedGate) || {}).name || "a gate";
@@ -387,7 +387,7 @@ async function doAuthorize(btn) {
     if (r.status === "settled" || r.status === "pending") {
       // Both outcomes committed funds, so neither re-arms the hold button.
       pr.textContent = r.status === "settled"
-        ? `Settled. ${fmtUnits(currentJob.intent.amount, 6)} USD₮ moved on Ethereum Sepolia with ${r.confirmations} confirmations.`
+        ? `Settled. ${fmtUnits(currentJob.intent.amount, 6)} USD₮ moved on BOT Chain Testnet with ${r.confirmations} confirmations.`
         : r.reason;
       renderReceiptCard(bubble, r);
       loadHeader();
@@ -468,9 +468,67 @@ async function loadHeader() {
     walletConfigured = w.configured !== false;
     if (!walletConfigured) { signerAddr.textContent = "demo mode"; signer.removeAttribute("href"); balance.textContent = "no wallet · read-only"; return; }
     signerAddr.textContent = short(w.address);
-    signer.href = `https://sepolia.etherscan.io/address/${w.address}`;
+    signer.href = `https://scan.bohr.life/address/${w.address}`;
     balance.textContent = `${fmtUnits(w.usdt, 6)} USD₮`;
   } catch { balance.textContent = "wallet offline"; }
+}
+
+
+/* ── BOT Chain on-chain settlement panel.
+      Every number here is read live from BustoSettlement contract state over RPC.
+      Nothing is a cached or in-memory counter, and an unreachable node shows as
+      unreachable rather than as zero. ─────────────────────────────────────────── */
+function renderOnchain(v) {
+  v.append(el("p", { class: "erp-lead", text: "Live BOT Chain settlement ledger. These figures are read from the BustoSettlement contract over RPC — they are not local counters." }));
+
+  const wrap = el("div", { class: "onchain" });
+  v.append(wrap);
+
+  const head = el("div", { class: "onchain-head" },
+    el("span", { class: "onchain-badge", text: "BOT CHAIN" }),
+    el("span", { class: "onchain-net", id: "ocNet", text: "connecting…" }));
+  wrap.append(head);
+
+  const grid = el("div", { class: "onchain-grid" });
+  wrap.append(grid);
+  const cell = (label, id) => {
+    const v2 = el("div", { class: "onchain-cell" }, el("span", { class: "oc-label", text: label }), el("span", { class: "oc-value", id, text: "—" }));
+    grid.append(v2);
+    return v2;
+  };
+  cell("Settlements", "ocCount");
+  cell("Total volume", "ocVolume");
+  cell("Contract", "ocContract");
+  cell("Network", "ocChain");
+
+  const foot = el("div", { class: "onchain-foot", id: "ocFoot" });
+  wrap.append(foot);
+  foot.append(el("p", { class: "meta", id: "ocStatus", text: "Reading contract state…" }));
+
+  fetch("/api/onchain")
+    .then((r) => r.json())
+    .then((d) => {
+      const set = (id, txt) => { const n = document.getElementById(id); if (n) n.textContent = txt; };
+      set("ocNet", `${d.network || "BOT Chain Testnet"} · chain ${d.chainId ?? 968}`);
+      if (!d.ok) {
+        set("ocStatus", `Contract state unavailable — ${d.error || "the BOT Chain RPC did not respond"}. Nothing is being inferred locally.`);
+        return;
+      }
+      set("ocCount", String(d.settledInvoiceCount));
+      set("ocVolume", `${d.totalSettledAmount} USD₮`);
+      set("ocContract", d.contract);
+      set("ocChain", `${d.network} (${d.chainId})`);
+      set("ocStatus", "Counters read directly from BustoSettlement on BOT Chain Testnet.");
+
+      const links = el("div", { class: "onchain-links" });
+      const a1 = el("a", { class: "btn ghost", href: `${d.addressBase}${d.contract}`, target: "_blank", rel: "noreferrer", text: "View contract on BOTScan" });
+      links.append(a1);
+      foot.append(links);
+    })
+    .catch((e) => {
+      const n = document.getElementById("ocStatus");
+      if (n) n.textContent = `Could not read BOT Chain state: ${e.message}. No local fallback.`;
+    });
 }
 
 /* ── nav — Workspace, Vendors and History are real (read from the air-gapped ERP);
@@ -480,6 +538,7 @@ const VIEWS = {
   inbox: { title: "Inbox", desc: "Invoices waiting to be verified.", render: renderInbox },
   history: { title: "History", desc: "Every on-chain settlement, from the local ledger.", render: renderHistory },
   vendors: { title: "Vendors", desc: "Your books: vendors, wallets, open POs.", render: renderVendors },
+  onchain: { title: "BOT Chain", desc: "Live settlement ledger read from the BustoSettlement contract.", render: renderOnchain },
   settings: { title: "Settings", desc: "Signer, network, and models.", render: renderSettings },
 };
 
@@ -551,7 +610,7 @@ function renderSettings(v) {
   v.append(el("div", { class: "stub-card" },
     el("svg", { class: "ico-lg", viewBox: "0 0 16 16", html: '<circle cx="8" cy="8" r="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2" stroke="currentColor" stroke-width="1.2"/>' }),
     el("h2", { text: "Settings" }),
-    el("p", { text: "Busto is configured on this machine via .env: the Edge-only Sepolia signer key, the RPC endpoint, and the pinned chain + USD₮ token. The on-device models (Qwen3-VL-2B, OCR, GTE-large, Qwen3-1.7B) load from the local QVAC cache. A settings UI is planned; today configuration is file-based." }),
+    el("p", { text: "Busto is configured on this machine via .env: the Edge-only BOT Chain signer key, the RPC endpoint, and the pinned chain + USD₮ token. The on-device models (Qwen3-VL-2B, OCR, GTE-large, Qwen3-1.7B) load from the local QVAC cache. A settings UI is planned; today configuration is file-based." }),
     el("span", { class: "stub-soon", text: "Planned" })));
 }
 

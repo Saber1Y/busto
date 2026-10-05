@@ -1,6 +1,6 @@
 // Busto · pre-demo preflight. Fails loudly BEFORE a live pitch rather than mid-demo.
 //
-// Checks, in order: wallet seed loads · Sepolia RPC answers on the pinned chain ·
+// Checks, in order: wallet seed loads · BOT Chain RPC answers on the pinned chain ·
 // USD₮ covers a settlement · ETH covers gas with headroom · the OCR and vision weights
 // are already on this machine (so nothing downloads while a judge is watching).
 //
@@ -23,7 +23,7 @@ import {
 } from "@qvac/sdk";
 import { loadEnvSafe, setAuditNode, enableQvacAudit, auditLoadModel, auditUnloadModel, fromMinorUnits } from "../packages/shared/src/index.ts";
 import { openErp, ensureSchema, isDuplicateInvoice } from "../packages/orchestrator/src/erp.ts";
-import { openEdgeWallet, CHAIN } from "../packages/edge/src/wallet.ts";
+import { openEdgeWallet, CHAIN_ID, USDT_ADDRESS, USDT_DECIMALS } from "../packages/edge/src/wallet.ts";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const MODELS_DIR = process.env.QVAC_MODELS_DIR ?? resolve(homedir(), ".qvac/models");
@@ -70,25 +70,25 @@ if (process.env.BUSTO_WALLET_SEED) {
     const w = await openEdgeWallet();
     pass("signer address", w.address);
 
-    const chainIdHex = await rpc(w.rpcs[0], "eth_chainId");
-    const blockHex = await rpc(w.rpcs[0], "eth_blockNumber");
+    const chainIdHex = await rpc(w.rpc, "eth_chainId");
+    const blockHex = await rpc(w.rpc, "eth_blockNumber");
     if (!chainIdHex || !blockHex) {
-      fail("Sepolia RPC", `${w.rpcs[0]} did not answer`);
-    } else if (parseInt(chainIdHex, 16) !== CHAIN.id) {
-      fail("chain id", `RPC reports ${parseInt(chainIdHex, 16)}, pinned is ${CHAIN.id}`);
+      fail("BOT Chain RPC", `${w.rpc} did not answer`);
+    } else if (parseInt(chainIdHex, 16) !== CHAIN_ID) {
+      fail("chain id", `RPC reports ${parseInt(chainIdHex, 16)}, pinned is ${CHAIN_ID}`);
     } else {
-      pass("Sepolia RPC", `${w.rpcs[0]} · chainId ${CHAIN.id} · block ${parseInt(blockHex, 16)}`);
+      pass("BOT Chain RPC", `${w.rpc} · chainId ${CHAIN_ID} · block ${parseInt(blockHex, 16)}`);
     }
 
-    const usdt = await w.account.getTokenBalance(CHAIN.usdt);
+    const usdt = await w.publicClient.readContract({ abi: [{ type: "function", stateMutability: "view", name: "balanceOf", inputs: [{ name: "a", type: "address" }], outputs: [{ type: "uint256" }] }], address: USDT_ADDRESS, functionName: "balanceOf", args: [w.address] });
     if (usdt < MIN_USDT_MINOR) {
-      fail("USD₮ balance", `${fromMinorUnits(usdt, CHAIN.usdtDecimals)} — need at least ${fromMinorUnits(MIN_USDT_MINOR, CHAIN.usdtDecimals)}`);
+      fail("USD₮ balance", `${fromMinorUnits(usdt, USDT_DECIMALS)} — need at least ${fromMinorUnits(MIN_USDT_MINOR, USDT_DECIMALS)}`);
     } else {
-      pass("USD₮ balance", `${fromMinorUnits(usdt, CHAIN.usdtDecimals)} USD₮ (${usdt} minor units)`);
+      pass("USD₮ balance", `${fromMinorUnits(usdt, USDT_DECIMALS)} USD₮ (${usdt} minor units)`);
     }
 
-    const gasPrice = await rpc(w.rpcs[0], "eth_gasPrice");
-    const eth = await w.account.getBalance();
+    const gasPrice = await rpc(w.rpc, "eth_gasPrice");
+    const eth = await w.publicClient.getBalance({ address: w.address });
     if (!gasPrice) {
       fail("gas price", "eth_gasPrice unavailable — cannot size the ETH floor");
     } else {

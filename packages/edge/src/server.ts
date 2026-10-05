@@ -11,7 +11,8 @@ import { computeVerdict, type Verdict } from "../../orchestrator/src/verdict.ts"
 import { explainInvoice, type ExplainContext } from "../../orchestrator/src/explain.ts";
 import { assistChat, buildErpSnapshot } from "../../orchestrator/src/assistant.ts";
 import { runVerificationAgent } from "../../orchestrator/src/tools.ts";
-import { openEdgeWallet, CHAIN } from "./wallet.ts";
+import { openEdgeWallet, CHAIN, CHAIN_ID, USDT_ADDRESS, USDT_DECIMALS, EXPLORER_TX } from "./wallet.ts";
+import { readOnChainMetrics, SETTLEMENT_CONTRACT } from "./settle.ts";
 import { settleIntent } from "./settle.ts";
 
 type Res = import("node:http").ServerResponse;
@@ -271,7 +272,7 @@ async function handleVerify(req: Req, res: Res): Promise<void> {
     if (verdict.decision === "PASS" && verdict.knownWallet) {
       const vendor = lookupVendor(db, ex.extraction.vendorName);
       const poRow = db.prepare("SELECT id FROM purchase_orders WHERE po_number = ?").get(verdict.matchedPO) as { id: number };
-      job.intent = buildPaymentIntent({ knownWallet: verdict.knownWallet, amountMinor: toMinorUnits(ex.extraction.invoiceAmount, CHAIN.usdtDecimals)!, token: CHAIN.usdt, chainId: CHAIN.id, invoiceRef, memo: `Busto · ${verdict.matchedPO}` });
+      job.intent = buildPaymentIntent({ knownWallet: verdict.knownWallet, amountMinor: toMinorUnits(ex.extraction.invoiceAmount, USDT_DECIMALS)!, token: USDT_ADDRESS, chainId: CHAIN_ID, invoiceRef, memo: `Busto · ${verdict.matchedPO}` });
       job.vendorId = vendor.vendorId!;
       job.poId = poRow.id;
     }
@@ -345,7 +346,7 @@ async function handleExplain(req: Req, res: Res): Promise<void> {
 }
 
 async function handleApprove(req: Req, res: Res): Promise<void> {
-  if (!process.env.BUSTO_WALLET_SEED) { json(res, 200, { status: "blocked", reason: "Demo mode — set BUSTO_WALLET_SEED in .env to a funded Sepolia wallet to settle for real." }); return; }
+  if (!process.env.BUSTO_WALLET_SEED) { json(res, 200, { status: "blocked", reason: "Demo mode — set BUSTO_WALLET_SEED in .env to a funded BOT Chain testnet wallet to settle for real." }); return; }
   const { jobId } = JSON.parse((await readBody(req)).toString() || "{}") as { jobId?: string };
   const job = jobId ? jobs.get(jobId) : undefined;
   if (!job || !jobId) { json(res, 404, { status: "blocked", error: "unknown or expired job", reason: "This invoice is no longer awaiting approval — it was already settled, or the console restarted. Re-run the verification." }); return; }
@@ -386,13 +387,46 @@ const server = createServer(async (req, res) => {
     if (req.method === "GET" && url === "/api/samples") return json(res, 200, SAMPLE_LIST);
     // The air-gapped ERP, read-only, for the Vendors + History screens. Same live snapshot
     // the assistant grounds on — real vendors/POs and the real on-chain settlement record.
-    if (req.method === "GET" && url === "/api/erp") return json(res, 200, { ...buildErpSnapshot(db), chain: "Ethereum Sepolia", explorer: "https://sepolia.etherscan.io/tx/" });
+    if (req.method === "GET" && url === "/api/erp") return json(res, 200, { ...buildErpSnapshot(db), chain: CHAIN.name, explorer: EXPLORER_TX(""), settlementContract: SETTLEMENT_CONTRACT });
     if (req.method === "GET" && url === "/api/wallet") {
       if (!process.env.BUSTO_WALLET_SEED) return json(res, 200, { configured: false });
       const w = await openEdgeWallet();
-      const [eth, usdt] = [await w.account.getBalance(), await w.account.getTokenBalance(CHAIN.usdt)];
+      const [bot, usdt] = [
+        await w.publicClient.getBalance({ address: w.address }),
+        await w.publicClient.readContract({
+          abi: [{ type: "function", stateMutability: "view", name: "balanceOf", inputs: [{ name: "a", type: "address" }], outputs: [{ type: "uint256" }] }],
+          address: USDT_ADDRESS,
+          functionName: "balanceOf",
+          args: [w.address]
+        })
+      ];
       w.dispose();
-      return json(res, 200, { configured: true, address: w.address, eth: eth.toString(), usdt: usdt.toString(), chain: "Ethereum Sepolia", token: CHAIN.usdt });
+      return json(res, 200, { configured: true, address: w.address, bot: bot.toString(), usdt: usdt.toString(), chain: CHAIN.name, chainId: CHAIN_ID, token: USDT_ADDRESS, tokenDecimals: USDT_DECIMALS });
+    }
+    // Blockchain-derived settlement metrics. Read live from BustoSettlement state —
+    // never from an in-memory counter or SQLite alone.
+    if (req.method === "GET" && url === "/api/onchain") {
+      try {
+        const metrics = await readOnChainMetrics(CHAIN_ID);
+        return json(res, 200, {
+          ok: true,
+          token: USDT_ADDRESS,
+          tokenSymbol: "USDT",
+          tokenDecimals: USDT_DECIMALS,
+          txBase: "https://scan.bohr.life/tx/",
+          addressBase: "https://scan.bohr.life/address/",
+          ...metrics
+        });
+      } catch (e) {
+        return json(res, 200, {
+          ok: false,
+          network: CHAIN.name,
+          chainId: CHAIN_ID,
+          explorer: "https://scan.bohr.life",
+          settlementContract: SETTLEMENT_CONTRACT,
+          error: String((e as Error)?.message ?? e)
+        });
+      }
     }
     if (req.method === "POST" && url === "/api/verify") return void (await handleVerify(req, res));
     if (req.method === "POST" && url === "/api/explain") return void (await handleExplain(req, res));

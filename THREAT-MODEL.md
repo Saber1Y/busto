@@ -31,7 +31,7 @@ results: [ADVERSARIAL-TESTING.md](./ADVERSARIAL-TESTING.md) (17/17). Gate model:
 - G0 + obfuscation (1–22): `npm run csec:test` → 17/17 ([ADVERSARIAL-TESTING.md](./ADVERSARIAL-TESTING.md)).
 - G2/G3 (36–54): `npm run c3:demo` → PASS + 3 REJECT ([evidence/c3-report.md](./evidence/c3-report.md)).
 - G3/G4/G5 (55–74): `BUSTO_APPROVE=I-APPROVE npm run c4:demo` → real tx
-  [`0xa3ed0f33…f79cd30`](https://sepolia.etherscan.io/tx/0xa3ed0f33fcfa685287185284079884c0ea0c3a260149443bfd945f083f79cd30),
+  [`0x2ea60336…8a4c23`](https://scan.bohr.life/tx/0x2ea60336babd5e995c79b2575026635d91ab50f9d42a67fd3908dcbd3e8a4c23),
   plus poisoned/forged/duplicate blocked ([evidence/c4-report.md](./evidence/c4-report.md)).
 - P2P (75–84): `npm run c1:demo` ([evidence/c1-report.md](./evidence/c1-report.md)) — runs both roles
   as two processes on **one host**. Check (a), the delegated round-trip, passes (`delegated:true`,

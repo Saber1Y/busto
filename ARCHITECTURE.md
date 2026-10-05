@@ -9,13 +9,13 @@ Orchestrator reads and verifies; the Edge holds keys and signs. The full design 
 ```mermaid
 flowchart LR
   subgraph Edge["Edge &middot; Intel i5 &middot; 16GB &middot; no local inference &middot; holds keys"]
-    UI["Edge console (server.ts)<br/>WDK signer (wallet.ts, settle.ts)<br/>P2P consumer (consumer.ts)"]
+    UI["Edge console (server.ts)<br/>viem signer (wallet.ts, settle.ts)<br/>P2P consumer (consumer.ts)"]
   end
   subgraph Orch["Orchestrator &middot; M1 Pro &middot; 32GB &middot; QVAC Metal &middot; no keys"]
     QV["Qwen3-VL-2B + ocr-onnx (extract.ts)<br/>GTE-large RAG + tool-calling (erp.ts, tools.ts)"]
   end
   UI <-->|"QVAC P2P &middot; Holepunch, E2E-encrypted (provider.ts / consumer.ts)"| QV
-  UI -->|"signed USD&#8366; transfer"| SEP[("Ethereum Sepolia<br/>test USD&#8366; 0xd077a4&hellip;e4fdb")]
+  UI -->|"signed USD&#8366; transfer"| SEP[("BOT Chain Testnet<br/>test USD&#8366; 0xd077a4&hellip;e4fdb")]
 ```
 
 QVAC's macOS-x64 build can't run these models reliably (its llama.cpp build suppresses stop
@@ -59,7 +59,7 @@ Stages and their files:
 | Extraction | [extract.ts](./packages/orchestrator/src/extract.ts) | Qwen3-VL-2B with grammar-constrained JSON (`responseFormat: json_schema`), Zod-validated |
 | ERP + verdict | [erp.ts](./packages/orchestrator/src/erp.ts), [verdict.ts](./packages/orchestrator/src/verdict.ts) | `better-sqlite3` + `sqlite-vec`; `lookupVendor` / `matchPurchaseOrder` / `verifyWallet` / `isDuplicateInvoice` → deterministic `computeVerdict` |
 | Intent | [intent.ts](./packages/shared/src/intent.ts) | `PaymentIntent { to, amount, token, chainId, invoiceRef, memo }`; `to` = DB `known_wallet` |
-| Settlement | [settle.ts](./packages/edge/src/settle.ts), [wallet.ts](./packages/edge/src/wallet.ts) | WDK `account.transfer({ token, recipient, amount })`, confirmations, `recordSettlement` |
+| Settlement | [settle.ts](./packages/edge/src/settle.ts), [wallet.ts](./packages/edge/src/wallet.ts) | exact `approve` then `BustoSettlement.settleInvoice(...)`, confirmations, `recordSettlement` |
 
 ## Settlement sequence
 
@@ -69,7 +69,7 @@ sequenceDiagram
   participant E as Edge (server.ts, keys)
   participant O as Orchestrator (QVAC Metal)
   participant DB as SQLite ERP
-  participant C as Ethereum Sepolia
+  participant C as BOT Chain Testnet
   U->>E: drop invoice
   E->>O: extractInvoice (OCR + Qwen3-VL)
   O-->>E: extraction + Gate-0 result
@@ -85,8 +85,8 @@ sequenceDiagram
 ```
 
 Proven on-chain: tx
-[`0xa3ed0f33…f79cd30`](https://sepolia.etherscan.io/tx/0xa3ed0f33fcfa685287185284079884c0ea0c3a260149443bfd945f083f79cd30)
-— 1 USD₮, block 11,103,356, 2 confirmations
+[`0x2ea60336…8a4c23`](https://scan.bohr.life/tx/0x2ea60336babd5e995c79b2575026635d91ab50f9d42a67fd3908dcbd3e8a4c23)
+— 1 USD₮, block 25,784,689, 2 confirmations
 ([evidence/c4-report.md](./evidence/c4-report.md)).
 
 ## Inference & logging

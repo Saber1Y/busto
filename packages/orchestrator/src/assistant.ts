@@ -53,7 +53,7 @@ const CAPABILITIES = [
   "Read a vendor invoice on-device (local OCR + a multimodal LLM) and extract its fields.",
   "Verify the invoice against your internal ERP — vendor, purchase order, payout wallet, and duplicates.",
   "Run every invoice through six security gates before any payment can be proposed.",
-  "Settle a fully verified invoice as real USD₮ on Ethereum Sepolia — but only after you approve.",
+  "Settle a fully verified invoice as real USD₮ on BOT Chain Testnet through BustoSettlement — but only after you approve.",
   "Answer questions about your vendors, their open purchase orders, and past settlements.",
   "Everything runs locally: air-gapped, on-device inference, zero cloud AI.",
 ];

@@ -1,41 +1,45 @@
 {
-  "_assertion": "ALL AI inference (LLM, multimodal, OCR, embeddings, RAG, tool-calling) runs 100% locally via @qvac/sdk. The only remote calls are the non-AI blockchain endpoints and the blind P2P transport relay below — the relay carries only end-to-end-encrypted UDX stream bytes and cannot read any payload. No cloud AI, ever.",
+  "_assertion": "ALL AI inference (LLM, multimodal, OCR, embeddings, RAG, tool-calling) runs 100% locally via @qvac/sdk. The only remote calls are the non-AI blockchain endpoints (BOT Chain Testnet) and the blind P2P transport relay below \u2014 the relay carries only end-to-end-encrypted UDX stream bytes and cannot read any payload. No cloud AI, ever.",
   "remote_apis": [
     {
-      "service": "Busto blind relay (Hyperswarm/hyperdht) — P2P transport",
+      "service": "Busto blind relay (Hyperswarm/hyperdht) \u2014 P2P transport",
       "type": "non-AI",
       "purpose": "Self-hosted blind relay that bridges the QVAC delegated-inference P2P connection when direct UDP holepunch fails (both nodes behind symmetric Starlink CGNAT). C1.",
-      "endpoints": ["169.155.63.190:49737/udp"],
+      "endpoints": [
+        "169.155.63.190:49737/udp"
+      ],
       "host": "busto-relay.fly.dev (Fly.io, region iad, dedicated IPv4)",
       "relayPublicKey": "cdc9bb588cf1622d29ddb872429d81aeb5a3bb9ea6b55c783b52231e5bf4c288",
-      "notes": "Hyperswarm blind-relay node (blind-relay@1.6.1 + hyperdht@6.32.0). Registered in qvac.config.json swarmRelays on both provider and consumer. Relays only E2E-encrypted UDX stream messages — blind to invoices, inference, and keys (threat model: transport, not a data/AI dependency). Self-hosted, not third-party. Peer discovery also uses the public hyperdht bootstrap nodes (node1/2/3.hyperdht.org)."
+      "notes": "Hyperswarm blind-relay node (blind-relay@1.6.1 + hyperdht@6.32.0). Registered in qvac.config.json swarmRelays on both provider and consumer. Relays only E2E-encrypted UDX stream messages \u2014 blind to invoices, inference, and keys (threat model: transport, not a data/AI dependency). Self-hosted, not third-party. Peer discovery also uses the public hyperdht bootstrap nodes (node1/2/3.hyperdht.org)."
     },
     {
-      "service": "Ethereum Sepolia RPC (send + read)",
+      "service": "BOT Chain Testnet RPC (read + broadcast)",
       "type": "non-AI",
-      "purpose": "Broadcast the USD₮ transfer and read balances/receipts for settlement (C4).",
+      "purpose": "Read BustoSettlement state for the on-chain dashboard, and broadcast the exact-amount USDT approval and settleInvoice call (C4).",
       "endpoints": [
-        "https://ethereum-sepolia-rpc.publicnode.com",
-        "https://sepolia.drpc.org"
+        "https://rpc.bohr.life"
       ],
-      "chainId": 11155111,
-      "notes": "Public-mempool RPCs used for reliable testnet inclusion. WDK failover array."
+      "chainId": 968,
+      "notes": "bohr keeps no unlocked accounts: eth_sendTransaction fails with 'unknown account', so writes are signed locally and broadcast with eth_sendRawTransaction. batch/multicall disabled for correctness against sharded nodes."
     },
     {
-      "service": "Flashbots Protect (Sepolia) — MEV-protected RPC",
+      "service": "BOT Chain Testnet USDT (ERC-20)",
       "type": "non-AI",
-      "purpose": "Production-pinned MEV-protected broadcast endpoint (Gate 5, threat #55).",
-      "endpoints": ["https://rpc-sepolia.flashbots.net"],
-      "chainId": 11155111,
-      "notes": "Pinned for production. The demo broadcasts via the public mempool because Sepolia private-mempool inclusion is unreliable and a plain ERC-20 transfer carries no extractable MEV."
-    },
-    {
-      "service": "Sepolia test USD₮ (ERC-20)",
-      "type": "non-AI",
-      "purpose": "Pinned settlement token. Funded via Pimlico/Candide faucet.",
-      "address": "0xd077a400968890eacc75cdc901f0356c943e4fdb",
+      "purpose": "Pinned settlement token for BustoSettlement on chain 968.",
+      "address": "0x75edC9335175Fc0552D51D48439F229c10420fe3",
       "decimals": 6,
-      "chainId": 11155111
+      "chainId": 968,
+      "notes": "Network-specific. An Ethereum USDT address is NOT valid on BOT Chain."
+    },
+    {
+      "service": "BOTScan block explorer",
+      "type": "non-AI",
+      "purpose": "Public explorer links for settled transactions and the settlement contract.",
+      "endpoints": [
+        "https://scan.bohr.life"
+      ],
+      "chainId": 968,
+      "notes": "Used for human verification only; Busto never depends on an explorer API."
     }
   ]
 }

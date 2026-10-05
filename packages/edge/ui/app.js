@@ -47,7 +47,7 @@ async function loadHeader() {
       return;
     }
     $("wallet").textContent = short(w.address);
-    $("wallet").href = `https://sepolia.etherscan.io/address/${w.address}`;
+    $("wallet").href = `https://scan.bohr.life/address/${w.address}`;
     $("balance").textContent = `${fmtUnits(w.usdt, 6)} USD₮`;
   } catch { $("balance").textContent = "wallet offline"; }
 }
@@ -228,9 +228,9 @@ function finalize(d) {
     } else {
       auth.classList.add("demo");
       label.textContent = "SUPPLY A FUNDED WALLET TO SETTLE";
-      note.innerHTML = "Demo mode — no wallet configured. Set <strong>BUSTO_WALLET_SEED</strong> in <strong>.env</strong> to a funded Sepolia wallet, then restart, to settle for real. The verification above is fully live.";
+      note.innerHTML = "Demo mode — no wallet configured. Set <strong>BUSTO_WALLET_SEED</strong> in <strong>.env</strong> to a funded BOT Chain testnet wallet, then restart, to settle for real. The verification above is fully live.";
       setGate("G4", "active", "demo mode — supply a funded wallet");
-      setState("verified", "VERIFIED", "Every automated gate cleared. Supply a funded Sepolia wallet to settle.");
+      setState("verified", "VERIFIED", "Every automated gate cleared. Supply a funded BOT Chain testnet wallet to settle.");
     }
     showAsk("VERIFIED");
     setTimeout(() => scrollToEl($("bandSettle")), 350);
@@ -253,7 +253,7 @@ function renderSummary(intent) {
     <div class="row"><dt>Recipient (DB-verified)</dt><dd class="mono">${intent.to}</dd></div>
     <div class="row"><dt>Amount</dt><dd class="amount">${fmtUnits(intent.amount, 6)} USD₮</dd></div>
     <div class="row"><dt>Token</dt><dd class="mono">${short(intent.token)}</dd></div>
-    <div class="row"><dt>Network</dt><dd>Ethereum Sepolia · ${intent.chainId}</dd></div>
+    <div class="row"><dt>Network</dt><dd>BOT Chain Testnet · ${intent.chainId}</dd></div>
     <div class="row"><dt>Invoice ref</dt><dd>${intent.invoiceRef}</dd></div>`;
 }
 
@@ -284,7 +284,7 @@ async function authorize() {
     const r = await (await fetch("/api/approve", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jobId: currentJob.jobId }) })).json();
     if (r.status === "settled") {
       setGate("G5", "cleared", `${r.confirmations} confirmations`);
-      setState("settled", "SETTLED", "Real test USD₮ moved on Ethereum Sepolia, behind every gate.");
+      setState("settled", "SETTLED", "Real test USD₮ moved on BOT Chain Testnet, behind every gate.");
       renderReceipt(r);
       $("bandSettle").hidden = true;
       $("bandReceipt").hidden = false;
@@ -311,7 +311,7 @@ function renderReceipt(r) {
     <div class="seal">SETTLED</div>
     <div class="rrow"><span class="rk">Amount</span><span class="rv">${fmtUnits(a.amount, 6)} USD₮</span></div>
     <div class="rrow"><span class="rk">Recipient</span><span class="rv mono">${a.to}</span></div>
-    <div class="rrow"><span class="rk">Confirmations</span><span class="rv">${r.confirmations} · Ethereum Sepolia</span></div>
+    <div class="rrow"><span class="rk">Confirmations</span><span class="rv">${r.confirmations} · BOT Chain Testnet</span></div>
     <div class="rrow"><span class="rk">Transaction</span><a class="tx" href="${r.explorerUrl}" target="_blank" rel="noreferrer">${r.txHash}</a></div>`;
   loadHeader();
 }
