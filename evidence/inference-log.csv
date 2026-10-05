@@ -1881,3 +1881,5 @@ ts,node,op,model,delegated,provider_public_key,load_ms,ttft_ms,gen_ms,prompt_tok
 2026-07-24T08:23:11.520Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-7002 classic-split-amount.json,darwin/arm64,none
 2026-07-24T08:23:11.520Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-1042 classic-duplicate-replay.json,darwin/arm64,none
 2026-07-24T08:23:11.521Z,orchestrator,verdict,deterministic,false,,,,,,,,,,REJECT INV-7004 classic-wallet-lookalike.json,darwin/arm64,none
+2026-10-05T11:38:46.840Z,orchestrator,loadModel,OCR_LATIN_RECOGNIZER_1,false,,146457,,,,,,,,model loaded,darwin/arm64,none
+2026-10-05T11:38:46.893Z,orchestrator,unloadModel,OCR_LATIN_RECOGNIZER_1,false,,,,,,,,,,model unloaded,darwin/arm64,none

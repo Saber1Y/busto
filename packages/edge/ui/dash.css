@@ -289,7 +289,8 @@ html[data-sidebar="collapsed"] .side-airgap, html[data-sidebar="collapsed"] .sid
 }
 
 /* ── BOT Chain on-chain settlement panel ─────────────────────────────────────── */
-.onchain { display: flex; flex-direction: column; gap: 0.9rem; margin-top: 0.4rem; }
+#view-onchain { align-content: start; justify-content: flex-start; }
+.onchain { display: flex; flex-direction: column; gap: 0.9rem; margin-top: 0.4rem; max-width: 62rem; }
 .onchain-head { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; }
 .onchain-badge {
   font: 600 0.68rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;

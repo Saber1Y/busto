@@ -163,16 +163,48 @@ export interface OnChainMetrics {
   totalSettledAmount: string;
 }
 
-/** Reads live settlement metrics from contract state. Never a cached counter. */
+const METRICS_TIMEOUT_MS = Number(process.env.BUSTO_RPC_TIMEOUT_MS ?? 12_000);
+
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(
+      () => reject(new Error(`${label} did not answer within ${ms}ms`)),
+      ms
+    );
+    p.then(
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(t);
+        reject(e);
+      }
+    );
+  });
+}
+
+/**
+ * Reads live settlement metrics from contract state. Never a cached counter.
+ *
+ * Bounded by a timeout on purpose: the BOT Chain RPC can stall, and a dashboard
+ * that hangs on "Reading contract state..." forever is worse than one that says
+ * the chain did not answer. The caller surfaces that as unavailable rather than
+ * rendering zeros that would read as "nothing has ever settled".
+ */
 export async function readOnChainMetrics(chainId = CHAIN_ID): Promise<OnChainMetrics> {
   const wallet = await openEdgeWallet();
   try {
     const read = async (fn: "settledInvoiceCount" | "totalSettledAmount") =>
-      wallet.publicClient.readContract({
-        abi: SETTLEMENT_ABI,
-        address: SETTLEMENT_CONTRACT,
-        functionName: fn
-      }) as Promise<bigint>;
+      withTimeout(
+        wallet.publicClient.readContract({
+          abi: SETTLEMENT_ABI,
+          address: SETTLEMENT_CONTRACT,
+          functionName: fn
+        }) as Promise<bigint>,
+        METRICS_TIMEOUT_MS,
+        `BustoSettlement.${fn}()`
+      );
     const [count, volume] = await Promise.all([read("settledInvoiceCount"), read("totalSettledAmount")]);
     return {
       contract: SETTLEMENT_CONTRACT,

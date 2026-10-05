@@ -515,7 +515,7 @@ function renderOnchain(v) {
         return;
       }
       set("ocCount", String(d.settledInvoiceCount));
-      set("ocVolume", `${d.totalSettledAmount} USD₮`);
+      set("ocVolume", `${d.totalSettledAmount} USDT`);
       set("ocContract", d.contract);
       set("ocChain", `${d.network} (${d.chainId})`);
       set("ocStatus", "Counters read directly from BustoSettlement on BOT Chain Testnet.");
