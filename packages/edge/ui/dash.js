@@ -15,6 +15,8 @@ const signer = $("signer"), signerAddr = $("signerAddr"), balance = $("balance")
 const nav = $("nav"), viewTitle = $("viewTitle"), viewDesc = $("viewDesc");
 
 let currentJob = null, walletConfigured = true, busy = false, pickerEl = null;
+const JOB_KEY = "busto.jobId";
+const CHAT_KEY = "busto.transcript";
 
 /* trusted icon constants (no user data) */
 const CHECK_SVG = '<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg>';
@@ -43,6 +45,57 @@ const stripThinking = (s) => s.replace(/<think>[\s\S]*?<\/think>/gi, "").replace
 // the ERP keeps the raw "USDT" ticker as data.
 const assetLabel = (c) => (/^usd[t₮]$/i.test(c || "") ? "USD₮" : c || "USD₮");
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
+
+// ── Refresh recovery ───────────────────────────────────────────────────────────
+// A reload used to strand the operator: the conversation was DOM-only and the
+// verified job lived in a module-level variable, so the authorize card vanished
+// and /api/approve answered "unknown or expired job". The job id is persisted and
+// the authoritative record is re-read from the server, so a refresh mid-review
+// costs the transcript but never the ability to settle a verified invoice.
+function saveTranscript() {
+  try {
+    const rows = [...thread.querySelectorAll(".msg")].map((m) => ({
+      who: m.classList.contains("user") ? "user" : "agent",
+      text: (m.querySelector(".prose")?.innerText || "").slice(0, 600)
+    })).filter((r) => r.text.trim());
+    sessionStorage.setItem(CHAT_KEY, JSON.stringify(rows.slice(-40)));
+  } catch { /* storage optional */ }
+}
+
+function restoreTranscript() {
+  let rows = [];
+  try { rows = JSON.parse(sessionStorage.getItem(CHAT_KEY) || "[]"); } catch { return; }
+  if (!Array.isArray(rows) || !rows.length) return;
+  for (const r of rows) {
+    if (r.who === "user") appendUser(String(r.text || ""));
+    else addProse(appendAgent().bubble, String(r.text || ""));
+  }
+  thread.append(el("p", { class: "meta", text: "— conversation restored from this tab. Re-verify an invoice to authorize a payment. —" }));
+  scrollThread();
+}
+
+async function rehydrateJob() {
+  let jobId = null;
+  try { jobId = sessionStorage.getItem(JOB_KEY); } catch { /* storage optional */ }
+  if (!jobId) return false;
+  try {
+    const r = await fetch("/api/job/" + encodeURIComponent(jobId));
+    const d = await r.json();
+    if (!r.ok || !d.ok) {
+      try { sessionStorage.removeItem(JOB_KEY); } catch { /* storage optional */ }
+      return false;
+    }
+    currentJob = { jobId: d.jobId, intent: d.intent || null, status: d.status };
+    if ((d.status === "VERIFIED" || d.status === "PASS") && currentJob.intent) {
+      const { bubble } = appendAgent();
+      addProse(bubble, "Restored your verified invoice after the page reloaded. The amount and recipient below were re-read from the console's own record of what cleared every gate.");
+      renderAuthorizeCard(bubble);
+    }
+    return true;
+  } catch { /* offline: the authorize card simply stays hidden */ }
+  return false;
+}
+
 const scrollThread = () => { thread.scrollTop = thread.scrollHeight; };
 
 function el(tag, attrs = {}, ...kids) {
@@ -66,12 +119,12 @@ function appendUser(text, srcLabel) {
   const pr = el("div", { class: "prose", text });
   if (srcLabel) pr.append(el("span", { class: "src-chip", html: DOC_SVG }), srcLabel);
   bubble.append(pr);
-  msg.append(bubble); thread.append(msg); scrollThread();
+  msg.append(bubble); thread.append(msg); scrollThread(); saveTranscript();
 }
 function appendAgent() {
   const bubble = el("div", { class: "bubble" }, el("div", { class: "who", text: "Busto" }));
   const msg = el("div", { class: "msg agent" }, el("div", { class: "avatar", text: "C" }), bubble);
-  thread.append(msg); scrollThread();
+  thread.append(msg); scrollThread(); saveTranscript();
   return { msg, bubble };
 }
 function addProse(bubble, text = "") { const p = el("div", { class: "prose", text }); bubble.append(p); scrollThread(); return p; }
@@ -302,6 +355,10 @@ function handleVerifyEvent(e, ctx) {
 function finalizeVerify(fin, ctx) {
   if (fin.status === "ERROR") { addReasonLine(ctx.box, fin.reason || "Something went wrong.", "cross"); return; }
   currentJob = { jobId: fin.jobId, intent: fin.intent || null, status: fin.status };
+  // Remember the id so a refresh can rehydrate. ONLY the id is stored: the
+  // amount and recipient are re-read from the server on restore, never trusted
+  // from a browser-cached copy.
+  try { sessionStorage.setItem(JOB_KEY, fin.jobId); } catch { /* storage optional */ }
   renderVerdictCard(ctx.bubble, fin, ctx);
   if (fin.status === "VERIFIED") {
     const amt = ctx.extraction ? `${ctx.extraction.invoiceAmount} ${assetLabel(ctx.extraction.currency)}` : "the amount";
@@ -650,4 +707,11 @@ function wireShell() {
 /* ── init ─────────────────────────────────────────────────────────── */
 loadHeader(); wireComposer(); wireNav(); wireShell();
 renderIntro();
+// A reload must not strand the operator mid-review. Re-read the authoritative
+// job record so the authorize card returns for anything still awaiting approval,
+// and restore the transcript either way.
+(async () => {
+  await rehydrateJob();
+  restoreTranscript();
+})();
 

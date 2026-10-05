@@ -428,6 +428,31 @@ const server = createServer(async (req, res) => {
         });
       }
     }
+    // Authoritative job state. A browser refresh drops the client's in-memory job,
+    // which would otherwise strand a verified invoice with no way to authorize it.
+    // The client rehydrates from HERE rather than from its own cached copy, so the
+    // amount and recipient it re-displays always come from the server's record of
+    // what was verified — never from anything the browser can edit.
+    if (req.method === "GET" && url.startsWith("/api/job/")) {
+      const jobId = decodeURIComponent(url.slice("/api/job/".length));
+      const job = jobs.get(jobId);
+      if (!job) {
+        return json(res, 404, {
+          status: "gone",
+          error: "unknown or expired job",
+          reason: "This invoice is no longer awaiting approval — it was already settled, or the console restarted. Re-run the verification."
+        });
+      }
+      // The verdict records "PASS"/"BLOCKED"; the UI speaks "VERIFIED"/"BLOCKED".
+      // Normalise here so a rehydrated job is described in the same vocabulary the
+      // live stream used, and the client has one status to match on.
+      return json(res, 200, {
+        ok: true,
+        jobId,
+        status: job.status === "PASS" ? "VERIFIED" : job.status,
+        intent: job.intent ?? null
+      });
+    }
     if (req.method === "POST" && url === "/api/verify") return void (await handleVerify(req, res));
     if (req.method === "POST" && url === "/api/explain") return void (await handleExplain(req, res));
     if (req.method === "POST" && url === "/api/assist") return void (await handleAssist(req, res));
