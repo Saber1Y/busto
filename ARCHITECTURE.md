@@ -1,8 +1,8 @@
 # Architecture
 
-Custos splits accounts-payable across two machines joined by QVAC's P2P. The
+Busto splits accounts-payable across two machines joined by QVAC's P2P. The
 Orchestrator reads and verifies; the Edge holds keys and signs. The full design is in
-[Custos-PRD.md](./Custos-PRD.md); this file maps it to the code.
+[Busto-PRD.md](./Busto-PRD.md); this file maps it to the code.
 
 ## Two-node mesh
 

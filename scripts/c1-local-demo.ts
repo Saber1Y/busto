@@ -1,4 +1,4 @@
-// Custos · C1 local proof — two-process QVAC delegation on the M1.
+// Busto · C1 local proof — two-process QVAC delegation on the M1.
 // Spawns the orchestrator provider as a child, then runs the edge consumer
 // in-process against it (per the SDK's own examples/delegated-inference/composite).
 // Proves: (a) delegated round-trip · (b) heartbeat detects offline ·
@@ -95,7 +95,7 @@ console.log(
 
 console.log("=== local M1 inference baseline ===");
 console.log(`  local (direct M1 Metal): ttft=${local.stats?.timeToFirstToken}ms tok/s=${local.stats?.tokensPerSecond} backend=${local.stats?.backendDevice}`);
-console.log("  The real CPU→Metal offload delta is measured on the Intel node (CUSTOS_NODE=edge → M1 provider).\n");
+console.log("  The real CPU→Metal offload delta is measured on the Intel node (BUSTO_NODE=edge → M1 provider).\n");
 
 // What ONE host can prove for real: provider identity, offline detection, degraded fallback, never-auto-settle.
 const localPass = !!publicKey && degraded.degradedMode && degraded.autoSettleBlocked;

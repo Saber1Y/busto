@@ -33,7 +33,7 @@ export interface ConsumerResult {
   delegated: boolean;
   /** Fell back to the local 1B because delegation was unavailable. */
   degradedMode: boolean;
-  /** In degraded mode Custos NEVER auto-settles (threat #82). */
+  /** In degraded mode Busto NEVER auto-settles (threat #82). */
   autoSettleBlocked: boolean;
   load_ms: number;
   stats?: CompletionStats;

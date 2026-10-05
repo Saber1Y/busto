@@ -1,6 +1,6 @@
-// Custos · C4 demo — REAL test USD₮ settlement on Sepolia, behind every gate.
+// Busto · C4 demo — REAL test USD₮ settlement on Sepolia, behind every gate.
 // Clean verified invoice → on-chain tx hash. Poisoned invoice → blocked, no send.
-// Set CUSTOS_APPROVE=I-APPROVE to authorize the live send (Gate 4).
+// Set BUSTO_APPROVE=I-APPROVE to authorize the live send (Gate 4).
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { mkdirSync, rmSync } from "node:fs";
@@ -12,7 +12,7 @@ import { settleIntent } from "../packages/edge/src/settle.ts";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DB_PATH = resolve(REPO, "data/erp.db");
-const APPROVE = process.env.CUSTOS_APPROVE === "I-APPROVE";
+const APPROVE = process.env.BUSTO_APPROVE === "I-APPROVE";
 const INVOICE_REF = "INV-C4-001";
 
 loadEnvSafe();
@@ -29,7 +29,7 @@ const ethBal = await wallet.account.getBalance();
 const usdtBal = await wallet.account.getTokenBalance(CHAIN.usdt);
 console.log(`Edge signer: ${wallet.address}`);
 console.log(`  ETH ${(Number(ethBal) / 1e18).toFixed(4)} · USD₮ ${(Number(usdtBal) / 1e6).toFixed(2)} · token ${CHAIN.usdt}`);
-console.log(`  approval: ${APPROVE ? "GRANTED (CUSTOS_APPROVE=I-APPROVE)" : "NOT granted — Gate 4 will block the send"}\n`);
+console.log(`  approval: ${APPROVE ? "GRANTED (BUSTO_APPROVE=I-APPROVE)" : "NOT granted — Gate 4 will block the send"}\n`);
 wallet.dispose();
 
 const acme = lookupVendor(db, "Acme Robotics Ltd");
@@ -50,7 +50,7 @@ if (verdict.decision === "PASS" && verdict.knownWallet) {
   const intent = buildPaymentIntent({
     knownWallet: verdict.knownWallet, // recipient from the DB, NOT the document
     amountMinor: toMinorUnits(clean.invoiceAmount, CHAIN.usdtDecimals)!,
-    token: CHAIN.usdt, chainId: CHAIN.id, invoiceRef: INVOICE_REF, memo: "Custos settlement PO-TEST",
+    token: CHAIN.usdt, chainId: CHAIN.id, invoiceRef: INVOICE_REF, memo: "Busto settlement PO-TEST",
   });
   console.log(`    intent: to=${intent.to} amount=${intent.amount} (1 USD₮) token=${intent.token} chain=${intent.chainId}`);
   console.log(APPROVE ? "    sending (this is a REAL on-chain transfer)..." : "    (no approval — Gate 4 will block)");

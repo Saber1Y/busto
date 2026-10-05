@@ -38,3 +38,8 @@ qvachack.md
 # internal/reference docs kept out of the public repo
 HACKATHON.md
 BUILD_PROMPTS.md
+
+# Foundry (contract build artifacts + deps)
+contracts/out/
+contracts/cache/
+contracts/broadcast/

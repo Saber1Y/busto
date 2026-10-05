@@ -2,7 +2,7 @@ import WalletManagerEvm from "@tetherto/wdk-wallet-evm";
 import type { WalletAccountEvm } from "@tetherto/wdk-wallet-evm";
 import { loadEnvSafe } from "../../shared/src/index.ts";
 
-// Custos Edge signer. Keys live ONLY on the Edge node (seed in gitignored .env via
+// Busto Edge signer. Keys live ONLY on the Edge node (seed in gitignored .env via
 // WDK self-custody). The Orchestrator has NO key API surface (threat #92).
 
 export const CHAIN = {
@@ -26,8 +26,8 @@ export interface EdgeWallet {
 
 export async function openEdgeWallet(): Promise<EdgeWallet> {
   loadEnvSafe();
-  const seed = process.env.CUSTOS_WALLET_SEED;
-  if (!seed) throw new Error("CUSTOS_WALLET_SEED missing — Edge keys live in .env (gitignored)");
+  const seed = process.env.BUSTO_WALLET_SEED;
+  if (!seed) throw new Error("BUSTO_WALLET_SEED missing — Edge keys live in .env (gitignored)");
   const envRpc = process.env.SEPOLIA_RPC_URL;
   const rpcs = envRpc ? [envRpc, ...FALLBACK_RPCS.filter((r) => r !== envRpc)] : [...FALLBACK_RPCS];
   const manager = new WalletManagerEvm(seed, { provider: rpcs, chainId: CHAIN.id });

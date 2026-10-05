@@ -1,4 +1,4 @@
-// Custos · C0 catalog probe — introspect the INSTALLED @qvac/sdk (ground truth, not docs).
+// Busto · C0 catalog probe — introspect the INSTALLED @qvac/sdk (ground truth, not docs).
 // Lists named exports, isolates model-id constants, and reports the package's
 // declared version + entry points. Throwaway verification script (P0).
 import { readFileSync } from "node:fs";

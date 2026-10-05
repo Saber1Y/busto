@@ -5,7 +5,7 @@ import { normalizeForLLM } from "../../../security/gate0.ts";
 import { loadReasoningModel, releaseReasoningModel, screenDelegatedText, CHAT_CACHE_KEY } from "./delegation.ts";
 
 // General Workspace assistant (C9-2-fix). Answers ANY free-text message grounded in
-// (a) what Custos IS + the six gates, and (b) a live snapshot of the air-gapped ERP
+// (a) what Busto IS + the six gates, and (b) a live snapshot of the air-gapped ERP
 // (vendors, open POs, settlement history). READ-ONLY by construction: it receives facts
 // and produces prose — it has no DB-mutating or settlement surface. The question is
 // untrusted text and is screened through Gate 0 first. Every LLM call goes through the
@@ -68,29 +68,29 @@ const THE_SIX_GATES = [
 ];
 
 const GROUNDING =
-  "You are Custos's assistant for a non-technical finance clerk. Custos is an AIR-GAPPED agentic " +
+  "You are Busto's assistant for a non-technical finance clerk. Busto is an AIR-GAPPED agentic " +
   "accounts-payable system: it reads vendor invoices on-device, verifies them against THIS internal ERP, " +
   "and settles real USD₮ on-chain only after a human approves every gate. You are READ-ONLY — you explain " +
   "and answer; you have NO tool that can move money or change the ERP. Answer the clerk's question in 2-5 " +
-  "short, plain sentences using ONLY the Custos capabilities, the six gates, and the ERP FACTS below. NEVER " +
+  "short, plain sentences using ONLY the Busto capabilities, the six gates, and the ERP FACTS below. NEVER " +
   "invent a vendor, purchase order, wallet, amount, or policy. If the answer is not in the facts, say plainly " +
   "that you can't see it. To verify a specific invoice, the clerk drops it in the workspace.\n" +
   "Field meanings — read carefully: 'openPurchaseOrders' are approved orders that have NOT been paid yet; " +
-  "'settlementHistory' is the list of payments Custos has ALREADY made on-chain. If settlementHistory is empty, " +
-  "or a vendor does not appear in it, then Custos has made NO payment to that vendor — say exactly that. NEVER " +
+  "'settlementHistory' is the list of payments Busto has ALREADY made on-chain. If settlementHistory is empty, " +
+  "or a vendor does not appear in it, then Busto has made NO payment to that vendor — say exactly that. NEVER " +
   "treat an open purchase order as a past payment.\n" +
   "Write warm, plain prose. Do NOT use markdown symbols (no **, #, or bullet characters); if you list the gates, " +
   "use simple numbered sentences.";
 
 function factsBlock(snapshot: ErpSnapshot): string {
-  return JSON.stringify({ whatCustosCanDo: CAPABILITIES, theSixGates: THE_SIX_GATES, erp: snapshot }, null, 2);
+  return JSON.stringify({ whatBustoCanDo: CAPABILITIES, theSixGates: THE_SIX_GATES, erp: snapshot }, null, 2);
 }
 
 export async function assistChat(question: string, snapshot: ErpSnapshot, onToken?: (t: string) => void): Promise<AssistantAnswer> {
   // The message is untrusted text — screen it through Gate 0 like any input.
   const gq = normalizeForLLM(question);
   if (gq.flagged) {
-    return { text: "That message contained an instruction-like pattern, so I won't follow it. I can explain how Custos works, your vendors and their open purchase orders, and past settlements — ask me about those, or drop an invoice to verify." };
+    return { text: "That message contained an instruction-like pattern, so I won't follow it. I can explain how Busto works, your vendors and their open purchase orders, and past settlements — ask me about those, or drop an invoice to verify." };
   }
 
   const rm = await loadReasoningModel(

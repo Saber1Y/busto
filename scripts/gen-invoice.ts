@@ -1,4 +1,4 @@
-// Custos · C2 sample generator — a REAL clean invoice as PNG (no external deps).
+// Busto · C2 sample generator — a REAL clean invoice as PNG (no external deps).
 // Builds an SVG and rasterizes it with macOS QuickLook (`qlmanage`). Output:
 // data/sample/acme_invoice.png  (+ the .svg source alongside it).
 import { execFileSync } from "node:child_process";
@@ -36,7 +36,7 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="1500" 
 <text x="1100" y="90" font-family="Helvetica" font-size="40" fill="#000" text-anchor="end">INVOICE</text>
 <text x="1100" y="128" font-family="Helvetica" font-size="22" fill="#444" text-anchor="end">No. INV-1042</text>
 <line x1="60" y1="160" x2="1100" y2="160" stroke="#000" stroke-width="2"/>
-<text x="60" y="210" font-family="Helvetica" font-size="22" fill="#111">Bill To: Custos Treasury Operations</text>
+<text x="60" y="210" font-family="Helvetica" font-size="22" fill="#111">Bill To: Busto Treasury Operations</text>
 <text x="1100" y="200" font-family="Helvetica" font-size="22" fill="#111" text-anchor="end">Issue date: 2026-06-20</text>
 <text x="1100" y="230" font-family="Helvetica" font-size="22" fill="#111" text-anchor="end">Due date: 2026-07-15</text>
 <rect x="48" y="270" width="1064" height="44" fill="#f0f0f0"/>

@@ -1,4 +1,4 @@
-// Custos · reset the demo to a clean slate between rehearsals.
+// Busto · reset the demo to a clean slate between rehearsals.
 //
 // Clears uploaded invoice images and EXPLICITLY resets the ERP — including the settlement
 // history — so an invoice settled in a previous run can be demoed again. This is the ONLY
@@ -16,7 +16,7 @@ const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const UPLOADS = resolve(REPO, "data/uploads");
 const DB_PATH = resolve(REPO, "data/erp.db");
 
-console.log("\nCUSTOS DEMO RESET\n");
+console.log("\nBUSTO DEMO RESET\n");
 
 let removed = 0;
 if (existsSync(UPLOADS)) {

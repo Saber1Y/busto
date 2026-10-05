@@ -129,7 +129,7 @@ export async function settleIntent(
       logInference({ node: "edge", op: "settle-unconfirmed", model: "wdk", delegated: false, event: `tx ${txHash} conf=${confirmations}/${need} waited=${waited}s ref ${intent.invoiceRef}` });
       return {
         status: "pending",
-        reason: `Broadcast, but only ${confirmations} of ${need} confirmations after ${waited}s. ${mined ? "The transfer is mined and should finalise shortly." : "The transfer has not been mined yet."} Check the explorer before re-sending — ${intent.invoiceRef} is already recorded, so Custos will not send it a second time.`,
+        reason: `Broadcast, but only ${confirmations} of ${need} confirmations after ${waited}s. ${mined ? "The transfer is mined and should finalise shortly." : "The transfer has not been mined yet."} Check the explorer before re-sending — ${intent.invoiceRef} is already recorded, so Busto will not send it a second time.`,
         txHash, explorerUrl, confirmations,
       };
     }

@@ -1,6 +1,6 @@
-# Custos — Threat Model: 100 Attack Vectors & Defenses
+# Busto — Threat Model: 100 Attack Vectors & Defenses
 
-**Companion to `Custos-PRD.md`.** Purpose: harden Custos so an attacker cannot trick the agent into moving funds, cannot poison the pipeline, and cannot exploit the on-chain or P2P surface — and so judges' static + artifact + live review finds a system that is *honest by construction*.
+**Companion to `Busto-PRD.md`.** Purpose: harden Busto so an attacker cannot trick the agent into moving funds, cannot poison the pipeline, and cannot exploit the on-chain or P2P surface — and so judges' static + artifact + live review finds a system that is *honest by construction*.
 
 **Tier legend:** `[MVP]` built & shown in the demo · `[HARD]` implemented defense · `[DOC]` documented mitigation / stretch.
 
@@ -214,4 +214,4 @@ Two readings, both covered:
 
 ---
 
-*Defensive document. All items are mitigations for Custos's own attack surface.*
+*Defensive document. All items are mitigations for Busto's own attack surface.*

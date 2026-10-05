@@ -1,4 +1,4 @@
-// Custos · pre-demo preflight. Fails loudly BEFORE a live pitch rather than mid-demo.
+// Busto · pre-demo preflight. Fails loudly BEFORE a live pitch rather than mid-demo.
 //
 // Checks, in order: wallet seed loads · Sepolia RPC answers on the pinned chain ·
 // USD₮ covers a settlement · ETH covers gas with headroom · the OCR and vision weights
@@ -52,20 +52,20 @@ const rpc = async (url: string, method: string, params: unknown[] = []): Promise
   } catch { return null; }
 };
 
-console.log("\nCUSTOS PREFLIGHT\n");
+console.log("\nBUSTO PREFLIGHT\n");
 
 // ── 1. seed ──────────────────────────────────────────────────────────────────
 console.log("[1] wallet seed");
 loadEnvSafe();
-if (!process.env.CUSTOS_WALLET_SEED) {
-  fail("CUSTOS_WALLET_SEED", "not set — the console will run in demo mode and cannot settle");
+if (!process.env.BUSTO_WALLET_SEED) {
+  fail("BUSTO_WALLET_SEED", "not set — the console will run in demo mode and cannot settle");
 } else {
-  pass("CUSTOS_WALLET_SEED", "present in .env (value never printed)");
+  pass("BUSTO_WALLET_SEED", "present in .env (value never printed)");
 }
 
 // ── 2. wallet + RPC + balances ───────────────────────────────────────────────
 console.log("\n[2] chain + funds");
-if (process.env.CUSTOS_WALLET_SEED) {
+if (process.env.BUSTO_WALLET_SEED) {
   try {
     const w = await openEdgeWallet();
     pass("signer address", w.address);

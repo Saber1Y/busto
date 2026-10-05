@@ -44,10 +44,10 @@ ensureSchema(db);
 // verify, so there is no per-request load tax for a 0.62 GiB model. Retrieval is ADVISORY
 // (verdict.ts): it reports what is *near*, it never widens what can pass.
 const RAG_MODEL = "GTE_LARGE_FP16";
-const RAG_ENABLED = process.env.CUSTOS_RAG !== "off"; // demo/measurement lever; verdict is identical either way
+const RAG_ENABLED = process.env.BUSTO_RAG !== "off"; // demo/measurement lever; verdict is identical either way
 let ragEmbed: EmbedFn | undefined;
 if (!RAG_ENABLED) {
-  console.log("  RAG   disabled (CUSTOS_RAG=off) — exact-match verification only; retrieval panel absent");
+  console.log("  RAG   disabled (BUSTO_RAG=off) — exact-match verification only; retrieval panel absent");
   await seedErp(db);
 } else try {
   setAuditNode("orchestrator");
@@ -271,7 +271,7 @@ async function handleVerify(req: Req, res: Res): Promise<void> {
     if (verdict.decision === "PASS" && verdict.knownWallet) {
       const vendor = lookupVendor(db, ex.extraction.vendorName);
       const poRow = db.prepare("SELECT id FROM purchase_orders WHERE po_number = ?").get(verdict.matchedPO) as { id: number };
-      job.intent = buildPaymentIntent({ knownWallet: verdict.knownWallet, amountMinor: toMinorUnits(ex.extraction.invoiceAmount, CHAIN.usdtDecimals)!, token: CHAIN.usdt, chainId: CHAIN.id, invoiceRef, memo: `Custos · ${verdict.matchedPO}` });
+      job.intent = buildPaymentIntent({ knownWallet: verdict.knownWallet, amountMinor: toMinorUnits(ex.extraction.invoiceAmount, CHAIN.usdtDecimals)!, token: CHAIN.usdt, chainId: CHAIN.id, invoiceRef, memo: `Busto · ${verdict.matchedPO}` });
       job.vendorId = vendor.vendorId!;
       job.poId = poRow.id;
     }
@@ -290,7 +290,7 @@ async function handleVerify(req: Req, res: Res): Promise<void> {
       const reason = gate0Flagged
         ? `A hidden instruction was found in the document and ignored — ${ex.gate0.findings[0]?.detail ?? ""}`
         : isDuplicate
-          ? `This invoice was already settled (${invoiceRef}). Custos will not pay the same document twice.`
+          ? `This invoice was already settled (${invoiceRef}). Busto will not pay the same document twice.`
           : verdict.reasons.find((r) => r.startsWith("REJECT"))?.replace(/^REJECT:\s*/, "") ?? "verification failed";
       send({ t: "final", data: { status: "BLOCKED", jobId, blockedGate, reason, gates, duplicate: isDuplicate, invoiceRef, priorTx: prior?.tx_hash ?? null } });
     }
@@ -345,7 +345,7 @@ async function handleExplain(req: Req, res: Res): Promise<void> {
 }
 
 async function handleApprove(req: Req, res: Res): Promise<void> {
-  if (!process.env.CUSTOS_WALLET_SEED) { json(res, 200, { status: "blocked", reason: "Demo mode — set CUSTOS_WALLET_SEED in .env to a funded Sepolia wallet to settle for real." }); return; }
+  if (!process.env.BUSTO_WALLET_SEED) { json(res, 200, { status: "blocked", reason: "Demo mode — set BUSTO_WALLET_SEED in .env to a funded Sepolia wallet to settle for real." }); return; }
   const { jobId } = JSON.parse((await readBody(req)).toString() || "{}") as { jobId?: string };
   const job = jobId ? jobs.get(jobId) : undefined;
   if (!job || !jobId) { json(res, 404, { status: "blocked", error: "unknown or expired job", reason: "This invoice is no longer awaiting approval — it was already settled, or the console restarted. Re-run the verification." }); return; }
@@ -388,7 +388,7 @@ const server = createServer(async (req, res) => {
     // the assistant grounds on — real vendors/POs and the real on-chain settlement record.
     if (req.method === "GET" && url === "/api/erp") return json(res, 200, { ...buildErpSnapshot(db), chain: "Ethereum Sepolia", explorer: "https://sepolia.etherscan.io/tx/" });
     if (req.method === "GET" && url === "/api/wallet") {
-      if (!process.env.CUSTOS_WALLET_SEED) return json(res, 200, { configured: false });
+      if (!process.env.BUSTO_WALLET_SEED) return json(res, 200, { configured: false });
       const w = await openEdgeWallet();
       const [eth, usdt] = [await w.account.getBalance(), await w.account.getTokenBalance(CHAIN.usdt)];
       w.dispose();
@@ -404,12 +404,12 @@ const server = createServer(async (req, res) => {
     // Full detail to the terminal; a readable sentence to the screen. This text can land
     // on a projector, and it must not overclaim about funds — an approve that threw here
     // may or may not have broadcast, so it says to check rather than "nothing was sent".
-    console.error(`[custos] unhandled error on ${req.method} ${url}:`, e);
+    console.error(`[busto] unhandled error on ${req.method} ${url}:`, e);
     json(res, 500, { status: "blocked", error: String((e as Error)?.message ?? e), reason: "Something went wrong inside the console — the detail is in the terminal. If you were settling an invoice, check the explorer before authorizing it again." });
   }
 });
 
 server.listen(PORT, HOST, () => {
   const scope = HOST === "127.0.0.1" || HOST === "localhost" ? "loopback only — the approve endpoint holds the wallet" : "⚠ REACHABLE FROM THE NETWORK — /api/approve signs real transfers";
-  console.log(`\n  CUSTOS · Edge console  →  http://localhost:${PORT}\n  bound to ${HOST} (${scope})\n  (Ctrl+C to stop)\n`);
+  console.log(`\n  BUSTO · Edge console  →  http://localhost:${PORT}\n  bound to ${HOST} (${scope})\n  (Ctrl+C to stop)\n`);
 });

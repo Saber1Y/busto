@@ -1,4 +1,4 @@
-// Custos · C2 demo — run the extraction pipeline on a real sample invoice and
+// Busto · C2 demo — run the extraction pipeline on a real sample invoice and
 // print the validated JSON + OCR-vs-vision cross-check.
 import { close } from "@qvac/sdk";
 import { fileURLToPath } from "node:url";

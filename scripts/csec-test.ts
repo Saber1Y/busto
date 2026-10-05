@@ -1,4 +1,4 @@
-// Custos · C-sec test — asserts Gate 0 blocks every adversarial Grade A–J, that the
+// Busto · C-sec test — asserts Gate 0 blocks every adversarial Grade A–J, that the
 // 4 bypass classics are REJECTed by the verdict, and that a clean invoice still passes
 // both. Pure (no models) and fast. Exits non-zero on any failure.
 import { readFileSync, readdirSync } from "node:fs";

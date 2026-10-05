@@ -1,9 +1,9 @@
 {
-  "name": "custos-relay",
+  "name": "busto-relay",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Self-hosted Hyperswarm blind relay for Custos — bridges the QVAC delegated-inference connection when both nodes are behind symmetric (Starlink CGNAT) NAT and direct holepunch fails.",
+  "description": "Self-hosted Hyperswarm blind relay for Busto — bridges the QVAC delegated-inference connection when both nodes are behind symmetric (Starlink CGNAT) NAT and direct holepunch fails.",
   "license": "Apache-2.0",
   "engines": {
     "node": ">=22.6"

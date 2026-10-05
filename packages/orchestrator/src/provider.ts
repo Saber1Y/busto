@@ -41,7 +41,7 @@ if (isMain) {
     seed: process.argv[2],
     allowedConsumer: process.argv[3],
   });
-  console.log("✅ Custos provider up (Orchestrator · M1 · QVAC Metal)");
+  console.log("✅ Busto provider up (Orchestrator · M1 · QVAC Metal)");
   if (ephemeral) {
     console.warn("⚠️  Ephemeral identity — set QVAC_HYPERSWARM_SEED in .env for a stable, pinnable key.");
   }

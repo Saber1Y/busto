@@ -1,6 +1,6 @@
 "use strict";
 
-/* Custos · Edge Console (C9-1) — conversational AP workspace.
+/* Busto · Edge Console (C9-1) — conversational AP workspace.
    The conversation is the INTERFACE only. Deterministic gates still authorize; the
    only money-mover is the deliberate human hold → /api/approve. The explainer is
    read-only. Model- and document-derived text is rendered via textContent, never
@@ -69,7 +69,7 @@ function appendUser(text, srcLabel) {
   msg.append(bubble); thread.append(msg); scrollThread();
 }
 function appendAgent() {
-  const bubble = el("div", { class: "bubble" }, el("div", { class: "who", text: "Custos" }));
+  const bubble = el("div", { class: "bubble" }, el("div", { class: "who", text: "Busto" }));
   const msg = el("div", { class: "msg agent" }, el("div", { class: "avatar", text: "C" }), bubble);
   thread.append(msg); scrollThread();
   return { msg, bubble };
@@ -193,7 +193,7 @@ function renderDemoNote(bubble) {
   bubble.append(el("div", { class: "card" },
     el("div", { class: "card-head" }, el("span", { class: "card-title", text: "Authorize payment" }), el("span", { class: "card-sub", text: "Gate 4 · demo mode" })),
     el("div", { class: "authorize" },
-      el("p", { class: "auth-note", html: "Demo mode — no wallet configured. Set <strong>CUSTOS_WALLET_SEED</strong> in <strong>.env</strong> to a funded Sepolia wallet and restart to settle for real. The verification above is fully live." }))));
+      el("p", { class: "auth-note", html: "Demo mode — no wallet configured. Set <strong>BUSTO_WALLET_SEED</strong> in <strong>.env</strong> to a funded Sepolia wallet and restart to settle for real. The verification above is fully live." }))));
   scrollThread();
 }
 function renderReceiptCard(bubble, r) {
@@ -307,12 +307,12 @@ function finalizeVerify(fin, ctx) {
     const amt = ctx.extraction ? `${ctx.extraction.invoiceAmount} ${assetLabel(ctx.extraction.currency)}` : "the amount";
     const vendor = ctx.extraction?.vendorName || "the vendor";
     addProse(ctx.bubble, `Every gate cleared. I've prepared a payment of ${amt} to ${vendor}'s verified wallet — the recipient comes from your books, not the document. Review it below and hold to authorize; I can't move the money myself.`);
-    addChips(ctx.bubble, ["What happens if I approve?", "Is this vendor known?", "What does Custos check?"], askInThread);
+    addChips(ctx.bubble, ["What happens if I approve?", "Is this vendor known?", "What does Busto check?"], askInThread);
     if (walletConfigured) renderAuthorizeCard(ctx.bubble); else renderDemoNote(ctx.bubble);
   } else if (fin.duplicate) {
     const pr = addProse(ctx.bubble, `Already settled. ${cap(fin.reason)} No money moved — this is the replay guard, and it survives restarts.`);
     if (fin.priorTx) pr.append(el("span", { text: " " }), el("a", { class: "tx-link", href: "https://sepolia.etherscan.io/tx/" + fin.priorTx, target: "_blank", rel: "noreferrer", text: "View the original payment" }));
-    addChips(ctx.bubble, ["Why was this blocked?", "What does Custos check?"], askInThread);
+    addChips(ctx.bubble, ["Why was this blocked?", "What does Busto check?"], askInThread);
   } else {
     const gname = (fin.gates.find((g) => g.id === fin.blockedGate) || {}).name || "a gate";
     addProse(ctx.bubble, `I stopped at “${gname}”. ${cap(fin.reason)} No money can move — nothing was sent.`);
@@ -428,7 +428,7 @@ function wireComposer() {
 /* ── intro + inbox picker ─────────────────────────────────────────── */
 function renderIntro() {
   const { bubble } = appendAgent();
-  addProse(bubble, "I'm Custos — your air-gapped accounts-payable agent. Drop a vendor invoice and I'll verify it against your books and settle it on-chain after you approve — or ask me about a vendor, a past payment, or how the gates work.");
+  addProse(bubble, "I'm Busto — your air-gapped accounts-payable agent. Drop a vendor invoice and I'll verify it against your books and settle it on-chain after you approve — or ask me about a vendor, a past payment, or how the gates work.");
   addChips(bubble, ["What can you do?", "How do the gates work?", "Is Acme a known vendor?"], handleMessage);
   pickerEl = renderPicker(bubble);
 }
@@ -510,7 +510,7 @@ function renderVendors(v) {
 }
 
 function renderHistory(v) {
-  v.append(el("p", { class: "erp-lead", text: "Every on-chain settlement Custos has made, read from the local ledger. The full profiler-backed trace of each verification is appended to evidence/inference-log.jsonl on this machine." }));
+  v.append(el("p", { class: "erp-lead", text: "Every on-chain settlement Busto has made, read from the local ledger. The full profiler-backed trace of each verification is appended to evidence/inference-log.jsonl on this machine." }));
   fetchErp().then((erp) => {
     if (!erp.settlementHistory.length) {
       v.append(el("div", { class: "erp-empty" },
@@ -543,7 +543,7 @@ function renderInbox(v) {
   v.append(el("div", { class: "stub-card" },
     el("svg", { class: "ico-lg", viewBox: "0 0 16 16", html: '<path d="M2 4h12v8H2zM2 4l6 4 6-4" fill="none" stroke="currentColor" stroke-width="1.2"/>' }),
     el("h2", { text: "Inbox" }),
-    el("p", { text: "Custos verifies invoices you bring it in the Workspace — drop a PNG or pick a sample. A live inbox that pulls invoices from a mailbox or ERP feed is planned; it is not implemented yet." }),
+    el("p", { text: "Busto verifies invoices you bring it in the Workspace — drop a PNG or pick a sample. A live inbox that pulls invoices from a mailbox or ERP feed is planned; it is not implemented yet." }),
     el("span", { class: "stub-soon", text: "Planned" })));
 }
 
@@ -551,7 +551,7 @@ function renderSettings(v) {
   v.append(el("div", { class: "stub-card" },
     el("svg", { class: "ico-lg", viewBox: "0 0 16 16", html: '<circle cx="8" cy="8" r="2.5" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2" stroke="currentColor" stroke-width="1.2"/>' }),
     el("h2", { text: "Settings" }),
-    el("p", { text: "Custos is configured on this machine via .env: the Edge-only Sepolia signer key, the RPC endpoint, and the pinned chain + USD₮ token. The on-device models (Qwen3-VL-2B, OCR, GTE-large, Qwen3-1.7B) load from the local QVAC cache. A settings UI is planned; today configuration is file-based." }),
+    el("p", { text: "Busto is configured on this machine via .env: the Edge-only Sepolia signer key, the RPC endpoint, and the pinned chain + USD₮ token. The on-device models (Qwen3-VL-2B, OCR, GTE-large, Qwen3-1.7B) load from the local QVAC cache. A settings UI is planned; today configuration is file-based." }),
     el("span", { class: "stub-soon", text: "Planned" })));
 }
 
@@ -573,13 +573,13 @@ function wireNav() { nav.addEventListener("click", (e) => { const b = e.target.c
 function applySidebar(state) { document.documentElement.dataset.sidebar = state; }
 function wireShell() {
   const override = new URLSearchParams(location.search).get("sidebar");
-  let saved = null; try { saved = localStorage.getItem("custos.sidebar"); } catch { /* storage optional */ }
+  let saved = null; try { saved = localStorage.getItem("busto.sidebar"); } catch { /* storage optional */ }
   applySidebar(override || saved || "expanded");
   const toggle = $("sideToggle");
   if (toggle) toggle.addEventListener("click", () => {
     const next = document.documentElement.dataset.sidebar === "collapsed" ? "expanded" : "collapsed";
     applySidebar(next);
-    try { localStorage.setItem("custos.sidebar", next); } catch { /* storage optional */ }
+    try { localStorage.setItem("busto.sidebar", next); } catch { /* storage optional */ }
   });
   const menuBtn = $("menuBtn"), scrim = $("scrim");
   const setDrawer = (open) => { document.body.dataset.drawer = open ? "open" : ""; };

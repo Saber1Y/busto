@@ -2,7 +2,7 @@
 
 This maps the 100-vector catalogue to the six gates and the code that enforces each. The
 full per-vector tables (attack → defense → tier) are in
-[Custos-Threat-Model.md](./Custos-Threat-Model.md) — the single source. Encoding-battery
+[Busto-Threat-Model.md](./Busto-Threat-Model.md) — the single source. Encoding-battery
 results: [ADVERSARIAL-TESTING.md](./ADVERSARIAL-TESTING.md) (17/17). Gate model:
 [SECURITY.md](./SECURITY.md).
 
@@ -30,7 +30,7 @@ results: [ADVERSARIAL-TESTING.md](./ADVERSARIAL-TESTING.md) (17/17). Gate model:
 
 - G0 + obfuscation (1–22): `npm run csec:test` → 17/17 ([ADVERSARIAL-TESTING.md](./ADVERSARIAL-TESTING.md)).
 - G2/G3 (36–54): `npm run c3:demo` → PASS + 3 REJECT ([evidence/c3-report.md](./evidence/c3-report.md)).
-- G3/G4/G5 (55–74): `CUSTOS_APPROVE=I-APPROVE npm run c4:demo` → real tx
+- G3/G4/G5 (55–74): `BUSTO_APPROVE=I-APPROVE npm run c4:demo` → real tx
   [`0xa3ed0f33…f79cd30`](https://sepolia.etherscan.io/tx/0xa3ed0f33fcfa685287185284079884c0ea0c3a260149443bfd945f083f79cd30),
   plus poisoned/forged/duplicate blocked ([evidence/c4-report.md](./evidence/c4-report.md)).
 - P2P (75–84): `npm run c1:demo` ([evidence/c1-report.md](./evidence/c1-report.md)) — runs both roles

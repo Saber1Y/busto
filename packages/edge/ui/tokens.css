@@ -1,5 +1,5 @@
 /* ============================================================================
-   Custos design tokens — "Vault Ledger"
+   Busto design tokens — "Vault Ledger"
    The single source of truth for the visual language. Every screen reads from
    these; no one-off hex anywhere else. Bespoke, air-gapped (system-safe type,
    no external CDN). Light, warm, archival — a guardian of payments.
@@ -20,7 +20,7 @@
   --on-dark:     #f6f2e9;  /* text on dark/brand surfaces */
   --on-dark-2:   #b9bcae;  /* secondary on dark */
 
-  /* ── brand — Custos Pine (primary interactive) + Brass (seal accent) */
+  /* ── brand — Busto Pine (primary interactive) + Brass (seal accent) */
   --brand:        #0e5247; /* pine — buttons, links, active, focus */
   --brand-strong: #0a3e36;
   --brand-press:  #082f29;

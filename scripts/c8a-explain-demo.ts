@@ -1,4 +1,4 @@
-// Custos · C8a demo — the on-device explainer answers a clerk's plain questions about
+// Busto · C8a demo — the on-device explainer answers a clerk's plain questions about
 // REAL verdicts (computed by computeVerdict, not mocked). It explains; it never decides.
 import { close } from "@qvac/sdk";
 import { fileURLToPath } from "node:url";
@@ -42,7 +42,7 @@ const cases: Array<{ q: string; ctx: ExplainContext }> = [
   { q: "Why was this blocked?", ctx: await ctx(acme("4,242.00"), "INV-A") },
   { q: "What happened to this invoice?", ctx: await ctx(acme("1.00"), "INV-B", inj.flagged, inj.findings) },
   { q: "What happens if I approve this?", ctx: await ctx(acme("1.00"), "INV-C") },
-  { q: "What does Custos do?", ctx: await ctx(acme("1.00"), "INV-D") },
+  { q: "What does Busto do?", ctx: await ctx(acme("1.00"), "INV-D") },
   { q: "Is this one safe to pay?", ctx: { invoiceRef: null, extraction: null, verdict: null, vendorOpenPOs: [], gate0Findings: [] } },
 ];
 

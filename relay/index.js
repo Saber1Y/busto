@@ -47,7 +47,7 @@ const server = dht.createServer((socket) => {
 await server.listen(keyPair)
 
 const publicKey = server.publicKey.toString('hex')
-console.log('🛰  Custos blind relay — up')
+console.log('🛰  Busto blind relay — up')
 console.log(`    public key : ${publicKey}`)
 console.log(`    udp bind   : ${host}:${port}`)
 console.log('    register this key in qvac.config.json -> swarmRelays on BOTH the provider (M1) and consumer (Edge)')

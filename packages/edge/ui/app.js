@@ -126,8 +126,8 @@ function showAsk(status) {
 }
 function renderChips(status) {
   const qs = status === "BLOCKED"
-    ? ["Why was this blocked?", "Is this vendor known?", "What does Custos do?"]
-    : ["What happens if I approve?", "Is this vendor known?", "What does Custos do?"];
+    ? ["Why was this blocked?", "Is this vendor known?", "What does Busto do?"]
+    : ["What happens if I approve?", "Is this vendor known?", "What does Busto do?"];
   $("askChips").innerHTML = qs.map((q) => `<button class="ask-chip" type="button">${q}</button>`).join("");
   $("askChips").querySelectorAll(".ask-chip").forEach((b) => b.addEventListener("click", () => askExplain(b.textContent)));
 }
@@ -228,7 +228,7 @@ function finalize(d) {
     } else {
       auth.classList.add("demo");
       label.textContent = "SUPPLY A FUNDED WALLET TO SETTLE";
-      note.innerHTML = "Demo mode — no wallet configured. Set <strong>CUSTOS_WALLET_SEED</strong> in <strong>.env</strong> to a funded Sepolia wallet, then restart, to settle for real. The verification above is fully live.";
+      note.innerHTML = "Demo mode — no wallet configured. Set <strong>BUSTO_WALLET_SEED</strong> in <strong>.env</strong> to a funded Sepolia wallet, then restart, to settle for real. The verification above is fully live.";
       setGate("G4", "active", "demo mode — supply a funded wallet");
       setState("verified", "VERIFIED", "Every automated gate cleared. Supply a funded Sepolia wallet to settle.");
     }

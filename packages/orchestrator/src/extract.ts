@@ -21,8 +21,8 @@ import {
 import { normalizeForLLM, type Gate0Result } from "../../../security/gate0.ts";
 
 const OCR_MODEL = "OCR_LATIN_RECOGNIZER_1";
-// Qwen3-VL-2B (accurate, default); CUSTOS_VISION=smol falls back to the fast SmolVLM2-500M.
-const USE_SMOL = process.env.CUSTOS_VISION === "smol";
+// Qwen3-VL-2B (accurate, default); BUSTO_VISION=smol falls back to the fast SmolVLM2-500M.
+const USE_SMOL = process.env.BUSTO_VISION === "smol";
 const VISION_SRC = USE_SMOL ? SMOLVLM2_500M_MULTIMODAL_Q8_0 : QWEN3VL_2B_MULTIMODAL_Q4_K;
 const VISION_PROJ = USE_SMOL ? MMPROJ_SMOLVLM2_500M_MULTIMODAL_Q8_0 : MMPROJ_QWEN3VL_2B_MULTIMODAL_Q4_K;
 const VISION_MODEL = USE_SMOL ? "SMOLVLM2_500M_MULTIMODAL_Q8_0" : "QWEN3VL_2B_MULTIMODAL_Q4_K";

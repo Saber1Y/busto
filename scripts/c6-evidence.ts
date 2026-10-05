@@ -1,4 +1,4 @@
-// Custos · C6 evidence — run a full extraction with the QVAC profiler enabled and
+// Busto · C6 evidence — run a full extraction with the QVAC profiler enabled and
 // every call routed through the audit wrappers, proving the inference log is complete
 // (load → ocr → unload → load → completion → unload) and profiler-backed. Exports the
 // raw profiler summary to evidence/profiler-summary.txt.

@@ -1,4 +1,4 @@
-// Custos · C2 prefetch — warm the model cache for the extraction pipeline so the
+// Busto · C2 prefetch — warm the model cache for the extraction pipeline so the
 // demo doesn't stall on cold downloads. Throwaway (plain ESM). Idempotent: cached
 // assets are skipped by the registry client.
 import {

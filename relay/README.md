@@ -1,4 +1,4 @@
-# custos-relay — self-hosted Hyperswarm blind relay
+# busto-relay — self-hosted Hyperswarm blind relay
 
 A standalone Hyperswarm/hyperdht **blind relay** node. It bridges the QVAC
 delegated-inference connection between the Orchestrator (M1 "Vault") and the
@@ -9,7 +9,7 @@ traverse and the SDK reports `PEER_CONNECTION_FAILED`.
 It is **blind**: it only forwards end-to-end-encrypted UDX stream messages
 between two peers paired by a one-time token. It cannot read the invoice, the
 inference, or anything else — it is transport, not an AI/data dependency. This
-preserves Custos's "zero cloud AI, zero data leakage" thesis. Disclose it in
+preserves Busto's "zero cloud AI, zero data leakage" thesis. Disclose it in
 `evidence/remote_apis.json` as transport, alongside the Sepolia RPC.
 
 ## How it works
@@ -55,11 +55,11 @@ Any VPS with a public IPv4 (DigitalOcean, Hetzner, Vultr, EC2):
 
 ```sh
 # open the UDP port in the cloud firewall / security group:  UDP 49737  from 0.0.0.0/0
-git clone <repo> && cd custos/relay
+git clone <repo> && cd busto/relay
 npm install
 RELAY_SEED=<your-64-hex-seed> RELAY_PORT=49737 node index.js
 # keep it alive with systemd or pm2:
-#   pm2 start index.js --name custos-relay
+#   pm2 start index.js --name busto-relay
 ```
 
 ### Option B — Fly.io (UDP service)
@@ -68,11 +68,11 @@ UDP on Fly requires a **dedicated IPv4**:
 
 ```sh
 cd relay
-fly launch --no-deploy            # accept app name "custos-relay" (matches fly.toml)
+fly launch --no-deploy            # accept app name "busto-relay" (matches fly.toml)
 fly ips allocate-v4               # dedicated IPv4 is REQUIRED for UDP
 fly secrets set RELAY_SEED=<your-64-hex-seed>
 fly deploy
-fly logs                          # confirm "Custos blind relay — up" + the public key
+fly logs                          # confirm "Busto blind relay — up" + the public key
 ```
 
 The bundled `Dockerfile` + `fly.toml` expose UDP `49737`.
@@ -82,7 +82,7 @@ The bundled `Dockerfile` + `fly.toml` expose UDP `49737`.
 On startup you must see the same public key that's in `qvac.config.json`:
 
 ```
-🛰  Custos blind relay — up
+🛰  Busto blind relay — up
     public key : <hex>
     udp bind   : 0.0.0.0:49737
 ```

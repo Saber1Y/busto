@@ -1,4 +1,4 @@
-// Custos · C3 prefetch — embeddings (RAG) + a tool-calling model. Throwaway ESM.
+// Busto · C3 prefetch — embeddings (RAG) + a tool-calling model. Throwaway ESM.
 import { downloadAsset, close, GTE_LARGE_FP16, QWEN3_1_7B_INST_Q4 } from "@qvac/sdk";
 
 const assets = [

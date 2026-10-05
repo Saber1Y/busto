@@ -1,14 +1,14 @@
-// Custos · C0 smoke harness
+// Busto · C0 smoke harness
 // Runs the SAME QVAC model on whichever Mac you run it on, and emits one
 // JSONL metrics row (load_ms, ttft_ms, tok_per_sec). Run on BOTH nodes:
-//   M1 Pro  (Metal)  -> CUSTOS_NODE=orchestrator npm run smoke
-//   Intel   (CPU)    -> CUSTOS_NODE=edge        npm run smoke
+//   M1 Pro  (Metal)  -> BUSTO_NODE=orchestrator npm run smoke
+//   Intel   (CPU)    -> BUSTO_NODE=edge        npm run smoke
 // The delta between the two rows is our first honest, reproducible datapoint.
 
 import { loadModel, LLAMA_3_2_1B_INST_Q4_0, completion, unloadModel } from "@qvac/sdk";
 import os from "node:os";
 
-const NODE_LABEL = process.env.CUSTOS_NODE || os.hostname();
+const NODE_LABEL = process.env.BUSTO_NODE || os.hostname();
 const MODEL_NAME = "LLAMA_3_2_1B_INST_Q4_0";
 const PROMPT =
   "List three reasons on-device AI is better than the cloud for handling " +

@@ -1,4 +1,4 @@
-// Custos · C3 demo — seed a real SQLite ERP, then produce DETERMINISTIC PASS/REJECT
+// Busto · C3 demo — seed a real SQLite ERP, then produce DETERMINISTIC PASS/REJECT
 // verdicts for a clean invoice and three adversarial variants. Also demonstrates
 // QVAC native tool-calling (the LLM gathers facts; the verdict is computed in code).
 import { embed as qvacEmbed, loadModel, unloadModel, close, GTE_LARGE_FP16 } from "@qvac/sdk";

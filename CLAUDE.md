@@ -1,15 +1,15 @@
-# CLAUDE.md — Custos
+# CLAUDE.md — Busto
 
-> You are the build agent for **Custos**. This file is authoritative and loads every session. Read it fully, then read the source-of-truth docs before doing anything.
+> You are the build agent for **Busto**. This file is authoritative and loads every session. Read it fully, then read the source-of-truth docs before doing anything.
 
-## What Custos is
+## What Busto is
 
 An **air-gapped agentic settlement** system. It reads a vendor invoice **locally** (QVAC OCR + multimodal LLM), verifies it against an internal ERP (QVAC tool-calling + RAG), and stages **real on-chain USD₮ settlement** via Tether's WDK — **zero cloud, zero data leakage.** Hackathon: QVAC Hackathon I (Tether/DoraHacks). Team: Tim (`@winsznx`) + Anu (`@svector`). License: **Apache-2.0**.
 
 ## Source of truth — READ FIRST, every session
 
-1. **`Custos-PRD.md`** — full design, architecture, build order (C0–C7 + C-sec). Authoritative.
-2. **`Custos-Threat-Model.md`** — the 5 gates, Gate-0 encoding battery, 100 attack vectors. Any code you write must preserve these gates.
+1. **`Busto-PRD.md`** — full design, architecture, build order (C0–C7 + C-sec). Authoritative.
+2. **`Busto-Threat-Model.md`** — the 5 gates, Gate-0 encoding battery, 100 attack vectors. Any code you write must preserve these gates.
 3. **`HACKATHON.md`** — the full hackathon brief: rules, tracks, **judging criteria**, prizes, validation stages, deadlines, build-in-public. Read it for **what wins** — optimize every decision toward these criteria.
 4. **`README.md`** — setup + hardware.
 4. **`evidence/p0-report.md`** (after C0) — **locked ground truth from real hardware**: exact model IDs (Qwen3-VL-2B multimodal + mmproj, GTE-large embeddings, OCR CRAFT+Latin), real API names (`startQVACProvider`, `account.transfer({token,recipient,amount})`), and profiler stats fields (`generatedTokens` — NOT `completionTokens` — `timeToFirstToken`, `tokensPerSecond`). The installed SDK (0.13.5) is the ground truth, not doc references.
@@ -68,7 +68,7 @@ A payment is impossible unless it clears every gate. No single component (least 
 ## Repo conventions
 
 ```
-custos/
+busto/
   packages/
     edge/          # Intel: UI + 1B routing + P2P consumer + WDK signer (keys)
     orchestrator/  # M1: provider + OCR + multimodal LLM + RAG + tools
@@ -97,4 +97,4 @@ ESM (`"type": "module"`). Prefer `better-sqlite3` + `sqlite-vec`. Keep the UI ba
 
 - **C1 P2P networking (corrected):** two peers behind **one NAT cannot hairpin** — same-WiFi holepunch fails (`PEER_CONNECTION_FAILED` / `0 swarm relay(s) configured`), confirmed on the two Macs. Holepunch works across **different NATs**, so for the cross-machine round-trip put one Mac on a **phone hotspot** (different NAT) — or configure real `swarmRelays` for a same-network setup. The provider's public key is stable identity (seed-derived), not network-bound, so only the consumer side needs re-running after a network change. Document the network requirement in the C6 repro instructions. Never claim the delegated round-trip until it runs across two NATs (Hard Rule 2). Cross-network P2P ("the nodes can be anywhere") is the demo story.
 - **C5 UI design source:** use `DESIGN.md` (the provided style reference) + the rules given at C5 time for the Edge UI's visual language. Keep the UI barebones-but-intentional.
-- **Before the repo goes public (C7):** delete `DESIGN.md` and the empty `qvachack.md` — they are references/strays, not Custos artifacts, and the static review shouldn't see them.
+- **Before the repo goes public (C7):** delete `DESIGN.md` and the empty `qvachack.md` — they are references/strays, not Busto artifacts, and the static review shouldn't see them.

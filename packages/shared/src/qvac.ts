@@ -1,7 +1,7 @@
 import { completion, getLoadedModelInfo } from "@qvac/sdk";
 
 /**
- * The CompletionStats fields Custos audits. Names are the exact ones the SDK
+ * The CompletionStats fields Busto audits. Names are the exact ones the SDK
  * emits on `run.stats` (verified against @qvac/sdk@0.13.5 .d.ts + live smoke).
  * NOTE: output tokens are `generatedTokens` — NOT `completionTokens`.
  */

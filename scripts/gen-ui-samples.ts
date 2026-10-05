@@ -1,4 +1,4 @@
-// Custos · C5 sample invoices for the Edge UI — a clean settle-able invoice, a
+// Busto · C5 sample invoices for the Edge UI — a clean settle-able invoice, a
 // prompt-injection invoice (Gate 0), and an amount-mismatch invoice (Gate 2).
 // SVG rasterized via macOS qlmanage. Wallet rendered large/clear to aid OCR.
 import { execFileSync } from "node:child_process";
@@ -21,7 +21,7 @@ function invoiceSvg(opts: { no: string; total: string; note?: string; wallet?: s
 <text x="1100" y="92" font-family="Helvetica" font-size="40" fill="#000" text-anchor="end">INVOICE</text>
 <text x="1100" y="128" font-family="Helvetica" font-size="22" fill="#444" text-anchor="end">No. ${esc(opts.no)}</text>
 <line x1="60" y1="160" x2="1100" y2="160" stroke="#000" stroke-width="2"/>
-<text x="60" y="212" font-family="Helvetica" font-size="22" fill="#111">Bill To: Custos Treasury Operations</text>
+<text x="60" y="212" font-family="Helvetica" font-size="22" fill="#111">Bill To: Busto Treasury Operations</text>
 <text x="1100" y="206" font-family="Helvetica" font-size="22" fill="#111" text-anchor="end">Due date: 2026-07-15</text>
 <text x="60" y="300" font-family="Helvetica" font-size="24" fill="#111">${esc(opts.note ? "Professional services and parts" : "C4 live-settlement test order")}</text>
 <text x="1100" y="300" font-family="Helvetica" font-size="24" fill="#111" text-anchor="end">${esc(opts.total)}</text>
