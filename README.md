@@ -1,13 +1,13 @@
 # Busto
 
-### Air-gapped agentic settlement — accounts payable an AI can't be tricked into paying wrong.
+### Air-gapped agentic settlement  accounts payable an AI can't be tricked into paying wrong.
 
 > Busto reads a vendor invoice **on your own machine**, checks it against **your own books**,
 > and pays it **on-chain** — and a payment is **impossible** unless it clears **six independent
 > gates**. No invoice, no dollar figure, and no AI prompt ever leaves the building.
 > **Zero cloud, zero data leakage.**
 
-**Built for** QVAC Hackathon I (Tether · DoraHacks) · **Team** Tim (`@winsznx`) + Anu (`@svector`) · **Track** General Purpose (≤ 32 GB) + Build in Public · **License** Apache-2.0
+
 
 **It's not a mock** — here is a real payment Busto settled on BOT Chain Testnet:
 [`0x2ea60336…8a4c23`](https://scan.bohr.life/tx/0x2ea60336babd5e995c79b2575026635d91ab50f9d42a67fd3908dcbd3e8a4c23)
